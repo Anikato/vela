@@ -6,6 +6,7 @@ import { ContactFormSection } from './blocks/contact-form-section';
 import { CtaSection } from './blocks/cta-section';
 import { CustomHtmlSection } from './blocks/custom-html-section';
 import { FaqSection } from './blocks/faq-section';
+import { NewsShowcaseSection } from './blocks/news-showcase-section';
 import { FeatureGridSection } from './blocks/feature-grid-section';
 import { HeroSection } from './blocks/hero-section';
 import { ImageGallerySection } from './blocks/image-gallery-section';
@@ -38,5 +39,6 @@ export const sectionRegistry: Record<string, ComponentType<SectionComponentProps
   image_gallery: ImageGallerySection,
   team: TeamSection,
   contact_form: ContactFormSection,
+  news_showcase: NewsShowcaseSection,
   custom_html: CustomHtmlSection,
 };

@@ -18,6 +18,10 @@ import {
   getCategoriesForShowcase,
   type PublicCategoryCardItem,
 } from '@/server/services/category-public.service';
+import {
+  getPublishedNewsForShowcase,
+  type PublicNewsShowcaseItem,
+} from '@/server/services/news.service';
 
 export type Section = typeof sections.$inferSelect;
 export type SectionTranslation = typeof sectionTranslations.$inferSelect;
@@ -63,6 +67,7 @@ export interface RenderSection {
   data?: {
     products?: PublicProductCardItem[];
     categories?: PublicCategoryCardItem[];
+    news?: PublicNewsShowcaseItem[];
   };
 }
 
@@ -416,6 +421,16 @@ export async function getPageSectionsForRender(
     categoryNavData = await getCategoriesForShowcase(locale, defaultLocale, limit);
   }
 
+  const hasNewsShowcase = rows.some((r) => r.type === 'news_showcase');
+  let newsShowcaseData: PublicNewsShowcaseItem[] | undefined;
+  if (hasNewsShowcase) {
+    const limitRaw = rows.find((r) => r.type === 'news_showcase')?.config?.limit;
+    const limit = typeof limitRaw === 'number' && Number.isFinite(limitRaw)
+      ? Math.max(1, Math.min(24, Math.floor(limitRaw)))
+      : 6;
+    newsShowcaseData = await getPublishedNewsForShowcase(locale, defaultLocale, limit);
+  }
+
   return rows.map((row) => {
     const translated = getTranslation(row.translations, locale, defaultLocale);
     const items = row.items
@@ -471,7 +486,9 @@ export async function getPageSectionsForRender(
             }
           : row.type === 'category_nav'
             ? { categories: categoryNavData ?? [] }
-            : undefined,
+            : row.type === 'news_showcase'
+              ? { news: newsShowcaseData ?? [] }
+              : undefined,
     };
   });
 }

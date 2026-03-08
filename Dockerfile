@@ -18,6 +18,10 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
+# 构建时需要数据库连接来预渲染页面
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
+
 RUN corepack enable pnpm && pnpm build
 
 # --- Runner ---

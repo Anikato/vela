@@ -32,6 +32,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { RichTextEditor } from '@/components/admin/common/rich-text-editor';
+import { BlockConfigForm } from './block-config-form';
 
 interface PageSectionsManagementProps {
   pageId: string;
@@ -50,7 +52,7 @@ type TranslationForm = {
   secondaryButtonLink: string;
 };
 
-type SectionType = 'hero' | 'rich_text' | 'cta' | 'product_showcase' | 'feature_grid' | 'carousel_banner' | 'stats' | 'faq' | 'two_column' | 'partner_logos' | 'testimonials' | 'category_nav' | 'video_embed' | 'timeline' | 'image_gallery' | 'team' | 'contact_form' | 'custom_html';
+type SectionType = 'hero' | 'rich_text' | 'cta' | 'product_showcase' | 'feature_grid' | 'carousel_banner' | 'stats' | 'faq' | 'two_column' | 'partner_logos' | 'testimonials' | 'category_nav' | 'video_embed' | 'timeline' | 'image_gallery' | 'team' | 'contact_form' | 'news_showcase' | 'custom_html';
 
 function buildTranslationForm(locales: Language[]): TranslationForm[] {
   return locales.map((item) => ({
@@ -65,15 +67,14 @@ function buildTranslationForm(locales: Language[]): TranslationForm[] {
   }));
 }
 
-function parseConfigJson(raw: string): Record<string, unknown> {
-  const trimmed = raw.trim();
-  if (!trimmed) return {};
-  const parsed = JSON.parse(trimmed) as unknown;
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('配置 JSON 必须是对象');
-  }
-  return parsed as Record<string, unknown>;
-}
+/* 需要使用富文本编辑器的区块类型（content 字段支持 HTML） */
+const richTextBlockTypes = new Set([
+  'hero',
+  'rich_text',
+  'cta',
+  'two_column',
+  'contact_form',
+]);
 
 export function PageSectionsManagement({
   pageId,
@@ -90,7 +91,7 @@ export function PageSectionsManagement({
   const [isActive, setIsActive] = useState(true);
   const [anchorId, setAnchorId] = useState('');
   const [cssClass, setCssClass] = useState('');
-  const [configJson, setConfigJson] = useState('{}');
+  const [configObj, setConfigObj] = useState<Record<string, unknown>>({});
   const [translations, setTranslations] = useState<TranslationForm[]>(() =>
     buildTranslationForm(locales),
   );
@@ -106,7 +107,7 @@ export function PageSectionsManagement({
     setIsActive(true);
     setAnchorId('');
     setCssClass('');
-    setConfigJson('{}');
+    setConfigObj({});
     setTranslations(buildTranslationForm(locales));
     setDialogOpen(true);
   }
@@ -117,7 +118,7 @@ export function PageSectionsManagement({
     setIsActive(item.isActive);
     setAnchorId(item.anchorId ?? '');
     setCssClass(item.cssClass ?? '');
-    setConfigJson(JSON.stringify(item.config ?? {}, null, 2));
+    setConfigObj(item.config ?? {});
     setTranslations(
       locales.map((locale) => {
         const matched = item.translations.find((tr) => tr.locale === locale.code);
@@ -147,18 +148,10 @@ export function PageSectionsManagement({
   }
 
   async function saveSection() {
-    let config: Record<string, unknown>;
-    try {
-      config = parseConfigJson(configJson);
-    } catch {
-      toast.error('配置 JSON 格式不正确');
-      return;
-    }
-
     const payload = {
       pageId,
       type,
-      config,
+      config: configObj,
       isActive,
       anchorId: anchorId || null,
       cssClass: cssClass || null,
@@ -334,7 +327,7 @@ export function PageSectionsManagement({
           <DialogHeader>
             <DialogTitle>{editing ? '编辑区块' : '新增区块'}</DialogTitle>
             <DialogDescription>
-              支持 18 种区块类型，涵盖布局、内容、媒体、交互四大类。
+              支持 19 种区块类型，涵盖布局、内容、媒体、交互四大类。填写可视化表单即可配置。
             </DialogDescription>
           </DialogHeader>
 
@@ -370,6 +363,7 @@ export function PageSectionsManagement({
                   <optgroup label="交互类">
                     <option value="product_showcase">product_showcase — 产品展示</option>
                     <option value="category_nav">category_nav — 分类导航</option>
+                    <option value="news_showcase">news_showcase — 新闻展示</option>
                     <option value="cta">cta — 行动号召</option>
                     <option value="contact_form">contact_form — 联系表单</option>
                   </optgroup>
@@ -396,21 +390,13 @@ export function PageSectionsManagement({
                   disabled={isSubmitting}
                 />
               </div>
-              <div className="sm:col-span-2 space-y-2">
-                <label className="text-sm font-medium">配置 JSON</label>
-                <textarea
-                  rows={6}
-                  className="min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
-                  value={configJson}
-                  onChange={(e) => setConfigJson(e.target.value)}
+              <div className="sm:col-span-2">
+                <BlockConfigForm
+                  type={type}
+                  value={configObj}
+                  onChange={setConfigObj}
                   disabled={isSubmitting}
                 />
-                {type === 'product_showcase' ? (
-                  <p className="text-xs text-muted-foreground">
-                    可用字段：`limit`（1-24），`category_slug`，`tag_slug`。例如：
-                    {` {"limit": 6, "category_slug": "pumps", "tag_slug": "featured"}`}
-                  </p>
-                ) : null}
               </div>
               <div className="flex items-end sm:col-span-2">
                 <label className="flex items-center gap-2 text-sm">
@@ -441,14 +427,23 @@ export function PageSectionsManagement({
                       onChange={(e) => updateTranslation(item.locale, 'subtitle', e.target.value)}
                       disabled={isSubmitting}
                     />
-                    <textarea
-                      rows={4}
-                      className="min-h-[96px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      placeholder="正文（可选，支持 HTML）"
-                      value={item.content}
-                      onChange={(e) => updateTranslation(item.locale, 'content', e.target.value)}
-                      disabled={isSubmitting}
-                    />
+                    {richTextBlockTypes.has(type) ? (
+                      <RichTextEditor
+                        value={item.content}
+                        onChange={(html) => updateTranslation(item.locale, 'content', html)}
+                        placeholder="正文（可选）"
+                        disabled={isSubmitting}
+                      />
+                    ) : (
+                      <textarea
+                        rows={4}
+                        className="min-h-[96px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        placeholder="正文（可选，支持 HTML）"
+                        value={item.content}
+                        onChange={(e) => updateTranslation(item.locale, 'content', e.target.value)}
+                        disabled={isSubmitting}
+                      />
+                    )}
                     <div className="grid gap-3 sm:grid-cols-2">
                       <Input
                         placeholder="主按钮文本"

@@ -33,6 +33,15 @@ export interface WebsiteSectionCategoryCard {
   productCount: number;
 }
 
+export interface WebsiteSectionNewsCard {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string | null;
+  coverImage: { url: string; alt: string | null } | null;
+  publishedAt: string | null;
+}
+
 export interface WebsiteSection {
   id: string;
   type: string;
@@ -53,6 +62,7 @@ export interface WebsiteSection {
   data?: {
     products?: WebsiteSectionProductCard[];
     categories?: WebsiteSectionCategoryCard[];
+    news?: WebsiteSectionNewsCard[];
   };
 }
 

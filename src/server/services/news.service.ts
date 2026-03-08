@@ -324,6 +324,51 @@ export async function getPublishedNewsList(
   return { items, total, page, pageSize, totalPages };
 }
 
+/** 前台：最新新闻展示（用于区块系统 news_showcase） */
+export interface PublicNewsShowcaseItem {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string | null;
+  coverImage: { url: string; alt: string | null } | null;
+  publishedAt: string | null;
+}
+
+export async function getPublishedNewsForShowcase(
+  locale: string,
+  defaultLocale: string,
+  limit: number = 6,
+): Promise<PublicNewsShowcaseItem[]> {
+  const storage = getStorageAdapter();
+
+  const rows = await db.query.news.findMany({
+    where: eq(news.status, 'published'),
+    with: {
+      coverImage: true,
+      translations: true,
+    },
+    orderBy: [desc(news.publishedAt), desc(news.createdAt)],
+    limit: Math.max(1, Math.min(24, limit)),
+  });
+
+  return rows.map((row) => {
+    const t = getTranslation(row.translations, locale, defaultLocale);
+    return {
+      id: row.id,
+      slug: row.slug,
+      title: t?.title ?? row.slug,
+      summary: t?.summary ?? null,
+      coverImage: row.coverImage
+        ? {
+            url: storage.getPublicUrl(row.coverImage.filename),
+            alt: row.coverImage.alt,
+          }
+        : null,
+      publishedAt: row.publishedAt?.toISOString() ?? null,
+    };
+  });
+}
+
 /** 前台：已发布新闻详情（按 slug） */
 export async function getPublishedNewsBySlug(
   slug: string,

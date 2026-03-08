@@ -114,6 +114,24 @@ export default auth(async (request) => {
   const { pathname, search } = request.nextUrl;
 
   if (pathname.startsWith('/admin')) {
+    const isLoginPage = pathname === '/admin/login';
+    const isLoggedIn = !!request.auth?.user;
+
+    if (isLoginPage) {
+      // 已登录用户访问登录页 → 重定向到后台首页
+      if (isLoggedIn) {
+        return NextResponse.redirect(new URL('/admin', request.nextUrl.origin));
+      }
+      return NextResponse.next();
+    }
+
+    // 未登录用户访问后台 → 重定向到登录页
+    if (!isLoggedIn) {
+      const loginUrl = new URL('/admin/login', request.nextUrl.origin);
+      loginUrl.searchParams.set('callbackUrl', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
     return NextResponse.next();
   }
 
