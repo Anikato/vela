@@ -3,19 +3,24 @@ import type { Metadata } from 'next';
 import { buildSeoMetadata, type AlternateLocale } from '@/lib/seo';
 import { WebsiteShell } from '@/components/website/layout/website-shell';
 import { ContactPage } from '@/components/website/contact/contact-page';
-import { getActiveLanguages, getDefaultLanguage } from '@/server/services/language.service';
-import { getPublicContactInfo, getPublicSiteInfo } from '@/server/services/settings-public.service';
-import { getUiTranslationMap } from '@/server/services/ui-translation.service';
+import {
+  getCachedActiveLanguages,
+  getCachedCaptchaSiteKey,
+  getCachedDefaultLanguage,
+  getCachedPublicContactInfo,
+  getCachedPublicSiteInfo,
+  getCachedUiTranslationMap,
+} from '@/lib/data-cache';
 
 export async function generateMetadata(): Promise<Metadata> {
   const [defaultLanguage, activeLanguages] = await Promise.all([
-    getDefaultLanguage(),
-    getActiveLanguages(),
+    getCachedDefaultLanguage(),
+    getCachedActiveLanguages(),
   ]);
   const locale = defaultLanguage.code;
   const [siteInfo, uiMap] = await Promise.all([
-    getPublicSiteInfo(locale, locale),
-    getUiTranslationMap(locale, locale, ['contact.title']),
+    getCachedPublicSiteInfo(locale, locale),
+    getCachedUiTranslationMap(locale, locale, ['contact.title']),
   ]);
   const pageTitle = uiMap['contact.title'] ?? 'Contact Us';
   const activeLocales: AlternateLocale[] = activeLanguages.map((l) => ({
@@ -51,25 +56,31 @@ const UI_KEYS = [
   'contact.emailInfo',
   'contact.phoneInfo',
   'contact.addressInfo',
+  'inquiry.success',
+  'inquiry.error',
 ];
 
 export default async function ContactPageRoute() {
-  const defaultLanguage = await getDefaultLanguage();
+  const defaultLanguage = await getCachedDefaultLanguage();
   const locale = defaultLanguage.code;
 
-  const [contactInfo, uiMap] = await Promise.all([
-    getPublicContactInfo(locale, locale),
-    getUiTranslationMap(locale, locale, UI_KEYS),
+  const [contactInfo, siteInfo, uiMap, captchaSiteKey] = await Promise.all([
+    getCachedPublicContactInfo(locale, locale),
+    getCachedPublicSiteInfo(locale, locale),
+    getCachedUiTranslationMap(locale, locale, UI_KEYS),
+    getCachedCaptchaSiteKey(),
   ]);
 
   return (
     <WebsiteShell locale={locale} defaultLocale={locale}>
       <ContactPage
         homeHref="/"
+        captchaSiteKey={captchaSiteKey}
         contactInfo={{
           email: contactInfo.email ?? undefined,
           phone: contactInfo.phone ?? undefined,
           address: contactInfo.address ?? undefined,
+          whatsapp: contactInfo.whatsapp ?? undefined,
         }}
         uiLabels={{
           home: uiMap['nav.home'] ?? 'Home',
@@ -83,6 +94,8 @@ export default async function ContactPageRoute() {
           messageLabel: uiMap['contact.messageLabel'] ?? 'Message',
           messagePlaceholder: uiMap['contact.messagePlaceholder'] ?? 'How can we help you?',
           submitButton: uiMap['contact.submitButton'] ?? 'Send Message',
+          successMessage: uiMap['inquiry.success'] ?? 'Message sent successfully!',
+          errorMessage: uiMap['inquiry.error'] ?? 'Failed to send message',
           infoTitle: uiMap['contact.infoTitle'] ?? 'Contact Information',
           emailInfo: uiMap['contact.emailInfo'] ?? 'Email',
           phoneInfo: uiMap['contact.phoneInfo'] ?? 'Phone',

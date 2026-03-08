@@ -1,9 +1,9 @@
 import Script from 'next/script';
 
-import { getScriptsForFrontend } from '@/server/services/settings-admin.service';
+import { getCachedScriptsForFrontend } from '@/lib/data-cache';
 
 export async function AnalyticsScripts() {
-  const scripts = await getScriptsForFrontend();
+  const scripts = await getCachedScriptsForFrontend();
 
   return (
     <>

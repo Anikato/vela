@@ -11,7 +11,7 @@ import {
   setUserActiveAction,
   updateUserProfileAction,
 } from '@/server/actions/user.actions';
-import type { SafeUser } from '@/server/services/user.service';
+import type { SafeUser } from '@/types/admin';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';

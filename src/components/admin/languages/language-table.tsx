@@ -6,7 +6,7 @@
  */
 
 import { useState } from 'react';
-import type { Language } from '@/server/services/language.service';
+import type { Language } from '@/types/admin';
 import {
   Table,
   TableBody,

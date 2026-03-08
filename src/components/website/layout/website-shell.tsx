@@ -1,5 +1,5 @@
+import { getCachedUiTranslationMap } from '@/lib/data-cache';
 import { getLanguageByCode } from '@/server/services/language.service';
-import { getUiTranslationMap } from '@/server/services/ui-translation.service';
 import { AnalyticsScripts } from './analytics-scripts';
 import { BackToTop } from './back-to-top';
 import { CookieConsentBanner } from './cookie-consent-banner';
@@ -15,7 +15,7 @@ interface WebsiteShellProps {
 
 export async function WebsiteShell({ locale, defaultLocale, children }: WebsiteShellProps) {
   const [ui, currentLang] = await Promise.all([
-    getUiTranslationMap(locale, defaultLocale, [
+    getCachedUiTranslationMap(locale, defaultLocale, [
       'cookie.title',
       'cookie.description',
       'cookie.accept',
@@ -30,7 +30,7 @@ export async function WebsiteShell({ locale, defaultLocale, children }: WebsiteS
     <div className="min-h-screen bg-background text-foreground" dir={dir} lang={locale}>
       <ThemeStyle />
       <Header locale={locale} defaultLocale={defaultLocale} />
-      <div>{children}</div>
+      <div className="vt-page-content">{children}</div>
       <Footer locale={locale} defaultLocale={defaultLocale} />
       <CookieConsentBanner
         title={ui['cookie.title']}

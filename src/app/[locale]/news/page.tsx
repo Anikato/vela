@@ -4,10 +4,13 @@ import { notFound } from 'next/navigation';
 import { buildSeoMetadata, type AlternateLocale } from '@/lib/seo';
 import { WebsiteShell } from '@/components/website/layout/website-shell';
 import { NewsListPage } from '@/components/website/news/news-list-page';
-import { getActiveLanguages, getDefaultLanguage } from '@/server/services/language.service';
+import {
+  getCachedActiveLanguages,
+  getCachedDefaultLanguage,
+  getCachedPublicSiteInfo,
+  getCachedUiTranslationMap,
+} from '@/lib/data-cache';
 import { getPublishedNewsList } from '@/server/services/news.service';
-import { getPublicSiteInfo } from '@/server/services/settings-public.service';
-import { getUiTranslationMap } from '@/server/services/ui-translation.service';
 
 interface LocaleNewsPageProps {
   params: Promise<{ locale: string }>;
@@ -17,12 +20,12 @@ interface LocaleNewsPageProps {
 export async function generateMetadata({ params }: LocaleNewsPageProps): Promise<Metadata> {
   const { locale } = await params;
   const [defaultLanguage, activeLanguages] = await Promise.all([
-    getDefaultLanguage(),
-    getActiveLanguages(),
+    getCachedDefaultLanguage(),
+    getCachedActiveLanguages(),
   ]);
   const [siteInfo, uiMap] = await Promise.all([
-    getPublicSiteInfo(locale, defaultLanguage.code),
-    getUiTranslationMap(locale, defaultLanguage.code, ['nav.news']),
+    getCachedPublicSiteInfo(locale, defaultLanguage.code),
+    getCachedUiTranslationMap(locale, defaultLanguage.code, ['nav.news']),
   ]);
   const pageTitle = uiMap['nav.news'] ?? 'News';
   const activeLocales: AlternateLocale[] = activeLanguages.map((l) => ({
@@ -50,8 +53,8 @@ export default async function LocaleNewsPage({ params, searchParams }: LocaleNew
   const pageNum = page ? Number(page) : 1;
 
   const [activeLanguages, defaultLanguage] = await Promise.all([
-    getActiveLanguages(),
-    getDefaultLanguage(),
+    getCachedActiveLanguages(),
+    getCachedDefaultLanguage(),
   ]);
   if (!new Set(activeLanguages.map((l) => l.code)).has(locale)) {
     notFound();
@@ -61,7 +64,7 @@ export default async function LocaleNewsPage({ params, searchParams }: LocaleNew
     getPublishedNewsList(locale, defaultLanguage.code, {
       page: Number.isFinite(pageNum) ? pageNum : 1,
     }),
-    getUiTranslationMap(locale, defaultLanguage.code, UI_KEYS),
+    getCachedUiTranslationMap(locale, defaultLanguage.code, UI_KEYS),
   ]);
 
   return (

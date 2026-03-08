@@ -10,6 +10,7 @@ import {
   timestamp,
   unique,
   primaryKey,
+  index,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { media } from './media';
@@ -40,7 +41,10 @@ export const products = pgTable('products', {
   templateConfig: jsonb('template_config'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('idx_products_status').on(table.status),
+  index('idx_products_primary_category').on(table.primaryCategoryId),
+]);
 
 // ─── 产品翻译 ───
 export const productTranslations = pgTable(
@@ -59,7 +63,10 @@ export const productTranslations = pgTable(
     seoTitle: varchar('seo_title', { length: 200 }),
     seoDescription: text('seo_description'),
   },
-  (table) => [unique().on(table.productId, table.locale)],
+  (table) => [
+    unique().on(table.productId, table.locale),
+    index('idx_product_translations_product').on(table.productId),
+  ],
 );
 
 // ─── 产品图集 ───
@@ -72,7 +79,9 @@ export const productImages = pgTable('product_images', {
     .references(() => media.id)
     .notNull(),
   sortOrder: integer('sort_order').default(0).notNull(),
-});
+}, (table) => [
+  index('idx_product_images_product').on(table.productId),
+]);
 
 // ─── 产品附件（如规格书、证书、手册） ───
 export const productAttachments = pgTable('product_attachments', {
@@ -84,7 +93,9 @@ export const productAttachments = pgTable('product_attachments', {
     .references(() => media.id)
     .notNull(),
   sortOrder: integer('sort_order').default(0).notNull(),
-});
+}, (table) => [
+  index('idx_product_attachments_product').on(table.productId),
+]);
 
 // ─── 附加分类（多对多） ───
 export const productCategories = pgTable(
@@ -121,7 +132,9 @@ export const productAttributeGroups = pgTable('product_attribute_groups', {
     .references(() => products.id, { onDelete: 'cascade' })
     .notNull(),
   sortOrder: integer('sort_order').default(0).notNull(),
-});
+}, (table) => [
+  index('idx_product_attr_groups_product').on(table.productId),
+]);
 
 export const productAttributeGroupTranslations = pgTable(
   'product_attribute_group_translations',

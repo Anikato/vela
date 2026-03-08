@@ -9,6 +9,7 @@ import {
   jsonb,
   timestamp,
   unique,
+  index,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { pages } from './pages';
@@ -30,7 +31,10 @@ export const sections = pgTable('sections', {
   cssClass: varchar('css_class', { length: 255 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('idx_sections_page').on(table.pageId),
+  index('idx_sections_category').on(table.categoryId),
+]);
 
 // ─── 区块翻译 ───
 export const sectionTranslations = pgTable(
@@ -51,7 +55,10 @@ export const sectionTranslations = pgTable(
     secondaryButtonText: varchar('secondary_button_text', { length: 200 }),
     secondaryButtonLink: varchar('secondary_button_link', { length: 500 }),
   },
-  (table) => [unique().on(table.sectionId, table.locale)],
+  (table) => [
+    unique().on(table.sectionId, table.locale),
+    index('idx_section_translations_section').on(table.sectionId),
+  ],
 );
 
 // ─── 区块子项 ───
@@ -67,7 +74,9 @@ export const sectionItems = pgTable('section_items', {
   sortOrder: integer('sort_order').default(0).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('idx_section_items_section').on(table.sectionId),
+]);
 
 // ─── 区块子项翻译 ───
 export const sectionItemTranslations = pgTable(

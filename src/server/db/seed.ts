@@ -76,11 +76,11 @@ const seedLanguages = [
   },
 ];
 
-/** 默认管理员账号 */
+/** 默认管理员账号（支持环境变量覆盖） */
 const defaultAdmin = {
-  email: 'admin@vela.com',
-  password: 'admin123',
-  name: 'admin',
+  email: process.env.ADMIN_EMAIL ?? 'admin@vela.com',
+  password: process.env.ADMIN_PASSWORD ?? 'admin123',
+  name: process.env.ADMIN_NAME ?? 'admin',
 };
 
 const seedUiTranslations = [

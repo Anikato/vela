@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
 import { auth } from '@/server/auth';
@@ -60,6 +61,8 @@ export async function updateSiteSettingsAction(
     await requireAuth();
     const parsed = updateSiteSchema.parse(input);
     await updateSiteSettings(parsed);
+    revalidateTag('site-info', 'max');
+    revalidateTag('settings', 'max');
     return { success: true, data: undefined };
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '更新站点设置失败' };
@@ -83,6 +86,7 @@ export async function updateSmtpSettingsAction(
     await requireAuth();
     const parsed = smtpSchema.parse(input);
     await updateSmtpSettings(parsed);
+    revalidateTag('settings', 'max');
     return { success: true, data: undefined };
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '更新邮件配置失败' };
@@ -93,6 +97,9 @@ const scriptsSchema = z.object({
   gaId: z.string().max(50).nullable().optional(),
   gtmId: z.string().max(50).nullable().optional(),
   fbPixelId: z.string().max(50).nullable().optional(),
+  captchaSiteKey: z.string().max(255).nullable().optional(),
+  captchaSecretKey: z.string().max(255).nullable().optional(),
+  translationApiKey: z.string().max(255).nullable().optional(),
   headScripts: z.string().nullable().optional(),
   bodyScripts: z.string().nullable().optional(),
 });
@@ -104,6 +111,7 @@ export async function updateScriptsSettingsAction(
     await requireAuth();
     const parsed = scriptsSchema.parse(input);
     await updateScriptsSettings(parsed);
+    revalidateTag('settings', 'max');
     return { success: true, data: undefined };
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '更新脚本配置失败' };
@@ -141,6 +149,7 @@ export async function upsertSettingTranslationAction(
       seoKeywords: rest.seoKeywords ?? null,
     };
     await upsertSettingTranslation(locale, data);
+    revalidateTag('site-info', 'max');
     return { success: true, data: undefined };
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '保存多语言设置失败' };
@@ -150,8 +159,14 @@ export async function upsertSettingTranslationAction(
 export async function sendTestEmailAction(): Promise<ActionResult<void>> {
   try {
     await requireAuth();
-    // TODO: 实际发送测试邮件，依赖 nodemailer 集成
-    return { success: false, error: '邮件发送功能尚未配置，请先完善 SMTP 设置' };
+    const settings = await getSiteSettings();
+    const recipient = settings.smtpFromEmail || settings.notificationEmails[0];
+    if (!recipient) {
+      return { success: false, error: '请先配置发件人邮箱或通知邮箱' };
+    }
+    const { sendTestEmail } = await import('@/server/services/email.service');
+    await sendTestEmail(recipient);
+    return { success: true, data: undefined };
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '发送测试邮件失败' };
   }

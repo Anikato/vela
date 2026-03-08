@@ -154,6 +154,7 @@ export function ProductListPage({
                 {data.page > 1 ? (
                   <Link
                     href={buildPageHref(basePath, data.page - 1, filterParams)}
+                    aria-label="Previous page"
                     className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-accent"
                   >
                     ‹
@@ -165,6 +166,7 @@ export function ProductListPage({
                 {data.page < data.totalPages ? (
                   <Link
                     href={buildPageHref(basePath, data.page + 1, filterParams)}
+                    aria-label="Next page"
                     className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-accent"
                   >
                     ›

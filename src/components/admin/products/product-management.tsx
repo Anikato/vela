@@ -11,11 +11,7 @@ import {
   deleteProductAction,
   updateProductAction,
 } from '@/server/actions/product.actions';
-import type { CategoryListItem } from '@/server/services/category.service';
-import type { Language } from '@/server/services/language.service';
-import type { Media } from '@/server/services/media.service';
-import type { ProductListItem, ProductStatus } from '@/server/services/product.service';
-import type { TagListItem } from '@/server/services/tag.service';
+import type { CategoryListItem, Language, Media, ProductListItem, ProductStatus, TagListItem } from '@/types/admin';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import type { PublicTagItem, ProductSortOption } from '@/server/services/product-public.service';
+import type { PublicTagItem, ProductSortOption } from '@/types/website';
 
 interface TagFilterProps {
   tags: PublicTagItem[];

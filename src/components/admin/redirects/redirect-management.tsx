@@ -33,7 +33,7 @@ import {
   updateRedirectAction,
   deleteRedirectAction,
 } from '@/server/actions/redirect.actions';
-import type { Redirect } from '@/server/services/redirect.service';
+import type { Redirect } from '@/types/admin';
 
 interface Props {
   initialRedirects: Redirect[];

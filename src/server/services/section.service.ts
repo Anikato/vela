@@ -14,6 +14,10 @@ import {
   getPublishedProductsForShowcase,
   type PublicProductCardItem,
 } from '@/server/services/product-public.service';
+import {
+  getCategoriesForShowcase,
+  type PublicCategoryCardItem,
+} from '@/server/services/category-public.service';
 
 export type Section = typeof sections.$inferSelect;
 export type SectionTranslation = typeof sectionTranslations.$inferSelect;
@@ -58,6 +62,7 @@ export interface RenderSection {
   items: RenderSectionItem[];
   data?: {
     products?: PublicProductCardItem[];
+    categories?: PublicCategoryCardItem[];
   };
 }
 
@@ -401,6 +406,16 @@ export async function getPageSectionsForRender(
     showcaseDataByKey.set(queryKey, products);
   }
 
+  const hasCategoryNav = rows.some((r) => r.type === 'category_nav');
+  let categoryNavData: PublicCategoryCardItem[] | undefined;
+  if (hasCategoryNav) {
+    const limitRaw = rows.find((r) => r.type === 'category_nav')?.config?.limit;
+    const limit = typeof limitRaw === 'number' && Number.isFinite(limitRaw)
+      ? Math.max(1, Math.min(50, Math.floor(limitRaw)))
+      : 20;
+    categoryNavData = await getCategoriesForShowcase(locale, defaultLocale, limit);
+  }
+
   return rows.map((row) => {
     const translated = getTranslation(row.translations, locale, defaultLocale);
     const items = row.items
@@ -454,7 +469,9 @@ export async function getPageSectionsForRender(
                 showcaseDataByKey.get(productShowcaseQueryKeyBySectionId.get(row.id) ?? '') ??
                 [],
             }
-          : undefined,
+          : row.type === 'category_nav'
+            ? { categories: categoryNavData ?? [] }
+            : undefined,
     };
   });
 }

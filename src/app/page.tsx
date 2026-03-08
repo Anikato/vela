@@ -4,20 +4,23 @@ import { buildSeoMetadata, type AlternateLocale } from '@/lib/seo';
 import { SectionRenderer } from '@/components/website/sections/section-renderer';
 import { OrganizationJsonLd, WebSiteJsonLd } from '@/components/website/seo/json-ld';
 import { WebsiteShell } from '@/components/website/layout/website-shell';
-import { getActiveLanguages, getDefaultLanguage } from '@/server/services/language.service';
+import {
+  getCachedActiveLanguages,
+  getCachedDefaultLanguage,
+  getCachedPublicSiteInfo,
+} from '@/lib/data-cache';
 import {
   getPageSectionsForRender,
   getPublishedHomepagePageId,
 } from '@/server/services/section.service';
-import { getPublicSiteInfo } from '@/server/services/settings-public.service';
 
 export async function generateMetadata(): Promise<Metadata> {
   const [defaultLanguage, activeLanguages] = await Promise.all([
-    getDefaultLanguage(),
-    getActiveLanguages(),
+    getCachedDefaultLanguage(),
+    getCachedActiveLanguages(),
   ]);
   const locale = defaultLanguage.code;
-  const siteInfo = await getPublicSiteInfo(locale, locale);
+  const siteInfo = await getCachedPublicSiteInfo(locale, locale);
 
   const activeLocales: AlternateLocale[] = activeLanguages.map((l) => ({
     code: l.code,
@@ -39,7 +42,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  const defaultLanguage = await getDefaultLanguage();
+  const defaultLanguage = await getCachedDefaultLanguage();
   const locale = defaultLanguage.code;
   const pageId = await getPublishedHomepagePageId();
 
@@ -49,7 +52,7 @@ export default async function Home() {
 
   const [sections, siteInfo] = await Promise.all([
     getPageSectionsForRender(pageId, locale, defaultLanguage.code),
-    getPublicSiteInfo(locale, locale),
+    getCachedPublicSiteInfo(locale, locale),
   ]);
 
   const socials = [

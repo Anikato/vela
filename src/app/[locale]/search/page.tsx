@@ -4,9 +4,12 @@ import { notFound } from 'next/navigation';
 
 import { WebsiteShell } from '@/components/website/layout/website-shell';
 import { SearchPage } from '@/components/website/product/search-page';
-import { getActiveLanguages, getDefaultLanguage } from '@/server/services/language.service';
+import {
+  getCachedActiveLanguages,
+  getCachedDefaultLanguage,
+  getCachedUiTranslationMap,
+} from '@/lib/data-cache';
 import { searchPublishedProducts } from '@/server/services/product-public.service';
-import { getUiTranslationMap } from '@/server/services/ui-translation.service';
 
 export const metadata: Metadata = {
   title: 'Search',
@@ -30,8 +33,8 @@ export default async function LocaleSearchPage({ params, searchParams }: LocaleS
   const pageNum = page ? Number(page) : 1;
 
   const [activeLanguages, defaultLanguage] = await Promise.all([
-    getActiveLanguages(),
-    getDefaultLanguage(),
+    getCachedActiveLanguages(),
+    getCachedDefaultLanguage(),
   ]);
   if (!new Set(activeLanguages.map((l) => l.code)).has(locale)) {
     notFound();
@@ -42,7 +45,7 @@ export default async function LocaleSearchPage({ params, searchParams }: LocaleS
       query: q ?? '',
       page: Number.isFinite(pageNum) ? pageNum : 1,
     }),
-    getUiTranslationMap(locale, defaultLanguage.code, UI_KEYS),
+    getCachedUiTranslationMap(locale, defaultLanguage.code, UI_KEYS),
   ]);
 
   return (

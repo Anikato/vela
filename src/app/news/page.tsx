@@ -3,20 +3,23 @@ import type { Metadata } from 'next';
 import { buildSeoMetadata, type AlternateLocale } from '@/lib/seo';
 import { WebsiteShell } from '@/components/website/layout/website-shell';
 import { NewsListPage } from '@/components/website/news/news-list-page';
-import { getActiveLanguages, getDefaultLanguage } from '@/server/services/language.service';
+import {
+  getCachedActiveLanguages,
+  getCachedDefaultLanguage,
+  getCachedPublicSiteInfo,
+  getCachedUiTranslationMap,
+} from '@/lib/data-cache';
 import { getPublishedNewsList } from '@/server/services/news.service';
-import { getPublicSiteInfo } from '@/server/services/settings-public.service';
-import { getUiTranslationMap } from '@/server/services/ui-translation.service';
 
 export async function generateMetadata(): Promise<Metadata> {
   const [defaultLanguage, activeLanguages] = await Promise.all([
-    getDefaultLanguage(),
-    getActiveLanguages(),
+    getCachedDefaultLanguage(),
+    getCachedActiveLanguages(),
   ]);
   const locale = defaultLanguage.code;
   const [siteInfo, uiMap] = await Promise.all([
-    getPublicSiteInfo(locale, locale),
-    getUiTranslationMap(locale, locale, ['nav.news']),
+    getCachedPublicSiteInfo(locale, locale),
+    getCachedUiTranslationMap(locale, locale, ['nav.news']),
   ]);
   const pageTitle = uiMap['nav.news'] ?? 'News';
   const activeLocales: AlternateLocale[] = activeLanguages.map((l) => ({
@@ -47,14 +50,14 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
   const { page } = await searchParams;
   const pageNum = page ? Number(page) : 1;
 
-  const defaultLanguage = await getDefaultLanguage();
+  const defaultLanguage = await getCachedDefaultLanguage();
   const locale = defaultLanguage.code;
 
   const [data, uiMap] = await Promise.all([
     getPublishedNewsList(locale, locale, {
       page: Number.isFinite(pageNum) ? pageNum : 1,
     }),
-    getUiTranslationMap(locale, locale, UI_KEYS),
+    getCachedUiTranslationMap(locale, locale, UI_KEYS),
   ]);
 
   return (

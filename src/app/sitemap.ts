@@ -4,14 +4,17 @@ import { eq, and } from 'drizzle-orm';
 import { buildLocalizedPath } from '@/lib/i18n';
 import { getBaseUrl } from '@/lib/seo';
 import { db } from '@/server/db';
-import { categories, news, products } from '@/server/db/schema';
-import { getActiveLanguages, getDefaultLanguage } from '@/server/services/language.service';
+import { categories, news, pages, products } from '@/server/db/schema';
+import {
+  getCachedActiveLanguages,
+  getCachedDefaultLanguage,
+} from '@/lib/data-cache';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = getBaseUrl();
   const [defaultLanguage, activeLanguages] = await Promise.all([
-    getDefaultLanguage(),
-    getActiveLanguages(),
+    getCachedDefaultLanguage(),
+    getCachedActiveLanguages(),
   ]);
   const defaultLocale = defaultLanguage.code;
   const locales = activeLanguages.map((l) => l.code);
@@ -46,6 +49,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   entries.push(makeEntry('/products', { priority: 0.9, changefreq: 'daily' }));
   entries.push(makeEntry('/news', { priority: 0.7, changefreq: 'daily' }));
   entries.push(makeEntry('/contact', { priority: 0.6, changefreq: 'monthly' }));
+
+  const publishedPages = await db
+    .select({ slug: pages.slug, updatedAt: pages.updatedAt, isHomepage: pages.isHomepage })
+    .from(pages)
+    .where(eq(pages.status, 'published'));
+
+  for (const pg of publishedPages) {
+    if (pg.isHomepage) continue;
+    const pagePath = pg.slug === 'about' ? '/about' : `/page/${pg.slug}`;
+    entries.push(
+      makeEntry(pagePath, {
+        lastmod: pg.updatedAt,
+        priority: 0.6,
+        changefreq: 'monthly',
+      }),
+    );
+  }
 
   const [activeCategories, publishedProducts, publishedNews] = await Promise.all([
     db

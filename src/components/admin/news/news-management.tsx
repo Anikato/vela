@@ -9,11 +9,10 @@ import { toast } from 'sonner';
 import {
   createNewsAction,
   deleteNewsAction,
+  getNewsByIdAction,
   updateNewsAction,
 } from '@/server/actions/news.actions';
-import type { Language } from '@/server/services/language.service';
-import type { Media } from '@/server/services/media.service';
-import type { NewsListItem } from '@/server/services/news.service';
+import type { Language, Media, NewsListItem } from '@/types/admin';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -105,27 +104,27 @@ export function NewsManagement({ initialNews, locales, mediaItems }: NewsManagem
     setActiveTab('basic');
 
     startTransition(async () => {
-      const { getNewsById } = await import('@/server/services/news.service');
-      try {
-        const detail = await getNewsById(item.id);
-        setTranslations(
-          locales.map((l) => {
-            const existing = detail.translations.find((t) => t.locale === l.code);
-            return {
-              locale: l.code,
-              title: existing?.title ?? '',
-              summary: existing?.summary ?? '',
-              content: existing?.content ?? '',
-              seoTitle: existing?.seoTitle ?? '',
-              seoDescription: existing?.seoDescription ?? '',
-            };
-          }),
-        );
-        setCoverImageId(detail.coverImageId ?? '');
-        setDialogOpen(true);
-      } catch {
+      const result = await getNewsByIdAction(item.id);
+      if (!result.success) {
         toast.error('加载新闻详情失败');
+        return;
       }
+      const detail = result.data;
+      setTranslations(
+        locales.map((l) => {
+          const existing = detail.translations.find((t) => t.locale === l.code);
+          return {
+            locale: l.code,
+            title: existing?.title ?? '',
+            summary: existing?.summary ?? '',
+            content: existing?.content ?? '',
+            seoTitle: existing?.seoTitle ?? '',
+            seoDescription: existing?.seoDescription ?? '',
+          };
+        }),
+      );
+      setCoverImageId(detail.coverImageId ?? '');
+      setDialogOpen(true);
     });
   };
 

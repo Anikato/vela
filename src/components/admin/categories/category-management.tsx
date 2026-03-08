@@ -11,8 +11,7 @@ import {
   reorderCategoryTreeAction,
   updateCategoryAction,
 } from '@/server/actions/category.actions';
-import type { CategoryListItem } from '@/server/services/category.service';
-import type { Language } from '@/server/services/language.service';
+import type { CategoryListItem, Language } from '@/types/admin';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {

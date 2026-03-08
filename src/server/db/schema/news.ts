@@ -1,5 +1,5 @@
 // 新闻表 — 新闻/博客文章
-import { pgTable, uuid, varchar, text, integer, timestamp, unique } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, integer, timestamp, unique, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { media } from './media';
 import { languages } from './languages';
@@ -13,7 +13,9 @@ export const news = pgTable('news', {
   sortOrder: integer('sort_order').default(0).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('idx_news_status').on(table.status),
+]);
 
 export const newsTranslations = pgTable(
   'news_translations',

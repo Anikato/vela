@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
 
 import { InquiryBasketTrigger } from '@/components/website/inquiry/inquiry-basket-drawer';
+import type { CustomFormField } from '@/components/website/inquiry/inquiry-form-dialog';
 
 interface HeaderActionsProps {
   searchPath: string;
+  captchaSiteKey: string | null;
+  customFormFields?: CustomFormField[];
   uiLabels: {
     searchPlaceholder: string;
     basketTitle: string;
@@ -29,7 +32,7 @@ interface HeaderActionsProps {
   };
 }
 
-export function HeaderActions({ searchPath, uiLabels }: HeaderActionsProps) {
+export function HeaderActions({ searchPath, captchaSiteKey, customFormFields, uiLabels }: HeaderActionsProps) {
   const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -83,6 +86,8 @@ export function HeaderActions({ searchPath, uiLabels }: HeaderActionsProps) {
 
       {/* Inquiry basket */}
       <InquiryBasketTrigger
+        captchaSiteKey={captchaSiteKey}
+        customFormFields={customFormFields}
         uiLabels={{
           title: uiLabels.basketTitle,
           empty: uiLabels.basketEmpty,

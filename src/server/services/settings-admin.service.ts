@@ -1,5 +1,6 @@
 import { eq, and } from 'drizzle-orm';
 
+import { encryptSecret, decryptSecret } from '@/lib/crypto';
 import { db } from '@/server/db';
 import { siteSettings, siteSettingTranslations } from '@/server/db/schema';
 import { getStorageAdapter } from '@/server/storage';
@@ -190,6 +191,9 @@ export async function updateSmtpSettings(input: UpdateSmtpInput): Promise<void> 
   if (input.notificationEmails !== undefined) {
     data.notificationEmails = input.notificationEmails;
   }
+  if (typeof data.smtpPassword === 'string' && data.smtpPassword) {
+    data.smtpPassword = encryptSecret(data.smtpPassword as string);
+  }
   if (!existing) {
     await db.insert(siteSettings).values(data);
   } else {
@@ -201,6 +205,9 @@ export interface UpdateScriptsInput {
   gaId?: string | null;
   gtmId?: string | null;
   fbPixelId?: string | null;
+  captchaSiteKey?: string | null;
+  captchaSecretKey?: string | null;
+  translationApiKey?: string | null;
   headScripts?: string | null;
   bodyScripts?: string | null;
 }

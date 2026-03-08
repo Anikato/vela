@@ -1,5 +1,5 @@
 // UI 翻译表 — 存储所有界面文本的翻译键值对
-import { pgTable, uuid, varchar, text, unique } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, unique, index } from 'drizzle-orm/pg-core';
 import { languages } from './languages';
 
 export const uiTranslations = pgTable(
@@ -13,5 +13,9 @@ export const uiTranslations = pgTable(
       .notNull(),
     value: text('value'),
   },
-  (table) => [unique().on(table.key, table.locale)],
+  (table) => [
+    unique().on(table.key, table.locale),
+    index('idx_ui_translations_category').on(table.category),
+    index('idx_ui_translations_locale').on(table.locale),
+  ],
 );

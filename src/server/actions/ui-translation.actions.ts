@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
 import { auth } from '@/server/auth';
@@ -65,6 +66,7 @@ export async function upsertTranslationAction(
     await requireAuth();
     const { key, category, translations } = upsertSchema.parse(input);
     await batchUpsertTranslations(key, category, translations);
+    revalidateTag('ui-translations', 'max');
     return { success: true, data: undefined };
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '保存翻译失败' };
@@ -88,6 +90,7 @@ export async function createTranslationKeyAction(
     const { key, translations } = createSchema.parse(input);
     const category = key.includes('.') ? key.split('.')[0] : 'common';
     await createTranslationKey(key, category, translations);
+    revalidateTag('ui-translations', 'max');
     return { success: true, data: undefined };
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '创建翻译键失败' };
@@ -105,6 +108,7 @@ export async function deleteTranslationKeyAction(
     await requireAuth();
     const { key } = deleteSchema.parse(input);
     await deleteTranslationKey(key);
+    revalidateTag('ui-translations', 'max');
     return { success: true, data: undefined };
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '删除翻译键失败' };
@@ -127,8 +131,50 @@ export async function renameTranslationKeyAction(
     await requireAuth();
     const { oldKey, newKey } = renameSchema.parse(input);
     await renameTranslationKey(oldKey, newKey);
+    revalidateTag('ui-translations', 'max');
     return { success: true, data: undefined };
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '重命名翻译键失败' };
+  }
+}
+
+/** 批量自动翻译 UI 翻译键到目标语言 */
+export async function batchTranslateUiKeys(
+  sourceLocale: string,
+  targetLocales: string[],
+): Promise<ActionResult<{ translated: number }>> {
+  try {
+    await requireAuth();
+    const { getAllSourceTexts, batchUpsertTranslations } = await import(
+      '@/server/services/ui-translation-admin.service'
+    );
+    const { translateTexts } = await import('@/server/services/translation.service');
+
+    const sourceData = await getAllSourceTexts(sourceLocale);
+    if (sourceData.length === 0) {
+      return { success: false, error: '源语言没有翻译数据' };
+    }
+
+    const texts = sourceData.map((d) => d.value);
+    const result = await translateTexts({ texts, from: sourceLocale, to: targetLocales });
+
+    let translated = 0;
+    for (const locale of targetLocales) {
+      const translatedTexts = result.translations[locale] ?? [];
+      for (let i = 0; i < sourceData.length; i++) {
+        if (translatedTexts[i]) {
+          await batchUpsertTranslations(
+            sourceData[i].key,
+            sourceData[i].category,
+            { [locale]: translatedTexts[i] },
+          );
+          translated++;
+        }
+      }
+    }
+
+    return { success: true, data: { translated } };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : '批量翻译失败' };
   }
 }

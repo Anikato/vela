@@ -68,7 +68,7 @@ export const navGroups: NavGroup[] = [
     label: '营销',
     items: [
       { title: '询盘管理', href: '/admin/inquiries', icon: MessageSquare },
-      { title: '表单配置', href: '/admin/inquiries/form', icon: ClipboardList, disabled: true },
+      { title: '表单配置', href: '/admin/inquiries/form', icon: ClipboardList },
       { title: '数据统计', href: '/admin/inquiries/stats', icon: BarChart3, disabled: true },
     ],
   },
@@ -84,13 +84,8 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: '语言管理', href: '/admin/languages', icon: Languages },
       { title: 'UI 翻译', href: '/admin/translations/ui', icon: Globe },
-      {
-        title: '内容翻译',
-        href: '/admin/translations/content',
-        icon: BookOpen,
-        disabled: true,
-      },
-      { title: '自动翻译', href: '/admin/translations/auto', icon: Wand2, disabled: true },
+      { title: '内容翻译', href: '/admin/translations/content', icon: BookOpen },
+      { title: '自动翻译', href: '/admin/translations/auto', icon: Wand2 },
     ],
   },
   {
@@ -102,12 +97,7 @@ export const navGroups: NavGroup[] = [
       { title: '邮件配置', href: '/admin/settings/email', icon: Mail },
       { title: '脚本注入', href: '/admin/settings/scripts', icon: Code },
       { title: '重定向', href: '/admin/redirects', icon: ArrowRightLeft },
-      {
-        title: '导入导出',
-        href: '/admin/settings/data',
-        icon: Database,
-        disabled: true,
-      },
+      { title: '导入导出', href: '/admin/settings/data', icon: Database },
     ],
   },
 ];

@@ -3,9 +3,11 @@ import { Suspense } from 'react';
 
 import { WebsiteShell } from '@/components/website/layout/website-shell';
 import { SearchPage } from '@/components/website/product/search-page';
-import { getDefaultLanguage } from '@/server/services/language.service';
+import {
+  getCachedDefaultLanguage,
+  getCachedUiTranslationMap,
+} from '@/lib/data-cache';
 import { searchPublishedProducts } from '@/server/services/product-public.service';
-import { getUiTranslationMap } from '@/server/services/ui-translation.service';
 
 export const metadata: Metadata = {
   title: 'Search',
@@ -27,7 +29,7 @@ export default async function SearchPageRoute({ searchParams }: SearchPageRouteP
   const { q, page } = await searchParams;
   const pageNum = page ? Number(page) : 1;
 
-  const defaultLanguage = await getDefaultLanguage();
+  const defaultLanguage = await getCachedDefaultLanguage();
   const locale = defaultLanguage.code;
 
   const [data, uiMap] = await Promise.all([
@@ -35,7 +37,7 @@ export default async function SearchPageRoute({ searchParams }: SearchPageRouteP
       query: q ?? '',
       page: Number.isFinite(pageNum) ? pageNum : 1,
     }),
-    getUiTranslationMap(locale, locale, UI_KEYS),
+    getCachedUiTranslationMap(locale, locale, UI_KEYS),
   ]);
 
   return (

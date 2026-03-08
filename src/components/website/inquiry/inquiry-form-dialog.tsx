@@ -1,14 +1,27 @@
 'use client';
 
-import { useCallback, useState, useTransition } from 'react';
+import { useCallback, useRef, useState, useTransition } from 'react';
+import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { Check, Loader2, X } from 'lucide-react';
 
 import { useInquiryBasket } from '@/hooks/use-inquiry-basket';
 import { submitInquiryAction } from '@/server/actions/inquiry.actions';
 
+export interface CustomFormField {
+  id: string;
+  fieldType: string;
+  isRequired: boolean;
+  label: string;
+  placeholder: string | null;
+  helpText: string | null;
+  options: string[] | null;
+}
+
 interface InquiryFormDialogProps {
   open: boolean;
   onClose: () => void;
+  captchaSiteKey: string | null;
+  customFields?: CustomFormField[];
   labels: {
     title: string;
     name: string;
@@ -24,17 +37,39 @@ interface InquiryFormDialogProps {
   };
 }
 
-export function InquiryFormDialog({ open, onClose, labels }: InquiryFormDialogProps) {
+export function InquiryFormDialog({ open, onClose, captchaSiteKey, customFields = [], labels }: InquiryFormDialogProps) {
   const { items, clearBasket } = useInquiryBasket();
   const [isPending, startTransition] = useTransition();
   const [state, setState] = useState<'form' | 'success' | 'error'>('form');
   const [inquiryNumber, setInquiryNumber] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<HCaptcha>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
+
+      if (captchaSiteKey && !captchaToken) {
+        captchaRef.current?.execute();
+        return;
+      }
+
       const form = new FormData(e.currentTarget);
+
+      const customFieldValues: Record<string, unknown> = {};
+      for (const field of customFields) {
+        const key = `custom_${field.id}`;
+        if (field.fieldType === 'multiselect') {
+          customFieldValues[field.id] = form.getAll(key);
+        } else {
+          const val = form.get(key);
+          if (val !== null && val !== '') {
+            customFieldValues[field.id] = val;
+          }
+        }
+      }
 
       startTransition(async () => {
         const result = await submitInquiryAction({
@@ -45,6 +80,8 @@ export function InquiryFormDialog({ open, onClose, labels }: InquiryFormDialogPr
           country: (form.get('country') as string) || undefined,
           message: form.get('message') as string,
           sourceUrl: typeof window !== 'undefined' ? window.location.href : undefined,
+          captchaToken: captchaToken ?? undefined,
+          customFields: Object.keys(customFieldValues).length > 0 ? customFieldValues : undefined,
           products: items.map((item) => ({
             productId: item.productId,
             snapshot: {
@@ -64,9 +101,20 @@ export function InquiryFormDialog({ open, onClose, labels }: InquiryFormDialogPr
           setErrorMsg(typeof result.error === 'string' ? result.error : labels.error);
           setState('error');
         }
+
+        setCaptchaToken(null);
+        captchaRef.current?.resetCaptcha();
       });
     },
-    [items, clearBasket, labels.error],
+    [items, clearBasket, labels.error, captchaSiteKey, captchaToken, customFields],
+  );
+
+  const handleCaptchaVerify = useCallback(
+    (token: string) => {
+      setCaptchaToken(token);
+      formRef.current?.requestSubmit();
+    },
+    [],
   );
 
   if (!open) return null;
@@ -74,8 +122,7 @@ export function InquiryFormDialog({ open, onClose, labels }: InquiryFormDialogPr
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative w-full max-w-lg rounded-xl bg-background p-6 shadow-xl">
-        {/* Close button */}
+      <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-background p-6 shadow-xl">
         <button
           onClick={onClose}
           className="absolute right-3 top-3 rounded-md p-1 hover:bg-accent"
@@ -113,8 +160,7 @@ export function InquiryFormDialog({ open, onClose, labels }: InquiryFormDialogPr
           <>
             <h2 className="mb-4 text-lg font-semibold">{labels.title}</h2>
 
-            {/* Product summary */}
-            {items.length > 0 ? (
+            {items.length > 0 && (
               <div className="mb-4 max-h-32 overflow-y-auto rounded-lg border border-border p-3">
                 {items.map((item) => (
                   <div key={item.productId} className="flex justify-between text-sm">
@@ -123,16 +169,16 @@ export function InquiryFormDialog({ open, onClose, labels }: InquiryFormDialogPr
                   </div>
                 ))}
               </div>
-            ) : null}
+            )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <FormField name="name" label={labels.name} required />
-                <FormField name="email" label={labels.email} type="email" required />
-                <FormField name="phone" label={labels.phone} />
-                <FormField name="company" label={labels.company} />
+                <PresetField name="name" label={labels.name} required />
+                <PresetField name="email" label={labels.email} type="email" required />
+                <PresetField name="phone" label={labels.phone} />
+                <PresetField name="company" label={labels.company} />
               </div>
-              <FormField name="country" label={labels.country} />
+              <PresetField name="country" label={labels.country} />
               <div>
                 <label className="mb-1.5 block text-sm font-medium">
                   {labels.message} <span className="text-destructive">*</span>
@@ -144,6 +190,27 @@ export function InquiryFormDialog({ open, onClose, labels }: InquiryFormDialogPr
                   className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
+
+              {/* Dynamic custom fields */}
+              {customFields.length > 0 && (
+                <div className="space-y-4 border-t border-border pt-4">
+                  {customFields.map((field) => (
+                    <DynamicField key={field.id} field={field} />
+                  ))}
+                </div>
+              )}
+
+              {captchaSiteKey && (
+                <div className="flex justify-center">
+                  <HCaptcha
+                    ref={captchaRef}
+                    sitekey={captchaSiteKey}
+                    size="invisible"
+                    onVerify={handleCaptchaVerify}
+                    onExpire={() => setCaptchaToken(null)}
+                  />
+                </div>
+              )}
 
               <div className="flex gap-3 pt-2">
                 <button
@@ -170,7 +237,7 @@ export function InquiryFormDialog({ open, onClose, labels }: InquiryFormDialogPr
   );
 }
 
-function FormField({
+function PresetField({
   name,
   label,
   type = 'text',
@@ -192,6 +259,78 @@ function FormField({
         required={required}
         className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
       />
+    </div>
+  );
+}
+
+function DynamicField({ field }: { field: CustomFormField }) {
+  const inputName = `custom_${field.id}`;
+  const inputCls =
+    'w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20';
+
+  return (
+    <div>
+      <label className="mb-1.5 block text-sm font-medium">
+        {field.label}
+        {field.isRequired ? <span className="text-destructive"> *</span> : null}
+      </label>
+
+      {field.fieldType === 'text' && (
+        <input
+          name={inputName}
+          type="text"
+          required={field.isRequired}
+          placeholder={field.placeholder ?? undefined}
+          className={inputCls}
+        />
+      )}
+
+      {field.fieldType === 'number' && (
+        <input
+          name={inputName}
+          type="number"
+          required={field.isRequired}
+          placeholder={field.placeholder ?? undefined}
+          className={inputCls}
+        />
+      )}
+
+      {field.fieldType === 'select' && field.options && (
+        <select name={inputName} required={field.isRequired} className={inputCls} defaultValue="">
+          <option value="" disabled>
+            {field.placeholder ?? '—'}
+          </option>
+          {field.options.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+      )}
+
+      {field.fieldType === 'multiselect' && field.options && (
+        <div className="space-y-1.5">
+          {field.options.map((opt) => (
+            <label key={opt} className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name={inputName} value={opt} className="rounded border-border" />
+              {opt}
+            </label>
+          ))}
+        </div>
+      )}
+
+      {field.fieldType === 'file' && (
+        <input
+          name={inputName}
+          type="file"
+          required={field.isRequired}
+          className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary"
+        />
+      )}
+
+      {field.helpText && (
+        <p className="mt-1 text-xs text-muted-foreground">{field.helpText}</p>
+      )}
     </div>
   );
 }

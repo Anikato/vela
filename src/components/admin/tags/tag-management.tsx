@@ -6,8 +6,7 @@ import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { createTagAction, deleteTagAction, updateTagAction } from '@/server/actions/tag.actions';
-import type { TagListItem } from '@/server/services/tag.service';
-import type { Language } from '@/server/services/language.service';
+import type { Language, TagListItem } from '@/types/admin';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,

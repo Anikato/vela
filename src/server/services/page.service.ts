@@ -128,6 +128,15 @@ export async function getPageList(locale: string, defaultLocale: string): Promis
   });
 }
 
+/** 前台：按 slug 获取已发布页面（含翻译） */
+export async function getPublishedPageBySlug(slug: string): Promise<PageWithTranslations | null> {
+  const page = await db.query.pages.findFirst({
+    where: and(eq(pages.slug, slug), eq(pages.status, 'published')),
+    with: { translations: true },
+  });
+  return page ?? null;
+}
+
 export async function createPage(input: CreatePageInput): Promise<PageWithTranslations> {
   const slug = normalizeSlug(input.slug);
   if (!slug) {

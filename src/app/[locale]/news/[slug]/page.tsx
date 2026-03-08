@@ -5,10 +5,13 @@ import { buildSeoMetadata, type AlternateLocale } from '@/lib/seo';
 import { ArticleJsonLd, BreadcrumbJsonLd } from '@/components/website/seo/json-ld';
 import { WebsiteShell } from '@/components/website/layout/website-shell';
 import { NewsDetailPage } from '@/components/website/news/news-detail-page';
-import { getActiveLanguages, getDefaultLanguage } from '@/server/services/language.service';
+import {
+  getCachedActiveLanguages,
+  getCachedDefaultLanguage,
+  getCachedPublicSiteInfo,
+  getCachedUiTranslationMap,
+} from '@/lib/data-cache';
 import { getPublishedNewsBySlug } from '@/server/services/news.service';
-import { getPublicSiteInfo } from '@/server/services/settings-public.service';
-import { getUiTranslationMap } from '@/server/services/ui-translation.service';
 
 const UI_KEYS = ['nav.home', 'nav.news'];
 
@@ -19,12 +22,12 @@ interface LocaleNewsDetailProps {
 export async function generateMetadata({ params }: LocaleNewsDetailProps): Promise<Metadata> {
   const { locale, slug } = await params;
   const [defaultLanguage, activeLanguages] = await Promise.all([
-    getDefaultLanguage(),
-    getActiveLanguages(),
+    getCachedDefaultLanguage(),
+    getCachedActiveLanguages(),
   ]);
   const [article, siteInfo] = await Promise.all([
     getPublishedNewsBySlug(slug, locale, defaultLanguage.code),
-    getPublicSiteInfo(locale, defaultLanguage.code),
+    getCachedPublicSiteInfo(locale, defaultLanguage.code),
   ]);
   if (!article) return { title: 'Not Found' };
 
@@ -52,8 +55,8 @@ export default async function LocaleNewsDetailPage({ params }: LocaleNewsDetailP
   const { locale, slug } = await params;
 
   const [activeLanguages, defaultLanguage] = await Promise.all([
-    getActiveLanguages(),
-    getDefaultLanguage(),
+    getCachedActiveLanguages(),
+    getCachedDefaultLanguage(),
   ]);
   if (!new Set(activeLanguages.map((l) => l.code)).has(locale)) {
     notFound();
@@ -61,7 +64,7 @@ export default async function LocaleNewsDetailPage({ params }: LocaleNewsDetailP
 
   const [article, uiMap] = await Promise.all([
     getPublishedNewsBySlug(slug, locale, defaultLanguage.code),
-    getUiTranslationMap(locale, defaultLanguage.code, UI_KEYS),
+    getCachedUiTranslationMap(locale, defaultLanguage.code, UI_KEYS),
   ]);
 
   if (!article) notFound();

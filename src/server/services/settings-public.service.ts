@@ -16,14 +16,22 @@ export interface PublicSiteInfo {
   slogan: string | null;
   contactEmail: string | null;
   contactPhone: string | null;
+  contactFax: string | null;
   address: string | null;
+  whatsapp: string | null;
   seoKeywords: string | null;
   ogImageUrl: string | null;
   logoUrl: string | null;
+  logoDarkUrl: string | null;
+  footerText: string | null;
+  copyright: string | null;
+  contactCta: string | null;
   socialFacebook: string | null;
   socialLinkedin: string | null;
   socialYoutube: string | null;
   socialInstagram: string | null;
+  socialPinterest: string | null;
+  socialAlibaba: string | null;
 }
 
 /** 获取面向前台的联系信息（从 site_settings 单行表读取） */
@@ -58,6 +66,7 @@ export async function getPublicSiteInfo(
   const row = await db.query.siteSettings.findFirst({
     with: {
       logo: true,
+      logoDark: true,
       ogImage: true,
     },
   });
@@ -72,13 +81,21 @@ export async function getPublicSiteInfo(
     slogan: t?.slogan ?? null,
     contactEmail: row?.contactEmail ?? null,
     contactPhone: row?.contactPhone ?? null,
+    contactFax: row?.contactFax ?? null,
     address: t?.address ?? null,
+    whatsapp: row?.whatsapp ?? null,
     seoKeywords: t?.seoKeywords ?? null,
     ogImageUrl: row?.ogImage ? storage.getPublicUrl(row.ogImage.filename) : null,
     logoUrl: row?.logo ? storage.getPublicUrl(row.logo.filename) : null,
+    logoDarkUrl: row?.logoDark ? storage.getPublicUrl(row.logoDark.filename) : null,
+    footerText: t?.footerText ?? null,
+    copyright: t?.copyright ?? null,
+    contactCta: t?.contactCta ?? null,
     socialFacebook: row?.socialFacebook ?? null,
     socialLinkedin: row?.socialLinkedin ?? null,
     socialYoutube: row?.socialYoutube ?? null,
     socialInstagram: row?.socialInstagram ?? null,
+    socialPinterest: row?.socialPinterest ?? null,
+    socialAlibaba: row?.socialAlibaba ?? null,
   };
 }

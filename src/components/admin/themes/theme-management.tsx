@@ -44,7 +44,7 @@ import {
   type RadiusPreset,
   type ShadowPreset,
 } from '@/types/theme';
-import type { ThemeListItem } from '@/server/services/theme.service';
+import type { ThemeListItem } from '@/types/admin';
 
 interface Props {
   initialThemes: ThemeListItem[];

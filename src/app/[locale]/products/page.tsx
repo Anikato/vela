@@ -4,15 +4,18 @@ import { notFound } from 'next/navigation';
 import { buildSeoMetadata, type AlternateLocale } from '@/lib/seo';
 import { WebsiteShell } from '@/components/website/layout/website-shell';
 import { ProductListPage } from '@/components/website/product/product-list-page';
-import { getActiveLanguages, getDefaultLanguage } from '@/server/services/language.service';
+import {
+  getCachedActiveLanguages,
+  getCachedDefaultLanguage,
+  getCachedPublicSiteInfo,
+  getCachedUiTranslationMap,
+} from '@/lib/data-cache';
 import {
   getPublicCategoryTree,
   getPublicTagList,
   getPublishedProductList,
   type ProductSortOption,
 } from '@/server/services/product-public.service';
-import { getPublicSiteInfo } from '@/server/services/settings-public.service';
-import { getUiTranslationMap } from '@/server/services/ui-translation.service';
 
 interface LocaleProductsPageProps {
   params: Promise<{ locale: string }>;
@@ -22,12 +25,12 @@ interface LocaleProductsPageProps {
 export async function generateMetadata({ params }: LocaleProductsPageProps): Promise<Metadata> {
   const { locale } = await params;
   const [defaultLanguage, activeLanguages] = await Promise.all([
-    getDefaultLanguage(),
-    getActiveLanguages(),
+    getCachedDefaultLanguage(),
+    getCachedActiveLanguages(),
   ]);
   const [siteInfo, uiMap] = await Promise.all([
-    getPublicSiteInfo(locale, defaultLanguage.code),
-    getUiTranslationMap(locale, defaultLanguage.code, ['nav.products']),
+    getCachedPublicSiteInfo(locale, defaultLanguage.code),
+    getCachedUiTranslationMap(locale, defaultLanguage.code, ['nav.products']),
   ]);
   const pageTitle = uiMap['nav.products'] ?? 'Products';
   const activeLocales: AlternateLocale[] = activeLanguages.map((l) => ({
@@ -75,8 +78,8 @@ export default async function LocaleProductsPage({
     : 'newest';
 
   const [activeLanguages, defaultLanguage] = await Promise.all([
-    getActiveLanguages(),
-    getDefaultLanguage(),
+    getCachedActiveLanguages(),
+    getCachedDefaultLanguage(),
   ]);
   if (!new Set(activeLanguages.map((l) => l.code)).has(locale)) {
     notFound();
@@ -90,7 +93,7 @@ export default async function LocaleProductsPage({
     }),
     getPublicCategoryTree(locale, defaultLanguage.code),
     getPublicTagList(locale, defaultLanguage.code),
-    getUiTranslationMap(locale, defaultLanguage.code, UI_KEYS),
+    getCachedUiTranslationMap(locale, defaultLanguage.code, UI_KEYS),
   ]);
 
   return (

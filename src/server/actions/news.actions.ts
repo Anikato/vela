@@ -8,9 +8,11 @@ import type { ActionResult } from '@/types';
 import {
   createNews,
   deleteNews,
+  getNewsById,
   getNewsList,
   NEWS_STATUSES,
   updateNews,
+  type NewsDetail,
   type NewsListItem,
 } from '@/server/services/news.service';
 
@@ -67,6 +69,25 @@ export async function getNewsListAction(
     return { success: true, data: items };
   } catch {
     return { success: false, error: 'Failed to load news' };
+  }
+}
+
+/** 后台：新闻详情（含所有翻译） */
+export async function getNewsByIdAction(
+  id: string,
+): Promise<ActionResult<NewsDetail>> {
+  const session = await auth();
+  if (!session?.user) return { success: false, error: 'Unauthorized' };
+
+  const parsedId = z.string().uuid().safeParse(id);
+  if (!parsedId.success) return { success: false, error: 'Invalid news id' };
+
+  try {
+    const detail = await getNewsById(parsedId.data);
+    return { success: true, data: detail };
+  } catch (error) {
+    if (error instanceof NotFoundError) return { success: false, error: 'News not found' };
+    return { success: false, error: 'Failed to load news detail' };
   }
 }
 

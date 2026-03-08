@@ -1,7 +1,10 @@
+import NextAuth from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { matchLocale } from '@/lib/i18n';
-import { auth } from '@/server/auth';
+import { authConfig } from '@/server/auth.config';
+
+const { auth } = NextAuth(authConfig);
 
 const LOCALE_COOKIE_KEY = 'vela_locale';
 const LOCALE_CACHE_TTL_MS = 5 * 60 * 1000;

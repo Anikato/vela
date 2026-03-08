@@ -4,9 +4,14 @@ import { notFound } from 'next/navigation';
 import { buildSeoMetadata, type AlternateLocale } from '@/lib/seo';
 import { WebsiteShell } from '@/components/website/layout/website-shell';
 import { ContactPage } from '@/components/website/contact/contact-page';
-import { getActiveLanguages, getDefaultLanguage } from '@/server/services/language.service';
-import { getPublicContactInfo, getPublicSiteInfo } from '@/server/services/settings-public.service';
-import { getUiTranslationMap } from '@/server/services/ui-translation.service';
+import {
+  getCachedActiveLanguages,
+  getCachedCaptchaSiteKey,
+  getCachedDefaultLanguage,
+  getCachedPublicContactInfo,
+  getCachedPublicSiteInfo,
+  getCachedUiTranslationMap,
+} from '@/lib/data-cache';
 
 interface LocaleContactPageProps {
   params: Promise<{ locale: string }>;
@@ -15,12 +20,12 @@ interface LocaleContactPageProps {
 export async function generateMetadata({ params }: LocaleContactPageProps): Promise<Metadata> {
   const { locale } = await params;
   const [defaultLanguage, activeLanguages] = await Promise.all([
-    getDefaultLanguage(),
-    getActiveLanguages(),
+    getCachedDefaultLanguage(),
+    getCachedActiveLanguages(),
   ]);
   const [siteInfo, uiMap] = await Promise.all([
-    getPublicSiteInfo(locale, defaultLanguage.code),
-    getUiTranslationMap(locale, defaultLanguage.code, ['contact.title']),
+    getCachedPublicSiteInfo(locale, defaultLanguage.code),
+    getCachedUiTranslationMap(locale, defaultLanguage.code, ['contact.title']),
   ]);
   const pageTitle = uiMap['contact.title'] ?? 'Contact Us';
   const activeLocales: AlternateLocale[] = activeLanguages.map((l) => ({
@@ -56,32 +61,38 @@ const UI_KEYS = [
   'contact.emailInfo',
   'contact.phoneInfo',
   'contact.addressInfo',
+  'inquiry.success',
+  'inquiry.error',
 ];
 
 export default async function LocaleContactPage({ params }: LocaleContactPageProps) {
   const { locale } = await params;
 
   const [activeLanguages, defaultLanguage] = await Promise.all([
-    getActiveLanguages(),
-    getDefaultLanguage(),
+    getCachedActiveLanguages(),
+    getCachedDefaultLanguage(),
   ]);
   if (!new Set(activeLanguages.map((l) => l.code)).has(locale)) {
     notFound();
   }
 
-  const [contactInfo, uiMap] = await Promise.all([
-    getPublicContactInfo(locale, defaultLanguage.code),
-    getUiTranslationMap(locale, defaultLanguage.code, UI_KEYS),
+  const [contactInfo, siteInfo, uiMap, captchaSiteKey] = await Promise.all([
+    getCachedPublicContactInfo(locale, defaultLanguage.code),
+    getCachedPublicSiteInfo(locale, defaultLanguage.code),
+    getCachedUiTranslationMap(locale, defaultLanguage.code, UI_KEYS),
+    getCachedCaptchaSiteKey(),
   ]);
 
   return (
     <WebsiteShell locale={locale} defaultLocale={defaultLanguage.code}>
       <ContactPage
         homeHref={`/${locale}`}
+        captchaSiteKey={captchaSiteKey}
         contactInfo={{
           email: contactInfo.email ?? undefined,
           phone: contactInfo.phone ?? undefined,
           address: contactInfo.address ?? undefined,
+          whatsapp: contactInfo.whatsapp ?? undefined,
         }}
         uiLabels={{
           home: uiMap['nav.home'] ?? 'Home',
@@ -95,6 +106,8 @@ export default async function LocaleContactPage({ params }: LocaleContactPagePro
           messageLabel: uiMap['contact.messageLabel'] ?? 'Message',
           messagePlaceholder: uiMap['contact.messagePlaceholder'] ?? 'How can we help you?',
           submitButton: uiMap['contact.submitButton'] ?? 'Send Message',
+          successMessage: uiMap['inquiry.success'] ?? 'Message sent successfully!',
+          errorMessage: uiMap['inquiry.error'] ?? 'Failed to send message',
           infoTitle: uiMap['contact.infoTitle'] ?? 'Contact Information',
           emailInfo: uiMap['contact.emailInfo'] ?? 'Email',
           phoneInfo: uiMap['contact.phoneInfo'] ?? 'Phone',

@@ -10,8 +10,7 @@ import {
   deleteNavigationItemAction,
   updateNavigationItemAction,
 } from '@/server/actions/navigation.actions';
-import type { Language } from '@/server/services/language.service';
-import type { NavigationListItem } from '@/server/services/navigation.service';
+import type { Language, NavigationListItem } from '@/types/admin';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {

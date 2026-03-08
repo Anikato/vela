@@ -1,5 +1,7 @@
 import { AdminShell } from '@/components/admin/layout';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * 后台布局
  * 使用 AdminShell 提供侧边栏 + 顶栏 + 内容区结构

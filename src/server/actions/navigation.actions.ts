@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
 import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
@@ -110,6 +111,7 @@ export async function createNavigationItemAction(
 
   try {
     const data = await createNavigationItem(parsed.data);
+    revalidateTag('navigation', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);
@@ -135,6 +137,7 @@ export async function updateNavigationItemAction(
 
   try {
     const data = await updateNavigationItem(parsedId.data, parsed.data);
+    revalidateTag('navigation', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);
@@ -152,6 +155,7 @@ export async function deleteNavigationItemAction(id: string): Promise<ActionResu
 
   try {
     await deleteNavigationItem(parsedId.data);
+    revalidateTag('navigation', 'max');
     return { success: true, data: undefined };
   } catch (error) {
     return handleError(error);
@@ -171,6 +175,7 @@ export async function reorderNavigationTreeAction(
 
   try {
     await reorderNavigationTree(parsed.data.items);
+    revalidateTag('navigation', 'max');
     return { success: true, data: undefined };
   } catch (error) {
     return handleError(error);

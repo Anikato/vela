@@ -1,8 +1,10 @@
 'use server';
 
+import { headers } from 'next/headers';
 import { z } from 'zod';
 
 import { NotFoundError, ValidationError } from '@/lib/errors';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { auth } from '@/server/auth';
 import type { ActionResult } from '@/types';
 import {
@@ -41,6 +43,8 @@ const submitInquirySchema = z.object({
   sourceUrl: z.string().max(500).optional(),
   locale: z.string().max(10).optional(),
   deviceType: z.string().max(20).optional(),
+  captchaToken: z.string().optional(),
+  customFields: z.record(z.string(), z.unknown()).optional(),
   products: z.array(inquiryProductSchema).default([]),
 });
 
@@ -58,14 +62,48 @@ export async function submitInquiryAction(
   }
 
   try {
-    const result = await createInquiry({
-      ...parsed.data,
-      products: parsed.data.products.map((p) => ({
-        productId: p.productId ?? null,
-        snapshot: p.snapshot,
-        quantity: p.quantity,
-      })),
-    });
+    const headerList = await headers();
+    const ip = headerList.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    const rl = checkRateLimit(`inquiry:${ip}`, RATE_LIMITS.INQUIRY);
+    if (!rl.allowed) {
+      return { success: false, error: 'Too many requests, please try again later' };
+    }
+
+    const { verifyCaptchaToken } = await import('@/server/services/captcha.service');
+    const captchaValid = await verifyCaptchaToken(parsed.data.captchaToken ?? '');
+    if (!captchaValid) {
+      return { success: false, error: 'Captcha verification failed' };
+    }
+
+    const products = parsed.data.products.map((p) => ({
+      productId: p.productId ?? null,
+      snapshot: p.snapshot,
+      quantity: p.quantity,
+    }));
+    const result = await createInquiry({ ...parsed.data, products });
+
+    // 异步发送邮件通知，不阻塞响应
+    import('@/server/services/email.service').then(async ({ sendInquiryNotification, sendInquiryConfirmation }) => {
+      const { getPublicSiteInfo } = await import('@/server/services/settings-public.service');
+      const siteInfo = await getPublicSiteInfo('en-US', 'en-US');
+      const emailPayload = {
+        inquiryNumber: result.inquiryNumber,
+        customerName: parsed.data.name,
+        customerEmail: parsed.data.email,
+        phone: parsed.data.phone ?? null,
+        company: parsed.data.company ?? null,
+        country: parsed.data.country ?? null,
+        message: parsed.data.message,
+        sourceUrl: parsed.data.sourceUrl ?? null,
+        products,
+        siteName: siteInfo.siteName,
+      };
+      await Promise.allSettled([
+        sendInquiryNotification(emailPayload),
+        sendInquiryConfirmation(emailPayload),
+      ]);
+    }).catch(() => {});
+
     return { success: true, data: { inquiryNumber: result.inquiryNumber } };
   } catch (error) {
     if (error instanceof ValidationError) {

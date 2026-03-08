@@ -261,3 +261,24 @@ export async function renameTranslationKey(oldKey: string, newKey: string): Prom
     .set({ key: newKey, category: newCategory })
     .where(eq(uiTranslations.key, oldKey));
 }
+
+/** 获取指定语言的所有翻译文本（用于批量自动翻译） */
+export async function getAllSourceTexts(
+  locale: string,
+): Promise<Array<{ key: string; category: string; value: string }>> {
+  const rows = await db
+    .select({
+      key: uiTranslations.key,
+      category: uiTranslations.category,
+      value: uiTranslations.value,
+    })
+    .from(uiTranslations)
+    .where(and(eq(uiTranslations.locale, locale), sql`${uiTranslations.value} IS NOT NULL AND ${uiTranslations.value} != ''`))
+    .orderBy(asc(uiTranslations.key));
+
+  return rows.filter((r) => r.value !== null).map((r) => ({
+    key: r.key,
+    category: r.category,
+    value: r.value!,
+  }));
+}

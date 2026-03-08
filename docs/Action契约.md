@@ -999,7 +999,40 @@ targetGroupId: string; // uuid
 }
 ```
 
-### 2) `createNewsAction(input)` — 后台创建新闻
+### 2) `getNewsByIdAction(id)` — 后台新闻详情
+
+- **权限**：需登录
+- **入参**：`id: string`（UUID）
+- **返回**：
+
+```typescript
+{
+  success: true,
+  data: {
+    id: string;
+    slug: string;
+    status: string;
+    coverImageId: string | null;
+    publishedAt: Date | null;
+    sortOrder: number;
+    createdAt: Date;
+    updatedAt: Date;
+    translations: Array<{
+      id: string;
+      locale: string;
+      title: string | null;
+      summary: string | null;
+      content: string | null;
+      seoTitle: string | null;
+      seoDescription: string | null;
+    }>;
+  }
+}
+```
+
+- **错误码**：`'Unauthorized'` / `'Invalid news id'` / `'News not found'`
+
+### 3) `createNewsAction(input)` — 后台创建新闻
 
 - **权限**：需登录
 - **入参**：
@@ -1023,13 +1056,13 @@ targetGroupId: string; // uuid
 
 - **返回**：`{ success: true, data: { id: string } }` 或错误
 
-### 3) `updateNewsAction(id, input)` — 后台更新新闻
+### 4) `updateNewsAction(id, input)` — 后台更新新闻
 
 - **权限**：需登录
 - **入参**：`id: string`（UUID），`input` 同创建（所有字段可选）
 - **返回**：`{ success: true, data: void }` 或错误
 
-### 4) `deleteNewsAction(id)` — 后台删除新闻
+### 5) `deleteNewsAction(id)` — 后台删除新闻
 
 - **权限**：需登录
 - **入参**：`id: string`（UUID）
@@ -1366,6 +1399,71 @@ targetGroupId: string; // uuid
 - **权限**：需管理员登录
 - **入参**：`id: number`
 - **返回**：`ActionResult<null>`
+
+---
+
+## 14. 导入导出 Actions（`export.actions.ts` / `import.actions.ts`）
+
+### 1) `exportProductsCsvAction(defaultLocale)` — 导出产品 CSV
+
+- **权限**：需登录
+- **入参**：`defaultLocale: string`
+- **返回**：`ActionResult<string>`（CSV 文本）
+- **错误码**：`'Unauthorized'` / `'Failed to export products'`
+
+### 2) `getProductCsvTemplateAction(defaultLocale)` — 下载导入模板
+
+- **权限**：需登录
+- **入参**：`defaultLocale: string`
+- **返回**：`ActionResult<string>`（CSV 模板文本）
+- **错误码**：`'Unauthorized'` / `'Failed to generate template'`
+
+### 3) `exportInquiriesCsvAction()` — 导出询盘 CSV
+
+- **权限**：需登录
+- **入参**：无
+- **返回**：`ActionResult<string>`（CSV 文本）
+- **错误码**：`'Unauthorized'` / `'Failed to export inquiries'`
+
+### 4) `previewProductCsvAction(csvText)` — 预览 CSV 导入
+
+- **权限**：需登录
+- **入参**：`csvText: string`
+- **返回**：
+
+```typescript
+{
+  success: true,
+  data: {
+    totalRows: number;
+    validRows: number;
+    errors: Array<{ row: number; field: string; message: string }>;
+    rows: ImportRow[];
+  }
+}
+```
+
+- **错误码**：`'Unauthorized'` / `'Failed to parse CSV'`
+
+### 5) `executeProductImportAction(csvText, mode)` — 确认执行导入
+
+- **权限**：需登录
+- **入参**：`csvText: string`, `mode: 'skip' | 'update'`（默认 `'skip'`）
+- **返回**：
+
+```typescript
+{
+  success: true,
+  data: {
+    created: number;
+    updated: number;
+    skipped: number;
+    errors: Array<{ row: number; message: string }>;
+  }
+}
+```
+
+- **错误码**：`'Unauthorized'` / `'No valid rows to import'` / `'Failed to import products'`
 
 ---
 

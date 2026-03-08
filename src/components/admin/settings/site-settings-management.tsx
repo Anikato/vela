@@ -16,7 +16,7 @@ import {
   updateSiteSettingsAction,
   upsertSettingTranslationAction,
 } from '@/server/actions/settings.actions';
-import type { SiteSettingsData, SiteSettingTranslationRow } from '@/server/services/settings-admin.service';
+import type { SiteSettingsData, SiteSettingTranslationRow } from '@/types/admin';
 
 interface Language {
   code: string;

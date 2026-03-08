@@ -6,9 +6,11 @@ import { Minus, Plus, ShoppingCart, Trash2, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { useInquiryBasket, type InquiryBasketItem } from '@/hooks/use-inquiry-basket';
-import { InquiryFormDialog } from './inquiry-form-dialog';
+import { InquiryFormDialog, type CustomFormField } from './inquiry-form-dialog';
 
 interface InquiryBasketDrawerProps {
+  captchaSiteKey: string | null;
+  customFormFields?: CustomFormField[];
   uiLabels: {
     title: string;
     empty: string;
@@ -31,7 +33,7 @@ interface InquiryBasketDrawerProps {
   };
 }
 
-export function InquiryBasketTrigger({ uiLabels, formLabels }: InquiryBasketDrawerProps) {
+export function InquiryBasketTrigger({ captchaSiteKey, customFormFields, uiLabels, formLabels }: InquiryBasketDrawerProps) {
   const { items, totalCount, removeItem, updateQuantity, clearBasket } = useInquiryBasket();
   const [open, setOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -114,6 +116,8 @@ export function InquiryBasketTrigger({ uiLabels, formLabels }: InquiryBasketDraw
           open={showForm}
           onClose={() => setShowForm(false)}
           labels={formLabels}
+          captchaSiteKey={captchaSiteKey}
+          customFields={customFormFields}
         />
       ) : null}
     </>

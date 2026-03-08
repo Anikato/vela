@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { ValidationError } from '@/lib/errors';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { auth } from '@/server/auth';
 import { uploadMedia } from '@/server/services/media.service';
 
@@ -19,6 +20,15 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { success: false, error: 'Unauthorized' },
       { status: 401 },
+    );
+  }
+
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const rl = checkRateLimit(`upload:${ip}`, RATE_LIMITS.UPLOAD);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { success: false, error: 'Too many uploads, please try later' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(rl.retryAfterMs / 1000)) } },
     );
   }
 

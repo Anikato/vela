@@ -2,6 +2,11 @@
 
 import { useEffect } from 'react';
 
+/**
+ * Root error boundary — must be a Client Component (Next.js constraint).
+ * When this renders, the server/DB may be unavailable, so translation
+ * fetching could fail. English fallback is the safe default.
+ */
 export default function Error({
   error,
   reset,
@@ -14,14 +19,14 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="text-center max-w-md">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center">
         <p className="text-8xl font-bold text-destructive/20">500</p>
-        <h1 className="text-2xl font-bold mt-4">Something Went Wrong</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="mt-4 text-2xl font-bold">Something Went Wrong</h1>
+        <p className="mt-2 text-muted-foreground">
           An unexpected error occurred. Please try again later.
         </p>
-        <div className="flex items-center justify-center gap-3 mt-8">
+        <div className="mt-8 flex items-center justify-center gap-3">
           <button
             onClick={reset}
             className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"

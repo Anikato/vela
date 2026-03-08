@@ -1,5 +1,5 @@
 // 产品分类表 — 树形结构，支持无限层级嵌套
-import { pgTable, uuid, varchar, boolean, integer, jsonb, timestamp, unique } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, boolean, integer, jsonb, timestamp, unique, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { media } from './media';
 import { languages } from './languages';
@@ -14,7 +14,10 @@ export const categories = pgTable('categories', {
   templateConfig: jsonb('template_config'), // 模板配置（布局、每页数量等）
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('idx_categories_parent').on(table.parentId),
+  index('idx_categories_active').on(table.isActive),
+]);
 
 export const categoryTranslations = pgTable(
   'category_translations',

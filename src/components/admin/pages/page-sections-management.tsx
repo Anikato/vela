@@ -11,8 +11,7 @@ import {
   reorderPageSectionsAction,
   updateSectionAction,
 } from '@/server/actions/section.actions';
-import type { Language } from '@/server/services/language.service';
-import type { SectionListItem } from '@/server/services/section.service';
+import type { Language, SectionListItem } from '@/types/admin';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -51,7 +50,7 @@ type TranslationForm = {
   secondaryButtonLink: string;
 };
 
-type SectionType = 'hero' | 'rich_text' | 'cta' | 'product_showcase';
+type SectionType = 'hero' | 'rich_text' | 'cta' | 'product_showcase' | 'feature_grid' | 'carousel_banner' | 'stats' | 'faq' | 'two_column' | 'partner_logos' | 'testimonials' | 'category_nav' | 'video_embed' | 'timeline' | 'image_gallery' | 'team' | 'contact_form' | 'custom_html';
 
 function buildTranslationForm(locales: Language[]): TranslationForm[] {
   return locales.map((item) => ({
@@ -335,7 +334,7 @@ export function PageSectionsManagement({
           <DialogHeader>
             <DialogTitle>{editing ? '编辑区块' : '新增区块'}</DialogTitle>
             <DialogDescription>
-              当前支持 hero / rich_text / cta / product_showcase 四种区块类型。
+              支持 18 种区块类型，涵盖布局、内容、媒体、交互四大类。
             </DialogDescription>
           </DialogHeader>
 
@@ -349,10 +348,34 @@ export function PageSectionsManagement({
                   onChange={(e) => setType(e.target.value as SectionType)}
                   disabled={isSubmitting}
                 >
-                  <option value="hero">hero</option>
-                  <option value="rich_text">rich_text</option>
-                  <option value="cta">cta</option>
-                  <option value="product_showcase">product_showcase</option>
+                  <optgroup label="布局类">
+                    <option value="hero">hero — 首屏横幅</option>
+                    <option value="two_column">two_column — 双栏布局</option>
+                    <option value="carousel_banner">carousel_banner — 轮播横幅</option>
+                  </optgroup>
+                  <optgroup label="内容类">
+                    <option value="rich_text">rich_text — 富文本</option>
+                    <option value="feature_grid">feature_grid — 特性网格</option>
+                    <option value="stats">stats — 数据统计</option>
+                    <option value="faq">faq — 常见问答</option>
+                    <option value="testimonials">testimonials — 客户评价</option>
+                    <option value="timeline">timeline — 时间线</option>
+                    <option value="team">team — 团队介绍</option>
+                  </optgroup>
+                  <optgroup label="媒体类">
+                    <option value="partner_logos">partner_logos — 合作伙伴Logo</option>
+                    <option value="image_gallery">image_gallery — 图片画廊</option>
+                    <option value="video_embed">video_embed — 视频嵌入</option>
+                  </optgroup>
+                  <optgroup label="交互类">
+                    <option value="product_showcase">product_showcase — 产品展示</option>
+                    <option value="category_nav">category_nav — 分类导航</option>
+                    <option value="cta">cta — 行动号召</option>
+                    <option value="contact_form">contact_form — 联系表单</option>
+                  </optgroup>
+                  <optgroup label="其他">
+                    <option value="custom_html">custom_html — 自定义HTML</option>
+                  </optgroup>
                 </select>
               </div>
               <div className="space-y-2">

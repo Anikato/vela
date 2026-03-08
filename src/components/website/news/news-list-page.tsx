@@ -97,6 +97,7 @@ export function NewsListPage({
             {data.page > 1 ? (
               <Link
                 href={data.page === 2 ? basePath : `${basePath}?page=${data.page - 1}`}
+                aria-label="Previous page"
                 className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-accent"
               >
                 ‹
@@ -108,6 +109,7 @@ export function NewsListPage({
             {data.page < data.totalPages ? (
               <Link
                 href={`${basePath}?page=${data.page + 1}`}
+                aria-label="Next page"
                 className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-accent"
               >
                 ›

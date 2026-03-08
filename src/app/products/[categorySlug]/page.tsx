@@ -4,15 +4,18 @@ import { notFound } from 'next/navigation';
 import { buildSeoMetadata, type AlternateLocale } from '@/lib/seo';
 import { WebsiteShell } from '@/components/website/layout/website-shell';
 import { ProductListPage } from '@/components/website/product/product-list-page';
-import { getActiveLanguages, getDefaultLanguage } from '@/server/services/language.service';
+import {
+  getCachedActiveLanguages,
+  getCachedDefaultLanguage,
+  getCachedPublicSiteInfo,
+  getCachedUiTranslationMap,
+} from '@/lib/data-cache';
 import {
   getPublicCategoryTree,
   getPublicTagList,
   getPublishedProductList,
   type ProductSortOption,
 } from '@/server/services/product-public.service';
-import { getPublicSiteInfo } from '@/server/services/settings-public.service';
-import { getUiTranslationMap } from '@/server/services/ui-translation.service';
 
 interface CategoryProductsPageProps {
   params: Promise<{ categorySlug: string }>;
@@ -22,13 +25,13 @@ interface CategoryProductsPageProps {
 export async function generateMetadata({ params }: CategoryProductsPageProps): Promise<Metadata> {
   const { categorySlug } = await params;
   const [defaultLanguage, activeLanguages] = await Promise.all([
-    getDefaultLanguage(),
-    getActiveLanguages(),
+    getCachedDefaultLanguage(),
+    getCachedActiveLanguages(),
   ]);
   const locale = defaultLanguage.code;
   const [data, siteInfo] = await Promise.all([
     getPublishedProductList(locale, locale, { categorySlug }),
-    getPublicSiteInfo(locale, locale),
+    getCachedPublicSiteInfo(locale, locale),
   ]);
   const categoryName = data.category?.name ?? categorySlug;
   const activeLocales: AlternateLocale[] = activeLanguages.map((l) => ({
@@ -76,7 +79,7 @@ export default async function CategoryProductsPage({
     ? (sort as ProductSortOption)
     : 'newest';
 
-  const defaultLanguage = await getDefaultLanguage();
+  const defaultLanguage = await getCachedDefaultLanguage();
   const locale = defaultLanguage.code;
 
   const [data, categoryTree, tagList, uiMap] = await Promise.all([
@@ -88,7 +91,7 @@ export default async function CategoryProductsPage({
     }),
     getPublicCategoryTree(locale, locale),
     getPublicTagList(locale, locale),
-    getUiTranslationMap(locale, locale, UI_KEYS),
+    getCachedUiTranslationMap(locale, locale, UI_KEYS),
   ]);
 
   if (!data.category) {

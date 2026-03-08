@@ -5,13 +5,49 @@ import { buildSeoMetadata, type AlternateLocale } from '@/lib/seo';
 import { BreadcrumbJsonLd, ProductJsonLd } from '@/components/website/seo/json-ld';
 import { WebsiteShell } from '@/components/website/layout/website-shell';
 import { ProductDetailPage } from '@/components/website/product/product-detail-page';
-import { getActiveLanguages, getDefaultLanguage } from '@/server/services/language.service';
+import {
+  getCachedActiveLanguages,
+  getCachedDefaultLanguage,
+  getCachedCaptchaSiteKey,
+  getCachedPublicFormFields,
+  getCachedPublicSiteInfo,
+  getCachedUiTranslationMap,
+} from '@/lib/data-cache';
 import {
   getPublishedProductDetailBySlug,
   getRelatedPublishedProducts,
 } from '@/server/services/product-public.service';
-import { getPublicSiteInfo } from '@/server/services/settings-public.service';
-import { getUiTranslationMap } from '@/server/services/ui-translation.service';
+
+const PRODUCT_DETAIL_UI_KEYS = [
+  'nav.home',
+  'nav.products',
+  'product.addToInquiry',
+  'product.sendInquiry',
+  'product.relatedProducts',
+  'product.specifications',
+  'product.videos',
+  'product.attachments',
+  'product.moq',
+  'product.leadTime',
+  'product.tradeTerms',
+  'product.paymentTerms',
+  'product.packaging',
+  'product.customization',
+  'product.customizationYes',
+  'product.customizationNo',
+  'product.days',
+  'inquiry.formTitle',
+  'inquiry.name',
+  'inquiry.email',
+  'inquiry.phone',
+  'inquiry.company',
+  'inquiry.country',
+  'inquiry.message',
+  'inquiry.submit',
+  'common.cancel',
+  'inquiry.success',
+  'inquiry.error',
+];
 
 interface ProductDetailRoutePageProps {
   params: Promise<{ categorySlug: string; productSlug: string }>;
@@ -20,13 +56,13 @@ interface ProductDetailRoutePageProps {
 export async function generateMetadata({ params }: ProductDetailRoutePageProps): Promise<Metadata> {
   const { categorySlug, productSlug } = await params;
   const [defaultLanguage, activeLanguages] = await Promise.all([
-    getDefaultLanguage(),
-    getActiveLanguages(),
+    getCachedDefaultLanguage(),
+    getCachedActiveLanguages(),
   ]);
   const locale = defaultLanguage.code;
   const [product, siteInfo] = await Promise.all([
     getPublishedProductDetailBySlug(productSlug, locale, locale),
-    getPublicSiteInfo(locale, locale),
+    getCachedPublicSiteInfo(locale, locale),
   ]);
   if (!product) return { title: 'Not Found' };
 
@@ -52,44 +88,39 @@ export async function generateMetadata({ params }: ProductDetailRoutePageProps):
 
 export default async function ProductDetailRoutePage({ params }: ProductDetailRoutePageProps) {
   const { categorySlug, productSlug } = await params;
-  const defaultLanguage = await getDefaultLanguage();
+  const defaultLanguage = await getCachedDefaultLanguage();
   const locale = defaultLanguage.code;
 
-  const product = await getPublishedProductDetailBySlug(
-    productSlug,
-    locale,
-    defaultLanguage.code,
-  );
-  if (!product) {
-    notFound();
-  }
+  const product = await getPublishedProductDetailBySlug(productSlug, locale, locale);
+  if (!product) notFound();
 
   const normalizedCategorySlug = categorySlug.trim().toLowerCase();
   const isPrimary = normalizedCategorySlug === product.primaryCategory.slug;
   const matchedAdditional = product.additionalCategories.find(
-    (item) => item.slug === normalizedCategorySlug,
+    (c) => c.slug === normalizedCategorySlug,
   );
-  if (!isPrimary && !matchedAdditional) {
-    notFound();
-  }
+  if (!isPrimary && !matchedAdditional) notFound();
 
   const currentCategoryName = isPrimary
     ? product.primaryCategory.name
     : (matchedAdditional?.name ?? product.primaryCategory.name);
-  const [relatedProducts, uiMap] = await Promise.all([
-    getRelatedPublishedProducts(locale, defaultLanguage.code, {
+
+  const [relatedProducts, uiMap, captchaSiteKey, customFormFields] = await Promise.all([
+    getRelatedPublishedProducts(locale, locale, {
       productId: product.id,
       primaryCategoryId: product.primaryCategory.id,
       limit: 6,
     }),
-    getUiTranslationMap(locale, defaultLanguage.code, ['nav.home', 'nav.products']),
+    getCachedUiTranslationMap(locale, locale, PRODUCT_DETAIL_UI_KEYS),
+    getCachedCaptchaSiteKey(),
+    getCachedPublicFormFields(locale, locale),
   ]);
 
   const homeLabel = uiMap['nav.home'] ?? 'Home';
   const productsLabel = uiMap['nav.products'] ?? 'Products';
 
   return (
-    <WebsiteShell locale={locale} defaultLocale={defaultLanguage.code}>
+    <WebsiteShell locale={locale} defaultLocale={locale}>
       <BreadcrumbJsonLd
         items={[
           { name: homeLabel, href: '/' },
@@ -107,11 +138,42 @@ export default async function ProductDetailRoutePage({ params }: ProductDetailRo
       />
       <ProductDetailPage
         locale={locale}
-        defaultLocale={defaultLanguage.code}
+        defaultLocale={locale}
         product={product}
         currentCategoryName={currentCategoryName}
         relatedProducts={relatedProducts}
-        uiLabels={{ home: homeLabel, products: productsLabel }}
+        captchaSiteKey={captchaSiteKey}
+        customFormFields={customFormFields}
+        uiLabels={{
+          home: homeLabel,
+          products: productsLabel,
+          addToBasket: uiMap['product.addToInquiry'] ?? 'Add to Inquiry',
+          sendInquiry: uiMap['product.sendInquiry'] ?? 'Send Inquiry',
+          relatedProducts: uiMap['product.relatedProducts'] ?? 'Related Products',
+          specifications: uiMap['product.specifications'] ?? 'Specifications',
+          videos: uiMap['product.videos'] ?? 'Videos',
+          attachments: uiMap['product.attachments'] ?? 'Downloads',
+          moq: uiMap['product.moq'] ?? 'MOQ',
+          leadTime: uiMap['product.leadTime'] ?? 'Lead Time',
+          tradeTerms: uiMap['product.tradeTerms'] ?? 'Trade Terms',
+          paymentTerms: uiMap['product.paymentTerms'] ?? 'Payment Terms',
+          packaging: uiMap['product.packaging'] ?? 'Packaging',
+          customization: uiMap['product.customization'] ?? 'Customization',
+          customizationYes: uiMap['product.customizationYes'] ?? 'Supported',
+          customizationNo: uiMap['product.customizationNo'] ?? 'Not Available',
+          days: uiMap['product.days'] ?? 'days',
+          formTitle: uiMap['inquiry.formTitle'] ?? 'Send Inquiry',
+          formName: uiMap['inquiry.name'] ?? 'Name',
+          formEmail: uiMap['inquiry.email'] ?? 'Email',
+          formPhone: uiMap['inquiry.phone'] ?? 'Phone',
+          formCompany: uiMap['inquiry.company'] ?? 'Company',
+          formCountry: uiMap['inquiry.country'] ?? 'Country',
+          formMessage: uiMap['inquiry.message'] ?? 'Message',
+          formSubmit: uiMap['inquiry.submit'] ?? 'Submit',
+          formCancel: uiMap['common.cancel'] ?? 'Cancel',
+          formSuccess: uiMap['inquiry.success'] ?? 'Inquiry submitted successfully!',
+          formError: uiMap['inquiry.error'] ?? 'Failed to submit inquiry',
+        }}
       />
     </WebsiteShell>
   );

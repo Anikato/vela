@@ -10,6 +10,7 @@ export default async function ScriptsSettingsPage() {
         gaId: settings.gaId,
         gtmId: settings.gtmId,
         fbPixelId: settings.fbPixelId,
+        captchaSiteKey: settings.captchaSiteKey,
         headScripts: settings.headScripts,
         bodyScripts: settings.bodyScripts,
       }}

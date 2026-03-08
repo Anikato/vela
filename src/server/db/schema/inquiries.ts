@@ -9,6 +9,7 @@ import {
   jsonb,
   timestamp,
   unique,
+  index,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { products } from './products';
@@ -34,7 +35,10 @@ export const inquiries = pgTable('inquiries', {
   customFields: jsonb('custom_fields').$type<Record<string, unknown>>(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('idx_inquiries_status').on(table.status),
+  index('idx_inquiries_created').on(table.createdAt),
+]);
 
 // ─── 询盘产品 ───
 export const inquiryProducts = pgTable('inquiry_products', {
@@ -47,7 +51,9 @@ export const inquiryProducts = pgTable('inquiry_products', {
     .$type<{ name: string; sku: string; imageUrl?: string }>()
     .notNull(),
   quantity: integer('quantity').default(1).notNull(),
-});
+}, (table) => [
+  index('idx_inquiry_products_inquiry').on(table.inquiryId),
+]);
 
 // ─── 询盘自定义字段定义 ───
 export const inquiryFormFields = pgTable('inquiry_form_fields', {

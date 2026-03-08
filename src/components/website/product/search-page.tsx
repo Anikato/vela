@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Search } from 'lucide-react';
 
 import { buildLocalizedPath } from '@/lib/i18n';
-import type { PublicProductSearchResult } from '@/server/services/product-public.service';
+import type { PublicProductSearchResult } from '@/types/website';
 import { ProductCard } from './product-card';
 
 interface SearchPageProps {
@@ -110,6 +110,7 @@ export function SearchPage({
           {data.page > 1 ? (
             <a
               href={buildPageHref(data.page - 1)}
+              aria-label="Previous page"
               className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-accent"
             >
               ‹
@@ -121,6 +122,7 @@ export function SearchPage({
           {data.page < data.totalPages ? (
             <a
               href={buildPageHref(data.page + 1)}
+              aria-label="Next page"
               className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-accent"
             >
               ›

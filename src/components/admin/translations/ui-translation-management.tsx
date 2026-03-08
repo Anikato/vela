@@ -29,7 +29,7 @@ import {
   createTranslationKeyAction,
   deleteTranslationKeyAction,
 } from '@/server/actions/ui-translation.actions';
-import type { UiTranslationListResult, CategoryStat } from '@/server/services/ui-translation-admin.service';
+import type { UiTranslationListResult, CategoryStat } from '@/types/admin';
 
 interface Language {
   code: string;

@@ -22,7 +22,7 @@ import {
   updateInquiryNotesAction,
   updateInquiryStatusAction,
 } from '@/server/actions/inquiry.actions';
-import type { InquiryDetail, InquiryListItem, InquiryStatus } from '@/server/services/inquiry.service';
+import type { InquiryDetail, InquiryListItem, InquiryStatus } from '@/types/admin';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';

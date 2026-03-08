@@ -1,5 +1,7 @@
 'use server';
 
+import { revalidateTag } from 'next/cache';
+
 /**
  * 语言管理 Server Actions
  * Zod 校验 → 调 Service → 返回 ActionResult
@@ -123,6 +125,7 @@ export async function createLanguageAction(
       ...parsed.data,
       code: normalizeLanguageCode(parsed.data.code),
     });
+    revalidateTag('languages', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);
@@ -147,6 +150,7 @@ export async function updateLanguageAction(
 
   try {
     const data = await updateLanguage(normalizedCode, parsed.data);
+    revalidateTag('languages', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);
@@ -163,6 +167,7 @@ export async function deleteLanguageAction(code: string): Promise<ActionResult<v
 
   try {
     await deleteLanguage(normalizedCode);
+    revalidateTag('languages', 'max');
     return { success: true, data: undefined };
   } catch (error) {
     return handleError(error);
@@ -179,6 +184,7 @@ export async function setDefaultLanguageAction(code: string): Promise<ActionResu
 
   try {
     const data = await setDefaultLanguage(normalizedCode);
+    revalidateTag('languages', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);
@@ -196,6 +202,7 @@ export async function reorderLanguagesAction(
 
   try {
     await reorderLanguages(parsed.data.orderedCodes);
+    revalidateTag('languages', 'max');
     return { success: true, data: undefined };
   } catch (error) {
     return handleError(error);
@@ -212,6 +219,7 @@ export async function toggleLanguageActiveAction(code: string): Promise<ActionRe
 
   try {
     const data = await toggleLanguageActive(normalizedCode);
+    revalidateTag('languages', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);

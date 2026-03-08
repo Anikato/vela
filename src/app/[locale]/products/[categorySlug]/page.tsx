@@ -4,15 +4,18 @@ import { notFound } from 'next/navigation';
 import { buildSeoMetadata, type AlternateLocale } from '@/lib/seo';
 import { WebsiteShell } from '@/components/website/layout/website-shell';
 import { ProductListPage } from '@/components/website/product/product-list-page';
-import { getActiveLanguages, getDefaultLanguage } from '@/server/services/language.service';
+import {
+  getCachedActiveLanguages,
+  getCachedDefaultLanguage,
+  getCachedPublicSiteInfo,
+  getCachedUiTranslationMap,
+} from '@/lib/data-cache';
 import {
   getPublicCategoryTree,
   getPublicTagList,
   getPublishedProductList,
   type ProductSortOption,
 } from '@/server/services/product-public.service';
-import { getPublicSiteInfo } from '@/server/services/settings-public.service';
-import { getUiTranslationMap } from '@/server/services/ui-translation.service';
 
 interface LocaleCategoryProductsPageProps {
   params: Promise<{ locale: string; categorySlug: string }>;
@@ -22,12 +25,12 @@ interface LocaleCategoryProductsPageProps {
 export async function generateMetadata({ params }: LocaleCategoryProductsPageProps): Promise<Metadata> {
   const { locale, categorySlug } = await params;
   const [defaultLanguage, activeLanguages] = await Promise.all([
-    getDefaultLanguage(),
-    getActiveLanguages(),
+    getCachedDefaultLanguage(),
+    getCachedActiveLanguages(),
   ]);
   const [data, siteInfo] = await Promise.all([
     getPublishedProductList(locale, defaultLanguage.code, { categorySlug }),
-    getPublicSiteInfo(locale, defaultLanguage.code),
+    getCachedPublicSiteInfo(locale, defaultLanguage.code),
   ]);
   const categoryName = data.category?.name ?? categorySlug;
   const activeLocales: AlternateLocale[] = activeLanguages.map((l) => ({
@@ -75,8 +78,8 @@ export default async function LocaleCategoryProductsPage({
     : 'newest';
 
   const [activeLanguages, defaultLanguage] = await Promise.all([
-    getActiveLanguages(),
-    getDefaultLanguage(),
+    getCachedActiveLanguages(),
+    getCachedDefaultLanguage(),
   ]);
   if (!new Set(activeLanguages.map((l) => l.code)).has(locale)) {
     notFound();
@@ -91,7 +94,7 @@ export default async function LocaleCategoryProductsPage({
     }),
     getPublicCategoryTree(locale, defaultLanguage.code),
     getPublicTagList(locale, defaultLanguage.code),
-    getUiTranslationMap(locale, defaultLanguage.code, UI_KEYS),
+    getCachedUiTranslationMap(locale, defaultLanguage.code, UI_KEYS),
   ]);
 
   if (!data.category) {

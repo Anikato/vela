@@ -4,12 +4,15 @@ import { notFound } from 'next/navigation';
 import { buildSeoMetadata, type AlternateLocale } from '@/lib/seo';
 import { WebsiteShell } from '@/components/website/layout/website-shell';
 import { SectionRenderer } from '@/components/website/sections/section-renderer';
-import { getActiveLanguages, getDefaultLanguage } from '@/server/services/language.service';
+import {
+  getCachedActiveLanguages,
+  getCachedDefaultLanguage,
+  getCachedPublicSiteInfo,
+} from '@/lib/data-cache';
 import {
   getPageSectionsForRender,
   getPublishedHomepagePageId,
 } from '@/server/services/section.service';
-import { getPublicSiteInfo } from '@/server/services/settings-public.service';
 
 interface LocaleHomePageProps {
   params: Promise<{ locale: string }>;
@@ -18,10 +21,10 @@ interface LocaleHomePageProps {
 export async function generateMetadata({ params }: LocaleHomePageProps): Promise<Metadata> {
   const { locale } = await params;
   const [defaultLanguage, activeLanguages] = await Promise.all([
-    getDefaultLanguage(),
-    getActiveLanguages(),
+    getCachedDefaultLanguage(),
+    getCachedActiveLanguages(),
   ]);
-  const siteInfo = await getPublicSiteInfo(locale, defaultLanguage.code);
+  const siteInfo = await getCachedPublicSiteInfo(locale, defaultLanguage.code);
   const activeLocales: AlternateLocale[] = activeLanguages.map((l) => ({
     code: l.code,
     isDefault: l.code === defaultLanguage.code,
@@ -44,8 +47,8 @@ export async function generateMetadata({ params }: LocaleHomePageProps): Promise
 export default async function LocaleHomePage({ params }: LocaleHomePageProps) {
   const { locale } = await params;
   const [activeLanguages, defaultLanguage] = await Promise.all([
-    getActiveLanguages(),
-    getDefaultLanguage(),
+    getCachedActiveLanguages(),
+    getCachedDefaultLanguage(),
   ]);
 
   const localeSet = new Set(activeLanguages.map((item) => item.code));

@@ -17,10 +17,10 @@ import {
   updateAttributeGroupAction,
 } from '@/server/actions/product-attribute.actions';
 import type {
+  Language,
   ProductAttributeEditorData,
   ProductOption,
-} from '@/server/services/product-attribute.service';
-import type { Language } from '@/server/services/language.service';
+} from '@/types/admin';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,

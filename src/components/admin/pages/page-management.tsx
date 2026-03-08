@@ -11,8 +11,7 @@ import {
   deletePageAction,
   updatePageAction,
 } from '@/server/actions/page.actions';
-import type { Language } from '@/server/services/language.service';
-import type { PageListItem } from '@/server/services/page.service';
+import type { Language, PageListItem } from '@/types/admin';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {

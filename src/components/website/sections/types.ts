@@ -25,6 +25,14 @@ export interface WebsiteSectionProductCard {
   } | null;
 }
 
+export interface WebsiteSectionCategoryCard {
+  id: string;
+  slug: string;
+  name: string;
+  imageUrl: string | null;
+  productCount: number;
+}
+
 export interface WebsiteSection {
   id: string;
   type: string;
@@ -44,6 +52,7 @@ export interface WebsiteSection {
   items: WebsiteSectionItem[];
   data?: {
     products?: WebsiteSectionProductCard[];
+    categories?: WebsiteSectionCategoryCard[];
   };
 }
 

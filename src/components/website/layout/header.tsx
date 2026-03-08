@@ -1,13 +1,18 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Home } from 'lucide-react';
 
 import { buildLocalizedPath } from '@/lib/i18n';
-import { getActiveLanguages, type Language } from '@/server/services/language.service';
 import {
-  getWebsiteNavigationTree,
-  type WebsiteNavigationNode,
-} from '@/server/services/navigation.service';
-import { getUiTranslationMap } from '@/server/services/ui-translation.service';
+  getCachedActiveLanguages,
+  getCachedNavigationTree,
+  getCachedCaptchaSiteKey,
+  getCachedPublicFormFields,
+  getCachedPublicSiteInfo,
+  getCachedUiTranslationMap,
+} from '@/lib/data-cache';
+import type { Language } from '@/server/services/language.service';
+import type { WebsiteNavigationNode } from '@/server/services/navigation.service';
 import { HeaderActions } from './header-actions';
 import { LanguageSwitcher } from './language-switcher';
 import { MobileNav } from './mobile-nav';
@@ -91,25 +96,38 @@ const HEADER_UI_KEYS = [
 ];
 
 export async function Header({ locale, defaultLocale }: HeaderProps) {
-  const [languages, navigationItems, uiMap] = await Promise.all([
-    getActiveLanguages(),
-    getWebsiteNavigationTree(locale, defaultLocale),
-    getUiTranslationMap(locale, defaultLocale, HEADER_UI_KEYS),
+  const [languages, navigationItems, uiMap, siteInfo, captchaSiteKey, customFormFields] = await Promise.all([
+    getCachedActiveLanguages(),
+    getCachedNavigationTree(locale, defaultLocale),
+    getCachedUiTranslationMap(locale, defaultLocale, HEADER_UI_KEYS),
+    getCachedPublicSiteInfo(locale, defaultLocale),
+    getCachedCaptchaSiteKey(),
+    getCachedPublicFormFields(locale, defaultLocale),
   ]);
 
   const localeOptions = mapLocaleOptions(languages);
   const searchPath = buildLocalizedPath('/search', locale, defaultLocale);
+  const homePath = locale === defaultLocale ? '/' : `/${locale}`;
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
       <div className="relative mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2">
-          <Link
-            href={locale === defaultLocale ? '/' : `/${locale}`}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border hover:bg-accent"
-            aria-label="home"
-          >
-            <Home className="h-4 w-4" />
+          <Link href={homePath} aria-label={siteInfo.siteName}>
+            {siteInfo.logoUrl ? (
+              <Image
+                src={siteInfo.logoUrl}
+                alt={siteInfo.siteName}
+                width={120}
+                height={36}
+                className="h-8 w-auto"
+                priority
+              />
+            ) : (
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border hover:bg-accent">
+                <Home className="h-4 w-4" />
+              </span>
+            )}
           </Link>
           <nav className="hidden items-center gap-1 md:flex">
             {navigationItems.map((item) => (
@@ -121,6 +139,8 @@ export async function Header({ locale, defaultLocale }: HeaderProps) {
         <div className="flex items-center gap-2">
           <HeaderActions
             searchPath={searchPath}
+            captchaSiteKey={captchaSiteKey}
+            customFormFields={customFormFields}
             uiLabels={{
               searchPlaceholder: uiMap['search.placeholder'] ?? 'Search...',
               basketTitle: uiMap['inquiry.basketTitle'] ?? 'Inquiry Basket',

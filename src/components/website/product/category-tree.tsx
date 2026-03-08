@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import type { PublicCategoryTreeNode } from '@/server/services/product-public.service';
+import type { PublicCategoryTreeNode } from '@/types/website';
 
 interface CategoryTreeProps {
   tree: PublicCategoryTreeNode[];
