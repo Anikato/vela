@@ -27,6 +27,7 @@ import {
   Mail,
   Code,
   Database,
+  ArrowRightLeft,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -60,13 +61,13 @@ export const navGroups: NavGroup[] = [
       { title: '分类管理', href: '/admin/categories', icon: FolderTree },
       { title: '标签管理', href: '/admin/tags', icon: Tags },
       { title: '页面管理', href: '/admin/pages', icon: FileText },
-      { title: '新闻管理', href: '/admin/news', icon: Newspaper, disabled: true },
+      { title: '新闻管理', href: '/admin/news', icon: Newspaper },
     ],
   },
   {
     label: '营销',
     items: [
-      { title: '询盘管理', href: '/admin/inquiries', icon: MessageSquare, disabled: true },
+      { title: '询盘管理', href: '/admin/inquiries', icon: MessageSquare },
       { title: '表单配置', href: '/admin/inquiries/form', icon: ClipboardList, disabled: true },
       { title: '数据统计', href: '/admin/inquiries/stats', icon: BarChart3, disabled: true },
     ],
@@ -75,14 +76,14 @@ export const navGroups: NavGroup[] = [
     label: '外观',
     items: [
       { title: '导航菜单', href: '/admin/navigation', icon: Navigation },
-      { title: '主题管理', href: '/admin/themes', icon: Palette, disabled: true },
+      { title: '主题管理', href: '/admin/themes', icon: Palette },
     ],
   },
   {
     label: '多语言',
     items: [
       { title: '语言管理', href: '/admin/languages', icon: Languages },
-      { title: 'UI 翻译', href: '/admin/translations/ui', icon: Globe, disabled: true },
+      { title: 'UI 翻译', href: '/admin/translations/ui', icon: Globe },
       {
         title: '内容翻译',
         href: '/admin/translations/content',
@@ -97,9 +98,10 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: '媒体库', href: '/admin/media', icon: Image },
       { title: '用户管理', href: '/admin/users', icon: Users },
-      { title: '站点设置', href: '/admin/settings', icon: Settings, disabled: true },
-      { title: '邮件配置', href: '/admin/settings/email', icon: Mail, disabled: true },
-      { title: '脚本注入', href: '/admin/settings/scripts', icon: Code, disabled: true },
+      { title: '站点设置', href: '/admin/settings', icon: Settings },
+      { title: '邮件配置', href: '/admin/settings/email', icon: Mail },
+      { title: '脚本注入', href: '/admin/settings/scripts', icon: Code },
+      { title: '重定向', href: '/admin/redirects', icon: ArrowRightLeft },
       {
         title: '导入导出',
         href: '/admin/settings/data',

@@ -5,10 +5,38 @@ import { auth } from '@/server/auth';
 
 const LOCALE_COOKIE_KEY = 'vela_locale';
 const LOCALE_CACHE_TTL_MS = 5 * 60 * 1000;
+const REDIRECT_CACHE_TTL_MS = 60 * 1000;
 const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 const FALLBACK_DEFAULT_LOCALE = 'en-US';
 
 const PUBLIC_FILE_REGEX = /\.[^/]+$/;
+
+let redirectCache: {
+  expiresAt: number;
+  data: Record<string, { toPath: string; statusCode: number }>;
+} | null = null;
+
+async function getRedirectMap(
+  request: NextRequest,
+): Promise<Record<string, { toPath: string; statusCode: number }>> {
+  if (redirectCache && redirectCache.expiresAt > Date.now()) {
+    return redirectCache.data;
+  }
+  try {
+    const url = new URL('/api/redirects', request.nextUrl.origin);
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) return {};
+    const payload = (await res.json()) as {
+      success?: boolean;
+      data?: Record<string, { toPath: string; statusCode: number }>;
+    };
+    const data = payload.success && payload.data ? payload.data : {};
+    redirectCache = { expiresAt: Date.now() + REDIRECT_CACHE_TTL_MS, data };
+    return data;
+  } catch {
+    return {};
+  }
+}
 
 let localeCache:
   | {
@@ -88,6 +116,13 @@ export default auth(async (request) => {
 
   if (isBypassedPath(pathname)) {
     return NextResponse.next();
+  }
+
+  const redirectMap = await getRedirectMap(request);
+  const match = redirectMap[pathname.toLowerCase()];
+  if (match) {
+    const target = new URL(match.toPath, request.nextUrl.origin);
+    return NextResponse.redirect(target, match.statusCode as 301 | 302 | 307 | 308);
   }
 
   const { defaultLocale, activeLocales } = await getLocaleConfig(request);

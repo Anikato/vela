@@ -1,11 +1,14 @@
 import Link from 'next/link';
 import { Home } from 'lucide-react';
 
+import { buildLocalizedPath } from '@/lib/i18n';
 import { getActiveLanguages, type Language } from '@/server/services/language.service';
 import {
   getWebsiteNavigationTree,
   type WebsiteNavigationNode,
 } from '@/server/services/navigation.service';
+import { getUiTranslationMap } from '@/server/services/ui-translation.service';
+import { HeaderActions } from './header-actions';
 import { LanguageSwitcher } from './language-switcher';
 import { MobileNav } from './mobile-nav';
 
@@ -67,13 +70,35 @@ function mapLocaleOptions(languages: Language[]) {
   }));
 }
 
+const HEADER_UI_KEYS = [
+  'search.placeholder',
+  'inquiry.basketTitle',
+  'inquiry.basketEmpty',
+  'inquiry.submitInquiry',
+  'inquiry.clearAll',
+  'common.close',
+  'inquiry.formTitle',
+  'inquiry.name',
+  'inquiry.email',
+  'inquiry.phone',
+  'inquiry.company',
+  'inquiry.country',
+  'inquiry.message',
+  'inquiry.submit',
+  'common.cancel',
+  'inquiry.success',
+  'inquiry.error',
+];
+
 export async function Header({ locale, defaultLocale }: HeaderProps) {
-  const [languages, navigationItems] = await Promise.all([
+  const [languages, navigationItems, uiMap] = await Promise.all([
     getActiveLanguages(),
     getWebsiteNavigationTree(locale, defaultLocale),
+    getUiTranslationMap(locale, defaultLocale, HEADER_UI_KEYS),
   ]);
 
   const localeOptions = mapLocaleOptions(languages);
+  const searchPath = buildLocalizedPath('/search', locale, defaultLocale);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
@@ -93,8 +118,32 @@ export async function Header({ locale, defaultLocale }: HeaderProps) {
           </nav>
         </div>
 
-        <div className="hidden md:block">
-          <LanguageSwitcher locales={localeOptions} defaultLocale={defaultLocale} />
+        <div className="flex items-center gap-2">
+          <HeaderActions
+            searchPath={searchPath}
+            uiLabels={{
+              searchPlaceholder: uiMap['search.placeholder'] ?? 'Search...',
+              basketTitle: uiMap['inquiry.basketTitle'] ?? 'Inquiry Basket',
+              basketEmpty: uiMap['inquiry.basketEmpty'] ?? 'Your inquiry basket is empty',
+              basketSubmit: uiMap['inquiry.submitInquiry'] ?? 'Submit Inquiry',
+              basketClear: uiMap['inquiry.clearAll'] ?? 'Clear All',
+              basketClose: uiMap['common.close'] ?? 'Close',
+              formTitle: uiMap['inquiry.formTitle'] ?? 'Send Inquiry',
+              formName: uiMap['inquiry.name'] ?? 'Name',
+              formEmail: uiMap['inquiry.email'] ?? 'Email',
+              formPhone: uiMap['inquiry.phone'] ?? 'Phone',
+              formCompany: uiMap['inquiry.company'] ?? 'Company',
+              formCountry: uiMap['inquiry.country'] ?? 'Country',
+              formMessage: uiMap['inquiry.message'] ?? 'Message',
+              formSubmit: uiMap['inquiry.submit'] ?? 'Submit',
+              formCancel: uiMap['common.cancel'] ?? 'Cancel',
+              formSuccess: uiMap['inquiry.success'] ?? 'Inquiry submitted successfully!',
+              formError: uiMap['inquiry.error'] ?? 'Failed to submit inquiry',
+            }}
+          />
+          <div className="hidden md:block">
+            <LanguageSwitcher locales={localeOptions} defaultLocale={defaultLocale} />
+          </div>
         </div>
 
         <MobileNav items={navigationItems} />

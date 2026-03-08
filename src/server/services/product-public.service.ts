@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, or } from 'drizzle-orm';
 
 import { getTranslation } from '@/lib/i18n';
 import { db } from '@/server/db';
@@ -14,6 +14,7 @@ import {
   productAttachments,
   productImages,
   productTags,
+  productTranslations,
   products,
   tags,
   tagTranslations,
@@ -112,6 +113,8 @@ export interface PublicCategorySummary {
   name: string;
 }
 
+export type ProductSortOption = 'newest' | 'popular' | 'name_asc' | 'name_desc';
+
 export interface PublicProductListResult {
   items: PublicProductCardItem[];
   total: number;
@@ -119,6 +122,30 @@ export interface PublicProductListResult {
   pageSize: number;
   totalPages: number;
   category: PublicCategorySummary | null;
+}
+
+export interface PublicCategoryTreeNode {
+  id: string;
+  slug: string;
+  name: string;
+  productCount: number;
+  children: PublicCategoryTreeNode[];
+}
+
+export interface PublicTagItem {
+  id: string;
+  slug: string;
+  name: string;
+  productCount: number;
+}
+
+export interface PublicProductSearchResult {
+  items: PublicProductCardItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  query: string;
 }
 
 export async function getPublishedProductDetailBySlug(
@@ -574,6 +601,8 @@ export async function getPublishedProductList(
   defaultLocale: string,
   options: {
     categorySlug?: string;
+    tagSlug?: string;
+    sort?: ProductSortOption;
     page?: number;
     pageSize?: number;
   } = {},
@@ -582,57 +611,57 @@ export async function getPublishedProductList(
   const pageSize = Math.max(1, Math.min(48, Math.floor(options.pageSize ?? 12)));
 
   const normalizedCategorySlug = options.categorySlug?.trim().toLowerCase();
+  const normalizedTagSlug = options.tagSlug?.trim().toLowerCase();
   const category = normalizedCategorySlug
     ? await getPublicCategoryBySlug(normalizedCategorySlug, locale, defaultLocale)
     : null;
 
   if (normalizedCategorySlug && !category) {
-    return {
-      items: [],
-      total: 0,
-      page,
-      pageSize,
-      totalPages: 0,
-      category: null,
-    };
+    return { items: [], total: 0, page, pageSize, totalPages: 0, category: null };
   }
 
-  let filteredIds: string[] | null = null;
+  let filteredIds: Set<string> | null = null;
+
   if (category) {
     const primaryRows = await db
       .select({ id: products.id })
       .from(products)
-      .where(
-        and(eq(products.status, 'published'), eq(products.primaryCategoryId, category.id)),
-      );
+      .where(and(eq(products.status, 'published'), eq(products.primaryCategoryId, category.id)));
     const additionalRows = await db
       .select({ id: productCategories.productId })
       .from(productCategories)
       .innerJoin(products, eq(productCategories.productId, products.id))
-      .where(
-        and(eq(productCategories.categoryId, category.id), eq(products.status, 'published')),
-      );
+      .where(and(eq(productCategories.categoryId, category.id), eq(products.status, 'published')));
 
-    filteredIds = Array.from(
-      new Set([
-        ...primaryRows.map((item) => item.id),
-        ...additionalRows.map((item) => item.id),
-      ]),
-    );
-    if (filteredIds.length === 0) {
-      return {
-        items: [],
-        total: 0,
-        page,
-        pageSize,
-        totalPages: 0,
-        category,
-      };
+    filteredIds = new Set([
+      ...primaryRows.map((item) => item.id),
+      ...additionalRows.map((item) => item.id),
+    ]);
+  }
+
+  if (normalizedTagSlug) {
+    const tagRows = await db
+      .select({ productId: productTags.productId })
+      .from(productTags)
+      .innerJoin(tags, eq(productTags.tagId, tags.id))
+      .innerJoin(products, eq(productTags.productId, products.id))
+      .where(and(eq(tags.slug, normalizedTagSlug), eq(products.status, 'published')));
+
+    const tagProductIds = new Set(tagRows.map((item) => item.productId));
+    if (filteredIds) {
+      filteredIds = new Set([...filteredIds].filter((id) => tagProductIds.has(id)));
+    } else {
+      filteredIds = tagProductIds;
     }
   }
 
-  const whereCondition = filteredIds
-    ? and(eq(products.status, 'published'), inArray(products.id, filteredIds))
+  if (filteredIds && filteredIds.size === 0) {
+    return { items: [], total: 0, page, pageSize, totalPages: 0, category };
+  }
+
+  const idArray = filteredIds ? [...filteredIds] : null;
+  const whereCondition = idArray
+    ? and(eq(products.status, 'published'), inArray(products.id, idArray))
     : eq(products.status, 'published');
 
   const [{ total: totalCount }] = await db
@@ -649,17 +678,16 @@ export async function getPublishedProductList(
 
   const offset = (page - 1) * pageSize;
 
+  const sortOption = options.sort ?? 'newest';
+  const orderByClause = buildOrderBy(sortOption);
+
   const rows = await db.query.products.findMany({
     where: whereCondition,
     with: {
       translations: true,
-      primaryCategory: {
-        with: {
-          translations: true,
-        },
-      },
+      primaryCategory: { with: { translations: true } },
     },
-    orderBy: [desc(products.sortOrder), desc(products.createdAt)],
+    orderBy: orderByClause,
     limit: pageSize,
     offset,
   });
@@ -668,23 +696,48 @@ export async function getPublishedProductList(
     return { items: [], total, page, pageSize, totalPages, category };
   }
 
-  const mediaIds = rows
-    .map((item) => item.featuredImageId)
-    .filter((id): id is string => Boolean(id));
-  const mediaRows =
-    mediaIds.length > 0
-      ? await db.select().from(media).where(inArray(media.id, mediaIds))
-      : [];
+  const items = await mapProductRowsToCards(rows, locale, defaultLocale);
+
+  return { items, total, page, pageSize, totalPages, category };
+}
+
+function buildOrderBy(sort: ProductSortOption) {
+  switch (sort) {
+    case 'popular':
+      return [desc(products.viewCount), desc(products.createdAt)];
+    case 'name_asc':
+      return [asc(products.slug)];
+    case 'name_desc':
+      return [desc(products.slug)];
+    case 'newest':
+    default:
+      return [desc(products.sortOrder), desc(products.createdAt)];
+  }
+}
+
+async function mapProductRowsToCards(
+  rows: Array<{
+    id: string;
+    slug: string;
+    sku: string;
+    featuredImageId: string | null;
+    translations: Array<{ locale: string; name: string | null; shortDescription: string | null; [key: string]: unknown }>;
+    primaryCategory: {
+      slug: string;
+      translations: Array<{ locale: string; name: string | null; [key: string]: unknown }>;
+    };
+  }>,
+  locale: string,
+  defaultLocale: string,
+): Promise<PublicProductCardItem[]> {
+  const mediaIds = rows.map((item) => item.featuredImageId).filter((id): id is string => Boolean(id));
+  const mediaRows = mediaIds.length > 0 ? await db.select().from(media).where(inArray(media.id, mediaIds)) : [];
   const mediaMap = new Map(mediaRows.map((item) => [item.id, item]));
   const storage = getStorageAdapter();
 
-  const items: PublicProductCardItem[] = rows.map((item) => {
+  return rows.map((item) => {
     const translated = getTranslation(item.translations, locale, defaultLocale);
-    const translatedCategory = getTranslation(
-      item.primaryCategory.translations,
-      locale,
-      defaultLocale,
-    );
+    const translatedCategory = getTranslation(item.primaryCategory.translations, locale, defaultLocale);
     const featuredMedia = item.featuredImageId ? mediaMap.get(item.featuredImageId) : null;
 
     return {
@@ -694,24 +747,157 @@ export async function getPublishedProductList(
       primaryCategoryName: translatedCategory?.name ?? item.primaryCategory.slug,
       sku: item.sku,
       name: translated?.name ?? item.sku,
-      shortDescription:
-        typeof translated?.shortDescription === 'string' ? translated.shortDescription : null,
+      shortDescription: typeof translated?.shortDescription === 'string' ? translated.shortDescription : null,
       featuredImage: featuredMedia
-        ? {
-            id: featuredMedia.id,
-            url: storage.getPublicUrl(featuredMedia.filename),
-            alt: featuredMedia.alt,
-          }
+        ? { id: featuredMedia.id, url: storage.getPublicUrl(featuredMedia.filename), alt: featuredMedia.alt }
         : null,
     };
   });
+}
 
-  return {
-    items,
-    total,
-    page,
-    pageSize,
-    totalPages,
-    category,
-  };
+/** 获取前台分类树（仅启用分类 + 每个分类的已发布产品数） */
+export async function getPublicCategoryTree(
+  locale: string,
+  defaultLocale: string,
+): Promise<PublicCategoryTreeNode[]> {
+  const allCategories = await db.query.categories.findMany({
+    where: eq(categories.isActive, true),
+    with: { translations: true },
+    orderBy: [asc(categories.sortOrder), asc(categories.createdAt)],
+  });
+
+  const primaryCountRows = await db
+    .select({ categoryId: products.primaryCategoryId, cnt: count() })
+    .from(products)
+    .where(eq(products.status, 'published'))
+    .groupBy(products.primaryCategoryId);
+  const primaryCountMap = new Map(primaryCountRows.map((r) => [r.categoryId, r.cnt]));
+
+  const additionalCountRows = await db
+    .select({ categoryId: productCategories.categoryId, cnt: count() })
+    .from(productCategories)
+    .innerJoin(products, eq(productCategories.productId, products.id))
+    .where(eq(products.status, 'published'))
+    .groupBy(productCategories.categoryId);
+  const additionalCountMap = new Map(additionalCountRows.map((r) => [r.categoryId, r.cnt]));
+
+  const nodeMap = new Map<string, PublicCategoryTreeNode>();
+  for (const cat of allCategories) {
+    const translated = getTranslation(cat.translations, locale, defaultLocale);
+    nodeMap.set(cat.id, {
+      id: cat.id,
+      slug: cat.slug,
+      name: translated?.name ?? cat.slug,
+      productCount: (primaryCountMap.get(cat.id) ?? 0) + (additionalCountMap.get(cat.id) ?? 0),
+      children: [],
+    });
+  }
+
+  const roots: PublicCategoryTreeNode[] = [];
+  for (const cat of allCategories) {
+    const node = nodeMap.get(cat.id)!;
+    if (cat.parentId && nodeMap.has(cat.parentId)) {
+      nodeMap.get(cat.parentId)!.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+
+  return roots;
+}
+
+/** 获取前台标签列表（仅有已发布产品的标签） */
+export async function getPublicTagList(
+  locale: string,
+  defaultLocale: string,
+): Promise<PublicTagItem[]> {
+  const tagCountRows = await db
+    .select({ tagId: productTags.tagId, cnt: count() })
+    .from(productTags)
+    .innerJoin(products, eq(productTags.productId, products.id))
+    .where(eq(products.status, 'published'))
+    .groupBy(productTags.tagId);
+
+  if (tagCountRows.length === 0) return [];
+
+  const tagIds = tagCountRows.map((r) => r.tagId);
+  const countMap = new Map(tagCountRows.map((r) => [r.tagId, r.cnt]));
+
+  const tagRows = await db.query.tags.findMany({
+    where: inArray(tags.id, tagIds),
+    with: { translations: true },
+    orderBy: [asc(tags.slug)],
+  });
+
+  return tagRows.map((tag) => {
+    const translated = getTranslation(tag.translations, locale, defaultLocale);
+    return {
+      id: tag.id,
+      slug: tag.slug,
+      name: translated?.name ?? tag.slug,
+      productCount: countMap.get(tag.id) ?? 0,
+    };
+  });
+}
+
+/** 搜索已发布产品（按产品名称所有语言 + SKU 匹配） */
+export async function searchPublishedProducts(
+  locale: string,
+  defaultLocale: string,
+  options: { query: string; page?: number; pageSize?: number },
+): Promise<PublicProductSearchResult> {
+  const q = options.query.trim();
+  const page = Math.max(1, Math.floor(options.page ?? 1));
+  const pageSize = Math.max(1, Math.min(48, Math.floor(options.pageSize ?? 12)));
+
+  if (!q) {
+    return { items: [], total: 0, page, pageSize, totalPages: 0, query: q };
+  }
+
+  const pattern = `%${q}%`;
+
+  const nameMatchRows = await db
+    .select({ productId: productTranslations.productId })
+    .from(productTranslations)
+    .innerJoin(products, eq(productTranslations.productId, products.id))
+    .where(and(eq(products.status, 'published'), ilike(productTranslations.name, pattern)));
+
+  const skuMatchRows = await db
+    .select({ id: products.id })
+    .from(products)
+    .where(and(eq(products.status, 'published'), ilike(products.sku, pattern)));
+
+  const matchedIds = Array.from(
+    new Set([
+      ...nameMatchRows.map((r) => r.productId),
+      ...skuMatchRows.map((r) => r.id),
+    ]),
+  );
+
+  const total = matchedIds.length;
+  const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
+
+  if (total === 0) {
+    return { items: [], total: 0, page, pageSize, totalPages: 0, query: q };
+  }
+
+  const offset = (page - 1) * pageSize;
+  const pageIds = matchedIds.slice(offset, offset + pageSize);
+
+  if (pageIds.length === 0) {
+    return { items: [], total, page, pageSize, totalPages, query: q };
+  }
+
+  const rows = await db.query.products.findMany({
+    where: inArray(products.id, pageIds),
+    with: {
+      translations: true,
+      primaryCategory: { with: { translations: true } },
+    },
+    orderBy: [desc(products.sortOrder), desc(products.createdAt)],
+  });
+
+  const items = await mapProductRowsToCards(rows, locale, defaultLocale);
+
+  return { items, total, page, pageSize, totalPages, query: q };
 }

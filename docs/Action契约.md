@@ -971,6 +971,404 @@ targetGroupId: string; // uuid
 
 ---
 
+## 新闻管理模块
+
+> 文件：`server/actions/news.actions.ts`  
+> 新增日期：2026-03-08
+
+### 1) `getNewsListAction(locale, defaultLocale)` — 后台新闻列表
+
+- **权限**：需登录
+- **入参**：`locale: string`, `defaultLocale: string`
+- **返回**：
+
+```typescript
+{
+  success: true,
+  data: Array<{
+    id: string;
+    slug: string;
+    status: string;
+    coverImage: { id: string; url: string; alt: string | null } | null;
+    publishedAt: Date | null;
+    title: string;
+    summary: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }>
+}
+```
+
+### 2) `createNewsAction(input)` — 后台创建新闻
+
+- **权限**：需登录
+- **入参**：
+
+```typescript
+{
+  slug: string;               // kebab-case
+  status?: 'draft' | 'published';
+  coverImageId?: string | null;
+  publishedAt?: string | null;
+  translations: Array<{
+    locale: string;
+    title?: string;
+    summary?: string;
+    content?: string;         // 富文本 HTML
+    seoTitle?: string;
+    seoDescription?: string;
+  }>;  // min 1
+}
+```
+
+- **返回**：`{ success: true, data: { id: string } }` 或错误
+
+### 3) `updateNewsAction(id, input)` — 后台更新新闻
+
+- **权限**：需登录
+- **入参**：`id: string`（UUID），`input` 同创建（所有字段可选）
+- **返回**：`{ success: true, data: void }` 或错误
+
+### 4) `deleteNewsAction(id)` — 后台删除新闻
+
+- **权限**：需登录
+- **入参**：`id: string`（UUID）
+- **返回**：`{ success: true, data: void }` 或错误
+
+---
+
+## 询盘管理模块
+
+> 文件：`server/actions/inquiry.actions.ts`  
+> 新增日期：2026-03-08
+
+### 1) `submitInquiryAction(input)` — 前台提交询盘
+
+- **权限**：无需登录（公开接口）
+- **入参**：
+
+```typescript
+{
+  name: string;          // 1-200
+  email: string;         // email 格式
+  phone?: string;        // max 50
+  company?: string;      // max 200
+  country?: string;      // max 100
+  message: string;       // 1-5000
+  sourceUrl?: string;    // max 500
+  locale?: string;
+  deviceType?: string;
+  products: Array<{
+    productId?: string | null; // UUID（可为空，已删除产品）
+    snapshot: { name: string; sku: string; imageUrl?: string };
+    quantity: number;          // >= 1
+  }>;
+}
+```
+
+- **返回**：
+
+```typescript
+// 成功
+{ success: true, data: { inquiryNumber: string } }
+// 校验失败
+{ success: false, error: Record<string, string[]> }
+// 业务错误
+{ success: false, error: string }
+```
+
+### 2) `getInquiryListAction(params)` — 后台询盘列表
+
+- **权限**：需登录
+- **入参**：
+
+```typescript
+{
+  status?: 'new' | 'read' | 'closed' | 'spam';
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+```
+
+- **返回**：
+
+```typescript
+{
+  success: true,
+  data: {
+    items: Array<{
+      id: string;
+      inquiryNumber: string;
+      name: string;
+      email: string;
+      company: string | null;
+      country: string | null;
+      status: string;
+      productCount: number;
+      createdAt: Date;
+    }>;
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  }
+}
+```
+
+### 3) `getInquiryDetailAction(id)` — 后台询盘详情
+
+- **权限**：需登录
+- **入参**：`id: string`（UUID）
+- **返回**：
+
+```typescript
+{
+  success: true,
+  data: {
+    id: string;
+    inquiryNumber: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    company: string | null;
+    country: string | null;
+    message: string;
+    status: string;
+    sourceUrl: string | null;
+    ipAddress: string | null;
+    userAgent: string | null;
+    locale: string | null;
+    deviceType: string | null;
+    internalNotes: string | null;
+    customFields: Record<string, unknown> | null;
+    createdAt: Date;
+    updatedAt: Date;
+    products: Array<{
+      id: string;
+      productId: string | null;
+      snapshot: { name: string; sku: string; imageUrl?: string };
+      quantity: number;
+    }>;
+  }
+}
+```
+
+### 4) `updateInquiryStatusAction(id, status)` — 后台更新状态
+
+- **权限**：需登录
+- **入参**：`id: string`, `status: 'new' | 'read' | 'closed' | 'spam'`
+- **返回**：`{ success: true, data: void }` 或 `{ success: false, error: string }`
+
+### 5) `updateInquiryNotesAction(id, notes)` — 后台更新备注
+
+- **权限**：需登录
+- **入参**：`id: string`, `notes: string`
+- **返回**：`{ success: true, data: void }` 或 `{ success: false, error: string }`
+
+### 6) `batchUpdateInquiryStatusAction(ids, status)` — 后台批量更新状态
+
+- **权限**：需登录
+- **入参**：`ids: string[]`（UUID 数组）, `status: 'new' | 'read' | 'closed' | 'spam'`
+- **返回**：`{ success: true, data: { count: number } }` 或 `{ success: false, error: string }`
+
+### 7) `getInquiryStatsAction()` — 后台询盘统计
+
+- **权限**：需登录
+- **入参**：无
+- **返回**：
+
+```typescript
+{
+  success: true,
+  data: {
+    total: number;
+    new: number;
+    read: number;
+    closed: number;
+    spam: number;
+  }
+}
+```
+
+---
+
+## UI 翻译管理模块
+
+> 文件：`src/server/actions/ui-translation.actions.ts`
+
+### 1) `getUiTranslationListAction(input)`
+
+- **权限**：需管理员登录
+- **入参**：
+  ```typescript
+  {
+    category?: string;      // 按分类过滤
+    search?: string;        // 搜索键名
+    missingOnly?: boolean;  // 仅显示缺失翻译的键
+    locale?: string;        // 检查特定语言的缺失
+    page?: number;          // 页码（默认 1）
+    pageSize?: number;      // 每页数量（默认 50，最大 200）
+  }
+  ```
+- **返回**：`ActionResult<{ items: UiTranslationRow[]; total: number }>`
+
+### 2) `getCategoriesAction()`
+
+- **权限**：需管理员登录
+- **入参**：无
+- **返回**：`ActionResult<CategoryStat[]>`（含 category、keyCount、translatedCount、totalSlots）
+
+### 3) `upsertTranslationAction(input)`
+
+- **权限**：需管理员登录
+- **入参**：
+  ```typescript
+  { key: string; category: string; translations: Record<string, string> }
+  ```
+- **返回**：`ActionResult<void>`
+
+### 4) `createTranslationKeyAction(input)`
+
+- **权限**：需管理员登录
+- **入参**：
+  ```typescript
+  { key: string; translations: Record<string, string> }
+  ```
+  - key 格式：`category.keyName`（自动提取分类）
+- **返回**：`ActionResult<void>`
+
+### 5) `deleteTranslationKeyAction(input)`
+
+- **权限**：需管理员登录
+- **入参**：`{ key: string }`
+- **返回**：`ActionResult<void>`
+
+### 6) `renameTranslationKeyAction(input)`
+
+- **权限**：需管理员登录
+- **入参**：`{ oldKey: string; newKey: string }`
+- **返回**：`ActionResult<void>`
+
+---
+
+## 主题管理模块
+
+> 文件：`src/server/actions/theme.actions.ts`
+
+### 1) `getThemeListAction()`
+
+- **权限**：需管理员登录
+- **入参**：无
+- **返回**：`ActionResult<ThemeListItem[]>`
+
+### 2) `createThemeAction(input)`
+
+- **权限**：需管理员登录
+- **入参**：
+  ```typescript
+  { name: string; config?: ThemeConfig }
+  ```
+- **返回**：`ActionResult<ThemeListItem>`
+
+### 3) `updateThemeAction(input)`
+
+- **权限**：需管理员登录
+- **入参**：
+  ```typescript
+  { id: string; name?: string; config?: ThemeConfig }
+  ```
+- **返回**：`ActionResult<ThemeListItem>`
+
+### 4) `activateThemeAction(input)`
+
+- **权限**：需管理员登录
+- **入参**：`{ id: string }`
+- **返回**：`ActionResult<void>`
+- **说明**：激活指定主题，自动停用其他主题
+
+### 5) `deleteThemeAction(input)`
+
+- **权限**：需管理员登录
+- **入参**：`{ id: string }`
+- **返回**：`ActionResult<void>`
+- **约束**：预设主题和激活中的主题不可删除
+
+---
+
+## 系统设置模块
+
+> 文件：`src/server/actions/settings.actions.ts`
+
+### 1) `getSiteSettingsAction()`
+
+- **权限**：需管理员登录
+- **入参**：无
+- **返回**：`ActionResult<SiteSettingsData>`（含全部站点设置 + 媒体 URL + 多语言翻译）
+
+### 2) `updateSiteSettingsAction(input)`
+
+- **权限**：需管理员登录
+- **入参**：站点基础字段（logoId、contactEmail、socialFacebook 等，均可选）
+- **返回**：`ActionResult<void>`
+
+### 3) `updateSmtpSettingsAction(input)`
+
+- **权限**：需管理员登录
+- **入参**：SMTP 配置字段（smtpHost、smtpPort、smtpUser、smtpPassword、smtpFromName、smtpFromEmail、notificationEmails）
+- **返回**：`ActionResult<void>`
+
+### 4) `updateScriptsSettingsAction(input)`
+
+- **权限**：需管理员登录
+- **入参**：`{ gaId?, gtmId?, fbPixelId?, headScripts?, bodyScripts? }`
+- **返回**：`ActionResult<void>`
+
+### 5) `upsertSettingTranslationAction(input)`
+
+- **权限**：需管理员登录
+- **入参**：`{ locale, siteName?, siteDescription?, companyName?, slogan?, address?, footerText?, copyright?, contactCta?, seoKeywords? }`
+- **返回**：`ActionResult<void>`
+
+### 6) `sendTestEmailAction()`
+
+- **权限**：需管理员登录
+- **入参**：无
+- **返回**：`ActionResult<void>`
+- **说明**：发送测试邮件（当前为占位，待 nodemailer 集成）
+
+---
+
+## 重定向管理模块
+
+> 文件：`src/server/actions/redirect.actions.ts`
+
+### 1) `getRedirectListAction()`
+
+- **权限**：需管理员登录
+- **入参**：无
+- **返回**：`ActionResult<Redirect[]>`
+
+### 2) `createRedirectAction(input)`
+
+- **权限**：需管理员登录
+- **入参**：`{ fromPath: string, toPath: string, statusCode?: number, isActive?: boolean }`
+- **返回**：`ActionResult<Redirect>`
+
+### 3) `updateRedirectAction(input)`
+
+- **权限**：需管理员登录
+- **入参**：`{ id: number, fromPath?: string, toPath?: string, statusCode?: number, isActive?: boolean }`
+- **返回**：`ActionResult<Redirect>`
+
+### 4) `deleteRedirectAction(id)`
+
+- **权限**：需管理员登录
+- **入参**：`id: number`
+- **返回**：`ActionResult<null>`
+
+---
+
 ## 废弃 Action 规范（Deprecated）
 
 当 Action 进入弃用流程时，必须在本文档明确标记，格式如下：

@@ -13,3 +13,4 @@ export * from './news';
 export * from './translations';
 export * from './themes';
 export * from './settings';
+export * from './redirects';
