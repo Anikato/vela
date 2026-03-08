@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+*_id_rsa
+*_id_ed25519
 .cursor/
 .pnpm-store/
 
