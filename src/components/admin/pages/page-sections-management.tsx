@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowDown, ArrowUp, Layers, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -66,6 +67,12 @@ function buildTranslationForm(locales: Language[]): TranslationForm[] {
     secondaryButtonLink: '',
   }));
 }
+
+/* 支持子项管理的区块类型 */
+const itemBasedBlockTypes = new Set([
+  'hero', 'feature_grid', 'carousel_banner', 'two_column', 'timeline',
+  'team', 'partner_logos', 'image_gallery', 'stats', 'testimonials', 'faq',
+]);
 
 /* 需要使用富文本编辑器的区块类型（content 字段支持 HTML） */
 const richTextBlockTypes = new Set([
@@ -303,6 +310,14 @@ export function PageSectionsManagement({
                         <Pencil className="mr-1 h-3.5 w-3.5" />
                         编辑
                       </Button>
+                      {itemBasedBlockTypes.has(item.type) && (
+                        <Button asChild variant="ghost" size="sm" className="h-8">
+                          <Link href={`/admin/pages/${pageId}/sections/${item.id}/items`}>
+                            <Layers className="mr-1 h-3.5 w-3.5" />
+                            子项
+                          </Link>
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"

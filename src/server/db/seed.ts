@@ -686,7 +686,21 @@ async function seed() {
     ? { id: aboutPageId }
     : await db.query.pages.findFirst({ where: eq(pages.slug, 'about') });
 
+  // Check existing navigation items to avoid duplicates
+  const existingNavItems = await db.select({
+    id: navigationItems.id,
+    sortOrder: navigationItems.sortOrder,
+  }).from(navigationItems);
+
+  const existingSortOrders = new Set(existingNavItems.map((n) => n.sortOrder));
+
   for (const nav of navData) {
+    // Skip if a navigation item with this sort order already exists
+    if (existingSortOrders.has(nav.sort)) {
+      console.log(`   ⏭ ${nav.enLabel} (sort=${nav.sort}) already exists, skipped`);
+      continue;
+    }
+
     const values: Record<string, unknown> = {
       type: nav.type,
       url: nav.url,
