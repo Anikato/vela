@@ -1,0 +1,134 @@
+import { NextResponse, type NextRequest } from 'next/server';
+
+import { matchLocale } from '@/lib/i18n';
+import { auth } from '@/server/auth';
+
+const LOCALE_COOKIE_KEY = 'vela_locale';
+const LOCALE_CACHE_TTL_MS = 5 * 60 * 1000;
+const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+const FALLBACK_DEFAULT_LOCALE = 'en-US';
+
+const PUBLIC_FILE_REGEX = /\.[^/]+$/;
+
+let localeCache:
+  | {
+      expiresAt: number;
+      data: {
+        defaultLocale: string;
+        activeLocales: string[];
+      };
+    }
+  | null = null;
+
+async function getLocaleConfig(request: NextRequest): Promise<{
+  defaultLocale: string;
+  activeLocales: string[];
+}> {
+  if (localeCache && localeCache.expiresAt > Date.now()) {
+    return localeCache.data;
+  }
+
+  try {
+    const url = new URL('/api/i18n/locales', request.nextUrl.origin);
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Fetch locales failed: ${response.status}`);
+
+    const payload = (await response.json()) as {
+      success?: boolean;
+      data?: { defaultLocale?: string; activeLocales?: string[] };
+    };
+
+    if (!payload.success || !payload.data?.defaultLocale || !payload.data.activeLocales?.length) {
+      throw new Error('Invalid locales payload');
+    }
+
+    const data = {
+      defaultLocale: payload.data.defaultLocale,
+      activeLocales: payload.data.activeLocales,
+    };
+    localeCache = {
+      expiresAt: Date.now() + LOCALE_CACHE_TTL_MS,
+      data,
+    };
+    return data;
+  } catch (error) {
+    console.error('Load locale config failed in middleware, fallback to default locale:', error);
+    return {
+      defaultLocale: FALLBACK_DEFAULT_LOCALE,
+      activeLocales: [FALLBACK_DEFAULT_LOCALE],
+    };
+  }
+}
+
+function setLocaleCookie(response: NextResponse, locale: string): void {
+  response.cookies.set(LOCALE_COOKIE_KEY, locale, {
+    path: '/',
+    httpOnly: false,
+    sameSite: 'lax',
+    maxAge: LOCALE_COOKIE_MAX_AGE,
+  });
+}
+
+function isBypassedPath(pathname: string): boolean {
+  if (pathname.startsWith('/api')) return true;
+  if (pathname.startsWith('/_next')) return true;
+  if (pathname === '/favicon.ico') return true;
+  if (pathname === '/robots.txt') return true;
+  if (pathname === '/sitemap.xml') return true;
+  if (PUBLIC_FILE_REGEX.test(pathname)) return true;
+  return false;
+}
+
+export default auth(async (request) => {
+  const { pathname, search } = request.nextUrl;
+
+  if (pathname.startsWith('/admin')) {
+    return NextResponse.next();
+  }
+
+  if (isBypassedPath(pathname)) {
+    return NextResponse.next();
+  }
+
+  const { defaultLocale, activeLocales } = await getLocaleConfig(request);
+  const localeSet = new Set(activeLocales);
+  const pathSegments = pathname.split('/').filter(Boolean);
+  const firstSegment = pathSegments[0];
+
+  if (firstSegment && localeSet.has(firstSegment)) {
+    // 默认语言不带前缀：/en-US/about -> /about
+    if (firstSegment === defaultLocale) {
+      const restPath = `/${pathSegments.slice(1).join('/')}`;
+      const normalizedPath = restPath === '/' ? '/' : restPath;
+      const redirectUrl = new URL(`${normalizedPath}${search}`, request.nextUrl.origin);
+      const response = NextResponse.redirect(redirectUrl, 308);
+      setLocaleCookie(response, defaultLocale);
+      return response;
+    }
+
+    const response = NextResponse.next();
+    setLocaleCookie(response, firstSegment);
+    return response;
+  }
+
+  const cookieLocale = request.cookies.get(LOCALE_COOKIE_KEY)?.value;
+  const preferredLocale = cookieLocale && localeSet.has(cookieLocale)
+    ? cookieLocale
+    : matchLocale(request.headers.get('accept-language'), activeLocales, defaultLocale);
+
+  // 默认语言保持无前缀；非默认语言重定向到带前缀 URL
+  if (preferredLocale !== defaultLocale) {
+    const redirectUrl = new URL(`/${preferredLocale}${pathname}${search}`, request.nextUrl.origin);
+    const response = NextResponse.redirect(redirectUrl, 307);
+    setLocaleCookie(response, preferredLocale);
+    return response;
+  }
+
+  const response = NextResponse.next();
+  setLocaleCookie(response, defaultLocale);
+  return response;
+});
+
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)'],
+};
