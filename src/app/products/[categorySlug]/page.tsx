@@ -4,6 +4,7 @@ import { WebsiteShell } from '@/components/website/layout/website-shell';
 import { ProductListPage } from '@/components/website/product/product-list-page';
 import { getDefaultLanguage } from '@/server/services/language.service';
 import { getPublishedProductList } from '@/server/services/product-public.service';
+import { getUiTranslationMap } from '@/server/services/ui-translation.service';
 
 interface CategoryProductsPageProps {
   params: Promise<{ categorySlug: string }>;
@@ -20,10 +21,13 @@ export default async function CategoryProductsPage({
 
   const defaultLanguage = await getDefaultLanguage();
   const locale = defaultLanguage.code;
-  const data = await getPublishedProductList(locale, defaultLanguage.code, {
-    categorySlug,
-    page: Number.isFinite(pageNum) ? pageNum : 1,
-  });
+  const [data, uiMap] = await Promise.all([
+    getPublishedProductList(locale, defaultLanguage.code, {
+      categorySlug,
+      page: Number.isFinite(pageNum) ? pageNum : 1,
+    }),
+    getUiTranslationMap(locale, defaultLanguage.code, ['nav.home', 'nav.products']),
+  ]);
 
   if (!data.category) {
     notFound();
@@ -36,6 +40,10 @@ export default async function CategoryProductsPage({
         defaultLocale={defaultLanguage.code}
         data={data}
         basePath={`/products/${categorySlug}`}
+        uiLabels={{
+          home: uiMap['nav.home'] ?? 'Home',
+          products: uiMap['nav.products'] ?? 'Products',
+        }}
       />
     </WebsiteShell>
   );

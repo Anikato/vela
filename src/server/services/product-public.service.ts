@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
 
 import { getTranslation } from '@/lib/i18n';
 import { db } from '@/server/db';
@@ -631,10 +631,26 @@ export async function getPublishedProductList(
     }
   }
 
+  const whereCondition = filteredIds
+    ? and(eq(products.status, 'published'), inArray(products.id, filteredIds))
+    : eq(products.status, 'published');
+
+  const [{ total: totalCount }] = await db
+    .select({ total: count() })
+    .from(products)
+    .where(whereCondition);
+
+  const total = totalCount;
+  const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
+
+  if (total === 0) {
+    return { items: [], total: 0, page, pageSize, totalPages: 0, category };
+  }
+
+  const offset = (page - 1) * pageSize;
+
   const rows = await db.query.products.findMany({
-    where: filteredIds
-      ? and(eq(products.status, 'published'), inArray(products.id, filteredIds))
-      : eq(products.status, 'published'),
+    where: whereCondition,
     with: {
       translations: true,
       primaryCategory: {
@@ -644,26 +660,15 @@ export async function getPublishedProductList(
       },
     },
     orderBy: [desc(products.sortOrder), desc(products.createdAt)],
+    limit: pageSize,
+    offset,
   });
 
-  const total = rows.length;
-  const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
-  const start = (page - 1) * pageSize;
-  const end = start + pageSize;
-  const pagedRows = rows.slice(start, end);
-
-  if (!pagedRows.length) {
-    return {
-      items: [],
-      total,
-      page,
-      pageSize,
-      totalPages,
-      category,
-    };
+  if (!rows.length) {
+    return { items: [], total, page, pageSize, totalPages, category };
   }
 
-  const mediaIds = pagedRows
+  const mediaIds = rows
     .map((item) => item.featuredImageId)
     .filter((id): id is string => Boolean(id));
   const mediaRows =
@@ -673,7 +678,7 @@ export async function getPublishedProductList(
   const mediaMap = new Map(mediaRows.map((item) => [item.id, item]));
   const storage = getStorageAdapter();
 
-  const items: PublicProductCardItem[] = pagedRows.map((item) => {
+  const items: PublicProductCardItem[] = rows.map((item) => {
     const translated = getTranslation(item.translations, locale, defaultLocale);
     const translatedCategory = getTranslation(
       item.primaryCategory.translations,

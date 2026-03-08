@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, max } from 'drizzle-orm';
 
 import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
 import { getTranslation } from '@/lib/i18n';
@@ -417,38 +417,42 @@ export async function createProduct(input: CreateProductInput): Promise<ProductW
 
   const sortOrder =
     input.sortOrder ??
-    (await db.select().from(products)).length;
+    ((await db.select({ val: max(products.sortOrder) }).from(products))[0].val ?? -1) + 1;
 
-  const [created] = await db
-    .insert(products)
-    .values({
-      sku,
-      slug,
-      primaryCategoryId: input.primaryCategoryId,
-      status: input.status ?? 'draft',
-      sortOrder,
-      featuredImageId: input.featuredImageId ?? null,
-      videoLinks: input.videoLinks ?? [],
-      moq: input.moq ?? null,
-      leadTimeDays: input.leadTimeDays ?? null,
-      tradeTerms: normalizeNullableText(input.tradeTerms) ?? null,
-      paymentTerms: normalizeNullableText(input.paymentTerms) ?? null,
-      packagingDetails: normalizeNullableText(input.packagingDetails) ?? null,
-      customizationSupport: input.customizationSupport ?? false,
-    })
-    .returning();
+  const createdId = await db.transaction(async (tx) => {
+    const [created] = await tx
+      .insert(products)
+      .values({
+        sku,
+        slug,
+        primaryCategoryId: input.primaryCategoryId,
+        status: input.status ?? 'draft',
+        sortOrder,
+        featuredImageId: input.featuredImageId ?? null,
+        videoLinks: input.videoLinks ?? [],
+        moq: input.moq ?? null,
+        leadTimeDays: input.leadTimeDays ?? null,
+        tradeTerms: normalizeNullableText(input.tradeTerms) ?? null,
+        paymentTerms: normalizeNullableText(input.paymentTerms) ?? null,
+        packagingDetails: normalizeNullableText(input.packagingDetails) ?? null,
+        customizationSupport: input.customizationSupport ?? false,
+      })
+      .returning();
 
-  await upsertProductTranslations(created.id, input.translations);
-  await replaceAdditionalCategories(
-    created.id,
-    created.primaryCategoryId,
-    input.additionalCategoryIds ?? [],
-  );
-  await replaceProductTags(created.id, input.tagIds ?? []);
-  await replaceProductImages(created.id, input.galleryImageIds ?? []);
-  await replaceProductAttachments(created.id, input.attachmentIds ?? []);
+    await upsertProductTranslations(created.id, input.translations);
+    await replaceAdditionalCategories(
+      created.id,
+      created.primaryCategoryId,
+      input.additionalCategoryIds ?? [],
+    );
+    await replaceProductTags(created.id, input.tagIds ?? []);
+    await replaceProductImages(created.id, input.galleryImageIds ?? []);
+    await replaceProductAttachments(created.id, input.attachmentIds ?? []);
 
-  return getProductById(created.id);
+    return created.id;
+  });
+
+  return getProductById(createdId);
 }
 
 export async function updateProduct(
@@ -486,54 +490,56 @@ export async function updateProduct(
 
   const nextPrimaryCategoryId = input.primaryCategoryId ?? existing.primaryCategoryId;
 
-  await db
-    .update(products)
-    .set({
-      sku,
-      slug,
-      primaryCategoryId: nextPrimaryCategoryId,
-      status: input.status ?? existing.status,
-      sortOrder: input.sortOrder ?? existing.sortOrder,
-      featuredImageId:
-        input.featuredImageId === undefined ? existing.featuredImageId : input.featuredImageId,
-      videoLinks: input.videoLinks ?? existing.videoLinks,
-      moq: input.moq === undefined ? existing.moq : input.moq,
-      leadTimeDays: input.leadTimeDays === undefined ? existing.leadTimeDays : input.leadTimeDays,
-      tradeTerms:
-        input.tradeTerms === undefined
-          ? existing.tradeTerms
-          : normalizeNullableText(input.tradeTerms) ?? null,
-      paymentTerms:
-        input.paymentTerms === undefined
-          ? existing.paymentTerms
-          : normalizeNullableText(input.paymentTerms) ?? null,
-      packagingDetails:
-        input.packagingDetails === undefined
-          ? existing.packagingDetails
-          : normalizeNullableText(input.packagingDetails) ?? null,
-      customizationSupport:
-        input.customizationSupport === undefined
-          ? existing.customizationSupport
-          : input.customizationSupport,
-      updatedAt: new Date(),
-    })
-    .where(eq(products.id, id));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(products)
+      .set({
+        sku,
+        slug,
+        primaryCategoryId: nextPrimaryCategoryId,
+        status: input.status ?? existing.status,
+        sortOrder: input.sortOrder ?? existing.sortOrder,
+        featuredImageId:
+          input.featuredImageId === undefined ? existing.featuredImageId : input.featuredImageId,
+        videoLinks: input.videoLinks ?? existing.videoLinks,
+        moq: input.moq === undefined ? existing.moq : input.moq,
+        leadTimeDays: input.leadTimeDays === undefined ? existing.leadTimeDays : input.leadTimeDays,
+        tradeTerms:
+          input.tradeTerms === undefined
+            ? existing.tradeTerms
+            : normalizeNullableText(input.tradeTerms) ?? null,
+        paymentTerms:
+          input.paymentTerms === undefined
+            ? existing.paymentTerms
+            : normalizeNullableText(input.paymentTerms) ?? null,
+        packagingDetails:
+          input.packagingDetails === undefined
+            ? existing.packagingDetails
+            : normalizeNullableText(input.packagingDetails) ?? null,
+        customizationSupport:
+          input.customizationSupport === undefined
+            ? existing.customizationSupport
+            : input.customizationSupport,
+        updatedAt: new Date(),
+      })
+      .where(eq(products.id, id));
 
-  if (input.translations) {
-    await upsertProductTranslations(id, input.translations);
-  }
-  if (input.additionalCategoryIds) {
-    await replaceAdditionalCategories(id, nextPrimaryCategoryId, input.additionalCategoryIds);
-  }
-  if (input.tagIds) {
-    await replaceProductTags(id, input.tagIds);
-  }
-  if (input.galleryImageIds) {
-    await replaceProductImages(id, input.galleryImageIds);
-  }
-  if (input.attachmentIds) {
-    await replaceProductAttachments(id, input.attachmentIds);
-  }
+    if (input.translations) {
+      await upsertProductTranslations(id, input.translations);
+    }
+    if (input.additionalCategoryIds) {
+      await replaceAdditionalCategories(id, nextPrimaryCategoryId, input.additionalCategoryIds);
+    }
+    if (input.tagIds) {
+      await replaceProductTags(id, input.tagIds);
+    }
+    if (input.galleryImageIds) {
+      await replaceProductImages(id, input.galleryImageIds);
+    }
+    if (input.attachmentIds) {
+      await replaceProductAttachments(id, input.attachmentIds);
+    }
+  });
 
   return getProductById(id);
 }

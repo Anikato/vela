@@ -7,6 +7,7 @@ import {
   getPublishedProductDetailBySlug,
   getRelatedPublishedProducts,
 } from '@/server/services/product-public.service';
+import { getUiTranslationMap } from '@/server/services/ui-translation.service';
 
 interface LocaleProductDetailRoutePageProps {
   params: Promise<{ locale: string; categorySlug: string; productSlug: string }>;
@@ -47,11 +48,14 @@ export default async function LocaleProductDetailRoutePage({
   const currentCategoryName = isPrimary
     ? product.primaryCategory.name
     : (matchedAdditional?.name ?? product.primaryCategory.name);
-  const relatedProducts = await getRelatedPublishedProducts(locale, defaultLanguage.code, {
-    productId: product.id,
-    primaryCategoryId: product.primaryCategory.id,
-    limit: 6,
-  });
+  const [relatedProducts, uiMap] = await Promise.all([
+    getRelatedPublishedProducts(locale, defaultLanguage.code, {
+      productId: product.id,
+      primaryCategoryId: product.primaryCategory.id,
+      limit: 6,
+    }),
+    getUiTranslationMap(locale, defaultLanguage.code, ['nav.home', 'nav.products']),
+  ]);
 
   return (
     <WebsiteShell locale={locale} defaultLocale={defaultLanguage.code}>
@@ -61,6 +65,10 @@ export default async function LocaleProductDetailRoutePage({
         product={product}
         currentCategoryName={currentCategoryName}
         relatedProducts={relatedProducts}
+        uiLabels={{
+          home: uiMap['nav.home'] ?? 'Home',
+          products: uiMap['nav.products'] ?? 'Products',
+        }}
       />
     </WebsiteShell>
   );

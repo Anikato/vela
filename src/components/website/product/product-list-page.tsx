@@ -10,25 +10,29 @@ interface ProductListPageProps {
   defaultLocale: string;
   data: PublicProductListResult;
   basePath: string;
+  uiLabels: {
+    home: string;
+    products: string;
+  };
 }
 
 function buildPageHref(basePath: string, page: number): string {
   return page <= 1 ? basePath : `${basePath}?page=${page}`;
 }
 
-export function ProductListPage({ locale, defaultLocale, data, basePath }: ProductListPageProps) {
+export function ProductListPage({ locale, defaultLocale, data, basePath, uiLabels }: ProductListPageProps) {
   const homeHref = buildLocalizedPath('/', locale, defaultLocale);
   const productsHref = buildLocalizedPath('/products', locale, defaultLocale);
 
   const crumbs = data.category
     ? [
-        { label: '⌂', href: homeHref },
-        { label: '●', href: productsHref },
+        { label: uiLabels.home, href: homeHref },
+        { label: uiLabels.products, href: productsHref },
         { label: data.category.name },
       ]
     : [
-        { label: '⌂', href: homeHref },
-        { label: '●' },
+        { label: uiLabels.home, href: homeHref },
+        { label: uiLabels.products },
       ];
 
   return (

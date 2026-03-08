@@ -14,6 +14,10 @@ interface ProductDetailPageProps {
   product: PublicProductDetail;
   currentCategoryName: string;
   relatedProducts: PublicProductCardItem[];
+  uiLabels: {
+    home: string;
+    products: string;
+  };
 }
 
 export function ProductDetailPage({
@@ -22,6 +26,7 @@ export function ProductDetailPage({
   product,
   currentCategoryName,
   relatedProducts,
+  uiLabels,
 }: ProductDetailPageProps) {
   const homeHref = buildLocalizedPath('/', locale, defaultLocale);
   const productsHref = buildLocalizedPath('/products', locale, defaultLocale);
@@ -35,8 +40,8 @@ export function ProductDetailPage({
     <div>
       <Breadcrumb
         items={[
-          { label: '⌂', href: homeHref },
-          { label: '●', href: productsHref },
+          { label: uiLabels.home, href: homeHref },
+          { label: uiLabels.products, href: productsHref },
           { label: currentCategoryName, href: categoryHref },
           { label: product.name },
         ]}

@@ -4,6 +4,7 @@ import { WebsiteShell } from '@/components/website/layout/website-shell';
 import { ProductListPage } from '@/components/website/product/product-list-page';
 import { getActiveLanguages, getDefaultLanguage } from '@/server/services/language.service';
 import { getPublishedProductList } from '@/server/services/product-public.service';
+import { getUiTranslationMap } from '@/server/services/ui-translation.service';
 
 interface LocaleCategoryProductsPageProps {
   params: Promise<{ locale: string; categorySlug: string }>;
@@ -26,10 +27,13 @@ export default async function LocaleCategoryProductsPage({
     notFound();
   }
 
-  const data = await getPublishedProductList(locale, defaultLanguage.code, {
-    categorySlug,
-    page: Number.isFinite(pageNum) ? pageNum : 1,
-  });
+  const [data, uiMap] = await Promise.all([
+    getPublishedProductList(locale, defaultLanguage.code, {
+      categorySlug,
+      page: Number.isFinite(pageNum) ? pageNum : 1,
+    }),
+    getUiTranslationMap(locale, defaultLanguage.code, ['nav.home', 'nav.products']),
+  ]);
   if (!data.category) {
     notFound();
   }
@@ -41,6 +45,10 @@ export default async function LocaleCategoryProductsPage({
         defaultLocale={defaultLanguage.code}
         data={data}
         basePath={`/${locale}/products/${categorySlug}`}
+        uiLabels={{
+          home: uiMap['nav.home'] ?? 'Home',
+          products: uiMap['nav.products'] ?? 'Products',
+        }}
       />
     </WebsiteShell>
   );
