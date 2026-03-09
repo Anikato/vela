@@ -215,7 +215,7 @@ export function DataManagement({ defaultLocale }: DataManagementProps) {
                   setActiveAction('news');
                   const result = await exportNewsCsvAction(defaultLocale);
                   if (result.success) {
-                    downloadCsv(result.data, `news-${dateStr}.csv`);
+                    downloadCsv(result.data, `news-${new Date().toISOString().slice(0, 10)}.csv`);
                     toast.success('新闻导出完成');
                   } else {
                     toast.error(typeof result.error === 'string' ? result.error : '导出失败');
