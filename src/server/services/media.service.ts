@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 
-import { and, desc, eq } from 'drizzle-orm';
+import { and, count, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import sharp from 'sharp';
 
 import { UPLOAD_LIMITS } from '@/lib/constants';
@@ -34,6 +34,8 @@ export interface UploadMediaResult extends Media {
 export interface ListMediaParams {
   page?: number;
   pageSize?: number;
+  search?: string;
+  typeFilter?: 'image' | 'document' | 'all';
 }
 
 function ensureMimeTypeAllowed(mimeType: string): void {
@@ -196,30 +198,70 @@ export async function uploadMedia(input: UploadMediaInput): Promise<UploadMediaR
 }
 
 /**
- * 分页获取媒体列表（按创建时间倒序）。
+ * 分页获取媒体列表（按创建时间倒序），支持搜索和类型筛选。
  */
 export async function listMedia(params: ListMediaParams = {}): Promise<{
   items: Array<Media & { url: string }>;
+  total: number;
   page: number;
   pageSize: number;
+  totalPages: number;
 }> {
   const page = Math.max(1, params.page ?? 1);
   const pageSize = Math.max(1, Math.min(100, params.pageSize ?? 20));
   const offset = (page - 1) * pageSize;
   const storage = getStorageAdapter();
 
+  const conditions = [];
+  if (params.search?.trim()) {
+    const pattern = `%${params.search.trim()}%`;
+    conditions.push(
+      or(
+        ilike(media.originalName, pattern),
+        ilike(media.alt, pattern),
+      ),
+    );
+  }
+  if (params.typeFilter === 'image') {
+    conditions.push(sql`${media.mimeType} like 'image/%'`);
+  } else if (params.typeFilter === 'document') {
+    conditions.push(sql`${media.mimeType} not like 'image/%'`);
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const [{ total: totalCount }] = await db
+    .select({ total: count() })
+    .from(media)
+    .where(whereClause);
+
+  const total = Number(totalCount);
+  const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
+
   const rows = await db
     .select()
     .from(media)
+    .where(whereClause)
     .orderBy(desc(media.createdAt))
     .limit(pageSize)
     .offset(offset);
 
   return {
     items: rows.map((row) => ({ ...row, url: storage.getPublicUrl(row.filename) })),
+    total,
     page,
     pageSize,
+    totalPages,
   };
+}
+
+/**
+ * 更新媒体文件的 ALT 文本。
+ */
+export async function updateMediaAlt(id: string, alt: string): Promise<void> {
+  const [target] = await db.select().from(media).where(eq(media.id, id));
+  if (!target) throw new NotFoundError('Media', id);
+  await db.update(media).set({ alt: alt.trim() || null }).where(eq(media.id, id));
 }
 
 /**

@@ -3,10 +3,10 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Copy, ImageIcon, Loader2, Trash2, Upload } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, FileText, ImageIcon, Loader2, Pencil, Search, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { deleteMediaAction } from '@/server/actions/media.actions';
+import { deleteMediaAction, updateMediaAltAction } from '@/server/actions/media.actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -41,8 +41,26 @@ export interface MediaItem {
   url: string;
 }
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+
 interface MediaManagementProps {
   initialItems: MediaItem[];
+  initialTotal: number;
+  initialPage: number;
+  initialTotalPages: number;
 }
 
 function formatBytes(bytes: number): string {
@@ -62,24 +80,24 @@ function formatDate(dateString: string): string {
   }).format(date);
 }
 
-export function MediaManagement({ initialItems }: MediaManagementProps) {
+export function MediaManagement({ initialItems, initialTotal, initialPage, initialTotalPages }: MediaManagementProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [items, setItems] = useState<MediaItem[]>(initialItems);
+  const [total, setTotal] = useState(initialTotal);
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  const [totalPages, setTotalPages] = useState(initialTotalPages);
   const [altText, setAltText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<MediaItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-
-  const sortedItems = useMemo(
-    () =>
-      [...items].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      ),
-    [items],
-  );
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'image' | 'document'>('all');
+  const [editAltTarget, setEditAltTarget] = useState<MediaItem | null>(null);
+  const [editAltValue, setEditAltValue] = useState('');
+  const [isSavingAlt, setIsSavingAlt] = useState(false);
 
   async function uploadFiles(fileList: FileList | File[]) {
     const files = Array.from(fileList);
@@ -204,6 +222,27 @@ export function MediaManagement({ initialItems }: MediaManagementProps) {
     }
   }
 
+  async function handleSaveAlt() {
+    if (!editAltTarget) return;
+    setIsSavingAlt(true);
+    try {
+      const result = await updateMediaAltAction(editAltTarget.id, editAltValue);
+      if (!result.success) {
+        toast.error(typeof result.error === 'string' ? result.error : '保存失败');
+        return;
+      }
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === editAltTarget.id ? { ...item, alt: editAltValue.trim() || null } : item,
+        ),
+      );
+      toast.success('ALT 文本已更新');
+      setEditAltTarget(null);
+    } finally {
+      setIsSavingAlt(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* ─── 拖拽上传区域 ─── */}
@@ -220,7 +259,7 @@ export function MediaManagement({ initialItems }: MediaManagementProps) {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+          accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain"
           multiple
           disabled={isUploading}
           className="hidden"
@@ -253,7 +292,7 @@ export function MediaManagement({ initialItems }: MediaManagementProps) {
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            支持 jpg / png / webp / gif / svg，单文件最大 10MB
+            支持 jpg / png / webp / gif / svg / pdf / doc / xls / txt，单文件最大 10MB
           </p>
         </div>
 
@@ -266,6 +305,51 @@ export function MediaManagement({ initialItems }: MediaManagementProps) {
             className="max-w-xs"
           />
         </div>
+      </div>
+
+      {/* ─── 搜索和筛选 ─── */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-1 items-center gap-2">
+          <div className="relative flex-1 sm:max-w-xs">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="搜索文件名 / ALT 文本…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const params = new URLSearchParams();
+                  if (searchQuery.trim()) params.set('search', searchQuery.trim());
+                  if (typeFilter !== 'all') params.set('type', typeFilter);
+                  const qs = params.toString();
+                  router.push(`/admin/media${qs ? `?${qs}` : ''}`);
+                }
+              }}
+              className="pl-9"
+            />
+          </div>
+          <Select
+            value={typeFilter}
+            onValueChange={(v) => {
+              setTypeFilter(v as 'all' | 'image' | 'document');
+              const params = new URLSearchParams();
+              if (searchQuery.trim()) params.set('search', searchQuery.trim());
+              if (v !== 'all') params.set('type', v);
+              const qs = params.toString();
+              router.push(`/admin/media${qs ? `?${qs}` : ''}`);
+            }}
+          >
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="全部类型" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部类型</SelectItem>
+              <SelectItem value="image">图片</SelectItem>
+              <SelectItem value="document">文档</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <p className="text-xs text-muted-foreground">共 {total} 个文件</p>
       </div>
 
       <div className="rounded-lg border border-border/50 bg-card">
@@ -303,7 +387,7 @@ export function MediaManagement({ initialItems }: MediaManagementProps) {
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center">
-                          <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                          <FileText className="h-5 w-5 text-muted-foreground" />
                         </div>
                       )}
                     </div>
@@ -319,6 +403,19 @@ export function MediaManagement({ initialItems }: MediaManagementProps) {
                   <TableCell>{formatDate(item.createdAt)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => {
+                          setEditAltTarget(item);
+                          setEditAltValue(item.alt ?? '');
+                        }}
+                        aria-label="编辑 ALT"
+                        title="编辑 ALT"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -345,6 +442,71 @@ export function MediaManagement({ initialItems }: MediaManagementProps) {
           </TableBody>
         </Table>
       </div>
+
+      {/* ─── 分页 ─── */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            第 {currentPage} / {totalPages} 页
+          </p>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage <= 1}
+              onClick={() => {
+                const params = new URLSearchParams();
+                params.set('page', String(currentPage - 1));
+                if (searchQuery.trim()) params.set('search', searchQuery.trim());
+                if (typeFilter !== 'all') params.set('type', typeFilter);
+                router.push(`/admin/media?${params.toString()}`);
+              }}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= totalPages}
+              onClick={() => {
+                const params = new URLSearchParams();
+                params.set('page', String(currentPage + 1));
+                if (searchQuery.trim()) params.set('search', searchQuery.trim());
+                if (typeFilter !== 'all') params.set('type', typeFilter);
+                router.push(`/admin/media?${params.toString()}`);
+              }}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ─── ALT 编辑对话框 ─── */}
+      <Dialog open={!!editAltTarget} onOpenChange={(open) => !open && setEditAltTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>编辑 ALT 文本</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">{editAltTarget?.originalName}</p>
+            <Input
+              placeholder="输入 ALT 文本（描述图片内容，用于 SEO 和无障碍访问）"
+              value={editAltValue}
+              onChange={(e) => setEditAltValue(e.target.value)}
+              disabled={isSavingAlt}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditAltTarget(null)} disabled={isSavingAlt}>
+              取消
+            </Button>
+            <Button onClick={handleSaveAlt} disabled={isSavingAlt}>
+              保存
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog
         open={!!deleteTarget}

@@ -6,7 +6,7 @@ import { inquiries, inquiryProducts } from '@/server/db/schema';
 
 // ─── Types ───
 
-export const INQUIRY_STATUSES = ['new', 'read', 'closed', 'spam'] as const;
+export const INQUIRY_STATUSES = ['new', 'read', 'replied', 'closed', 'spam'] as const;
 export type InquiryStatus = (typeof INQUIRY_STATUSES)[number];
 
 export interface InquiryProductSnapshot {
@@ -282,6 +282,7 @@ export async function getInquiryStats(): Promise<{
   total: number;
   new: number;
   read: number;
+  replied: number;
   closed: number;
   spam: number;
 }> {
@@ -296,6 +297,7 @@ export async function getInquiryStats(): Promise<{
     total: rows.reduce((sum, r) => sum + r.cnt, 0),
     new: statsMap.get('new') ?? 0,
     read: statsMap.get('read') ?? 0,
+    replied: statsMap.get('replied') ?? 0,
     closed: statsMap.get('closed') ?? 0,
     spam: statsMap.get('spam') ?? 0,
   };

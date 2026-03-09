@@ -25,7 +25,7 @@ export const inquiries = pgTable('inquiries', {
   company: varchar('company', { length: 200 }),
   country: varchar('country', { length: 100 }),
   message: text('message').notNull(),
-  status: varchar('status', { length: 20 }).default('new').notNull(), // new | read | closed | spam
+  status: varchar('status', { length: 20 }).default('new').notNull(), // new | read | replied | closed | spam
   sourceUrl: varchar('source_url', { length: 500 }),
   ipAddress: varchar('ip_address', { length: 50 }),
   userAgent: text('user_agent'),

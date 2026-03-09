@@ -6,6 +6,9 @@ import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
 import { auth } from '@/server/auth';
 import type { ActionResult } from '@/types';
 import {
+  batchDeleteProducts,
+  batchUpdateProductStatus,
+  cloneProduct,
   createProduct,
   deleteProduct,
   getProductList,
@@ -172,6 +175,67 @@ export async function deleteProductAction(id: string): Promise<ActionResult<void
   try {
     await deleteProduct(parsedId.data);
     return { success: true, data: undefined };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+export async function batchUpdateProductStatusAction(
+  ids: string[],
+  status: string,
+): Promise<ActionResult<{ count: number }>> {
+  const unauthed = await ensureAuthed();
+  if (unauthed) return unauthed;
+
+  const parsedIds = z.array(z.string().uuid()).safeParse(ids);
+  if (!parsedIds.success) return { success: false, error: 'Invalid product ids' };
+
+  const parsedStatus = productStatusSchema.safeParse(status);
+  if (!parsedStatus.success) return { success: false, error: 'Invalid status' };
+
+  try {
+    const count = await batchUpdateProductStatus(parsedIds.data, parsedStatus.data);
+    return { success: true, data: { count } };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+export async function batchDeleteProductsAction(
+  ids: string[],
+): Promise<ActionResult<{ count: number }>> {
+  const unauthed = await ensureAuthed();
+  if (unauthed) return unauthed;
+
+  const parsedIds = z.array(z.string().uuid()).safeParse(ids);
+  if (!parsedIds.success) return { success: false, error: 'Invalid product ids' };
+
+  try {
+    const count = await batchDeleteProducts(parsedIds.data);
+    return { success: true, data: { count } };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+export async function cloneProductAction(
+  sourceId: string,
+  newSku: string,
+  newSlug: string,
+): Promise<ActionResult<ProductWithRelations>> {
+  const unauthed = await ensureAuthed();
+  if (unauthed) return unauthed;
+
+  const parsedId = z.string().uuid().safeParse(sourceId);
+  if (!parsedId.success) return { success: false, error: 'Invalid product id' };
+
+  if (!newSku.trim() || !newSlug.trim()) {
+    return { success: false, error: 'SKU 和 Slug 不能为空' };
+  }
+
+  try {
+    const data = await cloneProduct(parsedId.data, newSku.trim(), newSlug.trim().toLowerCase());
+    return { success: true, data };
   } catch (error) {
     return handleError(error);
   }

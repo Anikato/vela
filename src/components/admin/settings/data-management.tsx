@@ -24,6 +24,7 @@ import {
   exportProductsCsvAction,
   getProductCsvTemplateAction,
   exportInquiriesCsvAction,
+  exportNewsCsvAction,
 } from '@/server/actions/export.actions';
 import {
   previewProductCsvAction,
@@ -207,6 +208,30 @@ export function DataManagement({ defaultLocale }: DataManagementProps) {
                 <Download className="mr-2 h-4 w-4" />
               )}
               导出询盘 CSV
+            </Button>
+            <Button
+              onClick={() =>
+                startTransition(async () => {
+                  setActiveAction('news');
+                  const result = await exportNewsCsvAction(defaultLocale);
+                  if (result.success) {
+                    downloadCsv(result.data, `news-${dateStr}.csv`);
+                    toast.success('新闻导出完成');
+                  } else {
+                    toast.error(typeof result.error === 'string' ? result.error : '导出失败');
+                  }
+                  setActiveAction(null);
+                })
+              }
+              disabled={isPending}
+              size="sm"
+            >
+              {activeAction === 'news' ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="mr-2 h-4 w-4" />
+              )}
+              导出新闻 CSV
             </Button>
           </div>
         </div>

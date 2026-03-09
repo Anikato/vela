@@ -548,3 +548,105 @@ export async function deleteProduct(id: string): Promise<void> {
   await getProductById(id);
   await db.delete(products).where(eq(products.id, id));
 }
+
+export async function batchUpdateProductStatus(
+  ids: string[],
+  status: ProductStatus,
+): Promise<number> {
+  if (ids.length === 0) return 0;
+  await db
+    .update(products)
+    .set({ status, updatedAt: new Date() })
+    .where(inArray(products.id, ids));
+  return ids.length;
+}
+
+export async function batchDeleteProducts(ids: string[]): Promise<number> {
+  if (ids.length === 0) return 0;
+  await db.delete(products).where(inArray(products.id, ids));
+  return ids.length;
+}
+
+export async function cloneProduct(
+  sourceId: string,
+  newSku: string,
+  newSlug: string,
+): Promise<ProductWithRelations> {
+  const source = await getProductById(sourceId);
+
+  return db.transaction(async (tx) => {
+    const [created] = await tx
+      .insert(products)
+      .values({
+        sku: newSku,
+        slug: newSlug,
+        primaryCategoryId: source.primaryCategoryId,
+        status: 'draft',
+        featuredImageId: source.featuredImageId,
+        videoLinks: source.videoLinks,
+        sortOrder: source.sortOrder,
+        moq: source.moq,
+        leadTimeDays: source.leadTimeDays,
+        tradeTerms: source.tradeTerms,
+        paymentTerms: source.paymentTerms,
+        packagingDetails: source.packagingDetails,
+        customizationSupport: source.customizationSupport,
+        templateConfig: source.templateConfig,
+      })
+      .returning();
+
+    if (source.translations.length > 0) {
+      await tx.insert(productTranslations).values(
+        source.translations.map((t) => ({
+          productId: created.id,
+          locale: t.locale,
+          name: t.name ? `${t.name} (副本)` : null,
+          shortDescription: t.shortDescription,
+          description: t.description,
+          seoTitle: t.seoTitle,
+          seoDescription: t.seoDescription,
+        })),
+      );
+    }
+
+    if (source.additionalCategoryIds.length > 0) {
+      await tx.insert(productCategories).values(
+        source.additionalCategoryIds.map((cid) => ({
+          productId: created.id,
+          categoryId: cid,
+        })),
+      );
+    }
+
+    if (source.tagIds.length > 0) {
+      await tx.insert(productTags).values(
+        source.tagIds.map((tid) => ({
+          productId: created.id,
+          tagId: tid,
+        })),
+      );
+    }
+
+    if (source.galleryImageIds.length > 0) {
+      await tx.insert(productImages).values(
+        source.galleryImageIds.map((mid, i) => ({
+          productId: created.id,
+          mediaId: mid,
+          sortOrder: i,
+        })),
+      );
+    }
+
+    if (source.attachmentIds.length > 0) {
+      await tx.insert(productAttachments).values(
+        source.attachmentIds.map((mid, i) => ({
+          productId: created.id,
+          mediaId: mid,
+          sortOrder: i,
+        })),
+      );
+    }
+
+    return getProductById(created.id);
+  });
+}

@@ -5,7 +5,7 @@ import { z } from 'zod';
 import type { ActionResult } from '@/types';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 import { auth } from '@/server/auth';
-import { deleteMediaById } from '@/server/services/media.service';
+import { deleteMediaById, updateMediaAlt } from '@/server/services/media.service';
 
 const mediaIdSchema = z.string().uuid();
 
@@ -37,6 +37,27 @@ export async function deleteMediaAction(id: string): Promise<ActionResult<void>>
 
   try {
     await deleteMediaById(parsedId.data);
+    return { success: true, data: undefined };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+/**
+ * 更新媒体 ALT 文本
+ */
+export async function updateMediaAltAction(
+  id: string,
+  alt: string,
+): Promise<ActionResult<void>> {
+  const session = await auth();
+  if (!session?.user) return { success: false, error: 'Unauthorized' };
+
+  const parsedId = mediaIdSchema.safeParse(id);
+  if (!parsedId.success) return { success: false, error: 'Invalid media id' };
+
+  try {
+    await updateMediaAlt(parsedId.data, alt);
     return { success: true, data: undefined };
   } catch (error) {
     return handleError(error);

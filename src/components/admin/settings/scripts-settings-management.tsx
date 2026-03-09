@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { Save } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +23,7 @@ interface Props {
 
 export function ScriptsSettingsManagement({ initialSettings }: Props) {
   const [isPending, startTransition] = useTransition();
-  const [saved, setSaved] = useState(false);
+  
 
   const [gaId, setGaId] = useState(initialSettings.gaId ?? '');
   const [gtmId, setGtmId] = useState(initialSettings.gtmId ?? '');
@@ -46,8 +47,9 @@ export function ScriptsSettingsManagement({ initialSettings }: Props) {
         bodyScripts: bodyScripts || null,
       });
       if (res.success) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+        toast.success('脚本配置已保存');
+      } else {
+        toast.error(typeof res.error === 'string' ? res.error : '保存失败');
       }
     });
   }
@@ -61,7 +63,7 @@ export function ScriptsSettingsManagement({ initialSettings }: Props) {
             配置分析工具和自定义脚本，会自动注入到前台页面
           </p>
         </div>
-        {saved && <span className="text-sm text-green-400">已保存</span>}
+        
       </div>
 
       <div className="rounded-lg border bg-card p-6 space-y-6">

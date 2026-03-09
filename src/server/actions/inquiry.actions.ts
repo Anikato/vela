@@ -225,7 +225,7 @@ export async function batchUpdateInquiryStatusAction(
 
 /** 后台：询盘统计 */
 export async function getInquiryStatsAction(): Promise<
-  ActionResult<{ total: number; new: number; read: number; closed: number; spam: number }>
+  ActionResult<{ total: number; new: number; read: number; replied: number; closed: number; spam: number }>
 > {
   const session = await auth();
   if (!session?.user) return { success: false, error: 'Unauthorized' };

@@ -47,6 +47,7 @@ export default async function AdminDashboardPage() {
     { label: '媒体文件', value: mediaCount, icon: Image, href: '/admin/media', color: 'text-orange-400' },
     { label: '总询盘', value: inquiryStats.total, icon: MessageSquare, href: '/admin/inquiries', color: 'text-cyan-400' },
     { label: '新询盘', value: inquiryStats.new, icon: TrendingUp, href: '/admin/inquiries', color: 'text-red-400' },
+    { label: '已回复', value: inquiryStats.replied, icon: Eye, href: '/admin/inquiries', color: 'text-emerald-400' },
   ];
 
   const STATUS_LABELS: Record<string, string> = {

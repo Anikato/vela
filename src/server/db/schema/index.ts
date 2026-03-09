@@ -14,3 +14,4 @@ export * from './translations';
 export * from './themes';
 export * from './settings';
 export * from './redirects';
+export * from './audit-logs';

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { Save, ImageIcon, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -115,7 +116,7 @@ function ImagePicker({
 export function SiteSettingsManagement({ initialSettings, languages, mediaItems }: Props) {
   const [settings, setSettings] = useState(initialSettings);
   const [isPending, startTransition] = useTransition();
-  const [saved, setSaved] = useState(false);
+  
 
   const [logoUrl, setLogoUrl] = useState(settings.logoUrl);
   const [logoDarkUrl, setLogoDarkUrl] = useState(settings.logoDarkUrl);
@@ -181,8 +182,9 @@ export function SiteSettingsManagement({ initialSettings, languages, mediaItems 
         mapEmbedCode: settings.mapEmbedCode,
       });
       if (res.success) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+        toast.success('设置已保存');
+      } else {
+        toast.error(typeof res.error === 'string' ? res.error : '保存失败');
       }
     });
   }
@@ -203,8 +205,9 @@ export function SiteSettingsManagement({ initialSettings, languages, mediaItems 
         seoKeywords: t.seoKeywords,
       });
       if (res.success) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+        toast.success('翻译已保存');
+      } else {
+        toast.error(typeof res.error === 'string' ? res.error : '保存失败');
       }
     });
   }
@@ -220,9 +223,7 @@ export function SiteSettingsManagement({ initialSettings, languages, mediaItems 
           <h1 className="text-2xl font-bold">站点设置</h1>
           <p className="text-sm text-muted-foreground mt-1">配置站点基础信息和品牌形象</p>
         </div>
-        {saved && (
-          <span className="text-sm text-green-400">已保存</span>
-        )}
+        
       </div>
 
       <Tabs defaultValue="brand">

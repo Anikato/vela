@@ -6,6 +6,7 @@ import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
 import { auth } from '@/server/auth';
 import type { ActionResult } from '@/types';
 import {
+  cloneNews,
   createNews,
   deleteNews,
   getNewsById,
@@ -154,5 +155,28 @@ export async function deleteNewsAction(id: string): Promise<ActionResult<void>> 
   } catch (error) {
     if (error instanceof NotFoundError) return { success: false, error: 'News not found' };
     return { success: false, error: 'Failed to delete news' };
+  }
+}
+
+/** 后台：克隆新闻 */
+export async function cloneNewsAction(
+  sourceId: string,
+  newSlug: string,
+): Promise<ActionResult<{ id: string }>> {
+  const session = await auth();
+  if (!session?.user) return { success: false, error: 'Unauthorized' };
+
+  const parsedId = z.string().uuid().safeParse(sourceId);
+  if (!parsedId.success) return { success: false, error: 'Invalid news id' };
+
+  if (!newSlug.trim()) return { success: false, error: 'Slug 不能为空' };
+
+  try {
+    const data = await cloneNews(parsedId.data, newSlug.trim().toLowerCase());
+    return { success: true, data };
+  } catch (error) {
+    if (error instanceof NotFoundError) return { success: false, error: 'News not found' };
+    if (error instanceof DuplicateError) return { success: false, error: error.message };
+    return { success: false, error: 'Failed to clone news' };
   }
 }

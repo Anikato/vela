@@ -24,6 +24,7 @@ export const PAGE_STATUS = {
 export const INQUIRY_STATUS = {
   NEW: 'new',
   READ: 'read',
+  REPLIED: 'replied',
   CLOSED: 'closed',
   SPAM: 'spam',
 } as const;

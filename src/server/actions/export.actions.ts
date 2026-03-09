@@ -4,6 +4,7 @@ import { auth } from '@/server/auth';
 import type { ActionResult } from '@/types';
 import { exportProductsCsv, generateProductCsvTemplate } from '@/server/services/product-export.service';
 import { exportInquiriesCsv } from '@/server/services/inquiry-export.service';
+import { exportNewsCsv } from '@/server/services/news-export.service';
 
 /** 后台：导出产品 CSV */
 export async function exportProductsCsvAction(
@@ -45,5 +46,20 @@ export async function exportInquiriesCsvAction(): Promise<ActionResult<string>> 
     return { success: true, data: csv };
   } catch {
     return { success: false, error: 'Failed to export inquiries' };
+  }
+}
+
+/** 后台：导出新闻 CSV */
+export async function exportNewsCsvAction(
+  defaultLocale: string,
+): Promise<ActionResult<string>> {
+  const session = await auth();
+  if (!session?.user) return { success: false, error: 'Unauthorized' };
+
+  try {
+    const csv = await exportNewsCsv(defaultLocale);
+    return { success: true, data: csv };
+  } catch {
+    return { success: false, error: 'Failed to export news' };
   }
 }

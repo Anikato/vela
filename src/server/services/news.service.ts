@@ -239,6 +239,48 @@ export async function deleteNews(id: string): Promise<void> {
   await db.delete(news).where(eq(news.id, id));
 }
 
+export async function cloneNews(
+  sourceId: string,
+  newSlug: string,
+): Promise<{ id: string }> {
+  const source = await db.query.news.findFirst({
+    where: eq(news.id, sourceId),
+    with: { translations: true },
+  });
+  if (!source) throw new NotFoundError('News', sourceId);
+
+  const existing = await db.query.news.findFirst({ where: eq(news.slug, newSlug) });
+  if (existing) throw new DuplicateError('News slug', newSlug);
+
+  return db.transaction(async (tx) => {
+    const [created] = await tx
+      .insert(news)
+      .values({
+        slug: newSlug,
+        coverImageId: source.coverImageId,
+        status: 'draft',
+        sortOrder: source.sortOrder,
+      })
+      .returning({ id: news.id });
+
+    if (source.translations.length > 0) {
+      await tx.insert(newsTranslations).values(
+        source.translations.map((t) => ({
+          newsId: created.id,
+          locale: t.locale,
+          title: t.title ? `${t.title} (副本)` : null,
+          summary: t.summary,
+          content: t.content,
+          seoTitle: t.seoTitle,
+          seoDescription: t.seoDescription,
+        })),
+      );
+    }
+
+    return { id: created.id };
+  });
+}
+
 // ─── Public Service (前台) ───
 
 export interface PublicNewsListItem {

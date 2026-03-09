@@ -158,7 +158,7 @@ export interface NewsListItem {
 export type Redirect = typeof redirects.$inferSelect;
 
 // ─── Inquiry ───
-export const INQUIRY_STATUSES = ['new', 'read', 'closed', 'spam'] as const;
+export const INQUIRY_STATUSES = ['new', 'read', 'replied', 'closed', 'spam'] as const;
 export type InquiryStatus = (typeof INQUIRY_STATUSES)[number];
 
 export interface InquiryProductSnapshot {

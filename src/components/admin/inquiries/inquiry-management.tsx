@@ -9,6 +9,7 @@ import {
   Eye,
   Inbox,
   Mail,
+  Reply,
   Search,
   ShieldAlert,
   X,
@@ -55,6 +56,7 @@ interface InquiryManagementProps {
     total: number;
     new: number;
     read: number;
+    replied: number;
     closed: number;
     spam: number;
   };
@@ -66,6 +68,7 @@ const STATUS_CONFIG: Record<
 > = {
   new: { label: '新询盘', variant: 'default' },
   read: { label: '已读', variant: 'secondary' },
+  replied: { label: '已回复', variant: 'secondary' },
   closed: { label: '已关闭', variant: 'outline' },
   spam: { label: '垃圾', variant: 'destructive' },
 };
@@ -183,10 +186,11 @@ export function InquiryManagement({ initialData, initialStats }: InquiryManageme
   return (
     <div className="space-y-4">
       {/* Stats cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard label="全部" count={stats.total} onClick={() => handleStatusFilter('')} active={statusFilter === ''} icon={<Mail className="h-4 w-4" />} />
         <StatCard label="新询盘" count={stats.new} onClick={() => handleStatusFilter('new')} active={statusFilter === 'new'} icon={<Inbox className="h-4 w-4" />} />
         <StatCard label="已读" count={stats.read} onClick={() => handleStatusFilter('read')} active={statusFilter === 'read'} icon={<Eye className="h-4 w-4" />} />
+        <StatCard label="已回复" count={stats.replied} onClick={() => handleStatusFilter('replied')} active={statusFilter === 'replied'} icon={<Reply className="h-4 w-4" />} />
         <StatCard label="已关闭" count={stats.closed} onClick={() => handleStatusFilter('closed')} active={statusFilter === 'closed'} icon={<Archive className="h-4 w-4" />} />
         <StatCard label="垃圾" count={stats.spam} onClick={() => handleStatusFilter('spam')} active={statusFilter === 'spam'} icon={<ShieldAlert className="h-4 w-4" />} />
       </div>
@@ -213,6 +217,9 @@ export function InquiryManagement({ initialData, initialStats }: InquiryManageme
             <span className="text-sm text-muted-foreground">已选 {selectedIds.size} 条</span>
             <Button size="sm" variant="secondary" onClick={() => handleBatchStatus('read')}>
               标记已读
+            </Button>
+            <Button size="sm" variant="secondary" onClick={() => handleBatchStatus('replied')}>
+              标记已回复
             </Button>
             <Button size="sm" variant="secondary" onClick={() => handleBatchStatus('closed')}>
               关闭
@@ -499,7 +506,7 @@ function InquiryDetailDialog({
           {/* Status actions */}
           <div className="flex flex-wrap gap-2 border-t border-border pt-4">
             <span className="text-sm text-muted-foreground">变更状态：</span>
-            {(['new', 'read', 'closed', 'spam'] as InquiryStatus[]).map((s) => (
+            {(['new', 'read', 'replied', 'closed', 'spam'] as InquiryStatus[]).map((s) => (
               <Button
                 key={s}
                 size="sm"

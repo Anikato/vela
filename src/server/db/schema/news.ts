@@ -1,8 +1,9 @@
 // 新闻表 — 新闻/博客文章
-import { pgTable, uuid, varchar, text, integer, timestamp, unique, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, integer, timestamp, unique, index, primaryKey } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { media } from './media';
 import { languages } from './languages';
+import { tags } from './tags';
 
 export const news = pgTable('news', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -36,10 +37,30 @@ export const newsTranslations = pgTable(
   (table) => [unique().on(table.newsId, table.locale)],
 );
 
+// ─── 新闻标签（多对多） ───
+export const newsTags = pgTable(
+  'news_tags',
+  {
+    newsId: uuid('news_id')
+      .references(() => news.id, { onDelete: 'cascade' })
+      .notNull(),
+    tagId: uuid('tag_id')
+      .references(() => tags.id, { onDelete: 'cascade' })
+      .notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.newsId, table.tagId] })],
+);
+
+export const newsTagsRelations = relations(newsTags, ({ one }) => ({
+  news: one(news, { fields: [newsTags.newsId], references: [news.id] }),
+  tag: one(tags, { fields: [newsTags.tagId], references: [tags.id] }),
+}));
+
 // Relations
 export const newsRelations = relations(news, ({ one, many }) => ({
   coverImage: one(media, { fields: [news.coverImageId], references: [media.id] }),
   translations: many(newsTranslations),
+  newsTags: many(newsTags),
 }));
 
 export const newsTranslationsRelations = relations(newsTranslations, ({ one }) => ({

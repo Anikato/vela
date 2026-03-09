@@ -3,10 +3,13 @@
 import Image from 'next/image';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, ChevronLeft, ChevronRight, FileText, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Copy, ExternalLink, FileText, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
+  batchDeleteProductsAction,
+  batchUpdateProductStatusAction,
+  cloneProductAction,
   createProductAction,
   deleteProductAction,
   updateProductAction,
@@ -14,6 +17,7 @@ import {
 import type { CategoryListItem, Language, Media, ProductListItem, ProductStatus, TagListItem } from '@/types/admin';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -143,6 +147,10 @@ export function ProductManagement({
   const PAGE_SIZE = 20;
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<ProductListItem | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [cloneTarget, setCloneTarget] = useState<ProductListItem | null>(null);
+  const [cloneSku, setCloneSku] = useState('');
+  const [cloneSlug, setCloneSlug] = useState('');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [initialSnapshot, setInitialSnapshot] = useState<string | null>(null);
@@ -529,6 +537,85 @@ export function ProductManagement({
     }
   }
 
+  function toggleSelectProduct(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds((prev) =>
+      prev.size === paginatedProducts.length
+        ? new Set()
+        : new Set(paginatedProducts.map((p) => p.id)),
+    );
+  }
+
+  async function handleBatchStatus(status: 'draft' | 'published' | 'archived') {
+    if (selectedIds.size === 0) return;
+    setIsSubmitting(true);
+    try {
+      const result = await batchUpdateProductStatusAction([...selectedIds], status);
+      if (!result.success) {
+        toast.error(typeof result.error === 'string' ? result.error : '操作失败');
+        return;
+      }
+      toast.success(`已更新 ${result.data.count} 个产品`);
+      setSelectedIds(new Set());
+      router.refresh();
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleBatchDelete() {
+    if (selectedIds.size === 0) return;
+    setIsSubmitting(true);
+    try {
+      const result = await batchDeleteProductsAction([...selectedIds]);
+      if (!result.success) {
+        toast.error(typeof result.error === 'string' ? result.error : '删除失败');
+        return;
+      }
+      setProducts((prev) => prev.filter((p) => !selectedIds.has(p.id)));
+      toast.success(`已删除 ${result.data.count} 个产品`);
+      setSelectedIds(new Set());
+      router.refresh();
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  function openCloneDialog(item: ProductListItem) {
+    setCloneTarget(item);
+    setCloneSku(`${item.sku}-copy`);
+    setCloneSlug(`${item.slug}-copy`);
+  }
+
+  async function handleClone() {
+    if (!cloneTarget) return;
+    if (!cloneSku.trim() || !cloneSlug.trim()) {
+      toast.error('SKU 和 Slug 不能为空');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const result = await cloneProductAction(cloneTarget.id, cloneSku.trim(), cloneSlug.trim());
+      if (!result.success) {
+        toast.error(typeof result.error === 'string' ? result.error : '克隆失败');
+        return;
+      }
+      toast.success('产品已克隆');
+      setCloneTarget(null);
+      router.refresh();
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   async function handleDelete() {
     if (!deleteTarget) return;
 
@@ -650,6 +737,28 @@ export function ProductManagement({
         </Button>
       </div>
 
+      {/* ─── 批量操作工具栏 ─── */}
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2">
+          <span className="text-sm text-muted-foreground">已选 {selectedIds.size} 项</span>
+          <Button size="sm" variant="secondary" onClick={() => handleBatchStatus('published')} disabled={isSubmitting}>
+            批量发布
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => handleBatchStatus('draft')} disabled={isSubmitting}>
+            设为草稿
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => handleBatchStatus('archived')} disabled={isSubmitting}>
+            批量归档
+          </Button>
+          <Button size="sm" variant="destructive" onClick={handleBatchDelete} disabled={isSubmitting}>
+            批量删除
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+            取消选择
+          </Button>
+        </div>
+      )}
+
       {/* ─── 结果统计 ─── */}
       <p className="text-xs text-muted-foreground">
         共 {filteredProducts.length} 条{filteredProducts.length !== products.length ? `（已筛选，总 ${products.length}）` : ''}
@@ -659,6 +768,12 @@ export function ProductManagement({
         <Table>
           <TableHeader>
             <TableRow className="border-border/50 hover:bg-transparent">
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={paginatedProducts.length > 0 && selectedIds.size === paginatedProducts.length}
+                  onCheckedChange={toggleSelectAll}
+                />
+              </TableHead>
               <TableHead>名称</TableHead>
               <TableHead>SKU</TableHead>
               <TableHead>主分类</TableHead>
@@ -671,7 +786,7 @@ export function ProductManagement({
           <TableBody>
             {paginatedProducts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                   {searchQuery || statusFilter !== 'all' || categoryFilter !== 'all'
                     ? '没有匹配的产品，请尝试调整筛选条件'
                     : '暂无产品'}
@@ -682,6 +797,12 @@ export function ProductManagement({
                 const completion = getRowCompletion(item);
                 return (
                 <TableRow key={item.id} className="border-border/50">
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.has(item.id)}
+                      onCheckedChange={() => toggleSelectProduct(item.id)}
+                    />
+                  </TableCell>
                   <TableCell className="max-w-[200px]">
                     <div className="truncate font-medium">{item.displayName}</div>
                     <div className="truncate text-xs text-muted-foreground">{item.slug}</div>
@@ -705,7 +826,20 @@ export function ProductManagement({
                   </TableCell>
                   <TableCell className="text-xs">{formatDate(item.updatedAt)}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
+                    <div className="flex flex-wrap justify-end gap-1">
+                      {item.status === 'published' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8"
+                          asChild
+                        >
+                          <a href={`/products/${categories.find(c => c.id === item.primaryCategoryId)?.slug ?? 'c'}/${item.slug}`} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="mr-1 h-3.5 w-3.5" />
+                            预览
+                          </a>
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -713,6 +847,16 @@ export function ProductManagement({
                         onClick={() => router.push(`/admin/products/attributes?productId=${item.id}`)}
                       >
                         参数
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8"
+                        onClick={() => openCloneDialog(item)}
+                        disabled={isSubmitting}
+                      >
+                        <Copy className="mr-1 h-3.5 w-3.5" />
+                        克隆
                       </Button>
                       <Button
                         variant="ghost"
@@ -1214,6 +1358,44 @@ export function ProductManagement({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ─── 克隆对话框 ─── */}
+      <Dialog open={!!cloneTarget} onOpenChange={(open) => !open && setCloneTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>克隆产品</DialogTitle>
+            <DialogDescription>
+              从 <strong>{cloneTarget?.displayName}</strong> 复制，请为新产品指定唯一 SKU 和 Slug。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 py-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">新 SKU</label>
+              <Input
+                value={cloneSku}
+                onChange={(e) => setCloneSku(e.target.value)}
+                disabled={isSubmitting}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">新 Slug</label>
+              <Input
+                value={cloneSlug}
+                onChange={(e) => setCloneSlug(e.target.value)}
+                disabled={isSubmitting}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCloneTarget(null)} disabled={isSubmitting}>
+              取消
+            </Button>
+            <Button onClick={handleClone} disabled={isSubmitting}>
+              {isSubmitting ? '克隆中…' : '确认克隆'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ─── 未保存变更确认 ─── */}
       <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>

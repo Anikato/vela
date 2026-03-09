@@ -28,6 +28,8 @@ import {
   Code,
   Database,
   ArrowRightLeft,
+  ScrollText,
+  Search as SearchIcon,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -69,7 +71,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: '询盘管理', href: '/admin/inquiries', icon: MessageSquare },
       { title: '表单配置', href: '/admin/inquiries/form', icon: ClipboardList },
-      { title: '数据统计', href: '/admin/inquiries/stats', icon: BarChart3, disabled: true },
+      { title: '数据统计', href: '/admin/inquiries/stats', icon: BarChart3 },
     ],
   },
   {
@@ -95,9 +97,11 @@ export const navGroups: NavGroup[] = [
       { title: '用户管理', href: '/admin/users', icon: Users },
       { title: '站点设置', href: '/admin/settings', icon: Settings },
       { title: '邮件配置', href: '/admin/settings/email', icon: Mail },
+      { title: 'SEO 总览', href: '/admin/settings/seo', icon: SearchIcon },
       { title: '脚本注入', href: '/admin/settings/scripts', icon: Code },
       { title: '重定向', href: '/admin/redirects', icon: ArrowRightLeft },
       { title: '导入导出', href: '/admin/settings/data', icon: Database },
+      { title: '操作日志', href: '/admin/audit-logs', icon: ScrollText },
     ],
   },
 ];

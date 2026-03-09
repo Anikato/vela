@@ -3,10 +3,11 @@
 import Image from 'next/image';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Copy, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
+  cloneNewsAction,
   createNewsAction,
   deleteNewsAction,
   getNewsByIdAction,
@@ -226,7 +227,7 @@ export function NewsManagement({ initialNews, locales, mediaItems }: NewsManagem
               <TableHead>Slug</TableHead>
               <TableHead>状态</TableHead>
               <TableHead>发布时间</TableHead>
-              <TableHead className="w-28">操作</TableHead>
+              <TableHead className="w-36">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -273,6 +274,25 @@ export function NewsManagement({ initialNews, locales, mediaItems }: NewsManagem
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={isPending}
+                        onClick={() => {
+                          const newSlug = `${item.slug}-copy-${Date.now().toString(36)}`;
+                          startTransition(async () => {
+                            const result = await cloneNewsAction(item.id, newSlug);
+                            if (result.success) {
+                              toast.success('新闻已克隆');
+                              router.refresh();
+                            } else {
+                              toast.error(typeof result.error === 'string' ? result.error : '克隆失败');
+                            }
+                          });
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => openEdit(item)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
