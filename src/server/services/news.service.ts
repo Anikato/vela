@@ -250,7 +250,7 @@ export async function cloneNews(
   if (!source) throw new NotFoundError('News', sourceId);
 
   const existing = await db.query.news.findFirst({ where: eq(news.slug, newSlug) });
-  if (existing) throw new DuplicateError('News slug', newSlug);
+  if (existing) throw new DuplicateError('News', 'slug', newSlug);
 
   return db.transaction(async (tx) => {
     const [created] = await tx
