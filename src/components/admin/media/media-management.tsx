@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Copy, FileText, ImageIcon, Loader2, Pencil, Search, Trash2, Upload } from 'lucide-react';
@@ -366,14 +366,14 @@ export function MediaManagement({ initialItems, initialTotal, initialPage, initi
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedItems.length === 0 ? (
+            {items.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                   暂无媒体文件，请先上传。
                 </TableCell>
               </TableRow>
             ) : (
-              sortedItems.map((item) => (
+              items.map((item) => (
                 <TableRow key={item.id} className="border-border/50">
                   <TableCell>
                     <div className="relative h-14 w-14 overflow-hidden rounded-md border border-border/60 bg-muted/20">
