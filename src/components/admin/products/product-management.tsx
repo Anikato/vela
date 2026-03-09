@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, ChevronRight, FileText, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, FileText, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -15,6 +15,16 @@ import type { CategoryListItem, Language, Media, ProductListItem, ProductStatus,
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -24,6 +34,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Table,
   TableBody,
   TableCell,
@@ -31,6 +48,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { RichTextEditor } from '@/components/admin/common/rich-text-editor';
 
 interface ProductManagementProps {
   initialProducts: ProductListItem[];
@@ -118,6 +136,14 @@ export function ProductManagement({
   const [mediaLibrary, setMediaLibrary] = useState<Array<Media & { url: string }>>(mediaItems);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // ─── 搜索 / 筛选 / 分页 ───
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<ProductStatus | 'all'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const PAGE_SIZE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [deleteTarget, setDeleteTarget] = useState<ProductListItem | null>(null);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [initialSnapshot, setInitialSnapshot] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProductEditTab>('basic');
@@ -148,12 +174,40 @@ export function ProductManagement({
   );
   const [expandedLocales, setExpandedLocales] = useState<string[]>([]);
 
-  const sortedProducts = useMemo(
-    () =>
-      [...products].sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-      ),
-    [products],
+  const filteredProducts = useMemo(() => {
+    let list = [...products];
+    // 搜索
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter(
+        (p) =>
+          p.displayName.toLowerCase().includes(q) ||
+          p.sku.toLowerCase().includes(q) ||
+          p.slug.toLowerCase().includes(q),
+      );
+    }
+    // 状态筛选
+    if (statusFilter !== 'all') {
+      list = list.filter((p) => p.status === statusFilter);
+    }
+    // 分类筛选
+    if (categoryFilter !== 'all') {
+      list = list.filter(
+        (p) =>
+          p.primaryCategoryId === categoryFilter ||
+          p.additionalCategoryIds.includes(categoryFilter),
+      );
+    }
+    // 排序
+    list.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    return list;
+  }, [products, searchQuery, statusFilter, categoryFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedProducts = filteredProducts.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
   );
 
   function serializePayload(payload: ProductFormPayload): string {
@@ -475,20 +529,20 @@ export function ProductManagement({
     }
   }
 
-  async function handleDelete(item: ProductListItem) {
-    const confirmed = window.confirm(`确认删除产品“${item.displayName}”吗？`);
-    if (!confirmed) return;
+  async function handleDelete() {
+    if (!deleteTarget) return;
 
     setIsSubmitting(true);
     try {
-      const result = await deleteProductAction(item.id);
+      const result = await deleteProductAction(deleteTarget.id);
       if (!result.success) {
         toast.error(typeof result.error === 'string' ? result.error : '删除失败');
         return;
       }
 
-      setProducts((prev) => prev.filter((row) => row.id !== item.id));
+      setProducts((prev) => prev.filter((row) => row.id !== deleteTarget.id));
       toast.success('产品已删除');
+      setDeleteTarget(null);
       router.refresh();
     } finally {
       setIsSubmitting(false);
@@ -515,6 +569,8 @@ export function ProductManagement({
       ? serializePayload(buildCurrentPayload()) !== initialSnapshot
       : false;
 
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+
   function handleDialogOpenChange(open: boolean) {
     if (open) {
       setDialogOpen(true);
@@ -522,8 +578,8 @@ export function ProductManagement({
     }
     if (isSubmitting) return;
     if (hasUnsavedChanges) {
-      const confirmed = window.confirm('有未保存的修改，确认关闭吗？');
-      if (!confirmed) return;
+      setShowUnsavedDialog(true);
+      return;
     }
     setDialogOpen(false);
     setInitialSnapshot(null);
@@ -548,12 +604,56 @@ export function ProductManagement({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button onClick={openCreateDialog}>
+      {/* ─── 搜索栏 + 筛选 + 新建 ─── */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-1 flex-wrap items-center gap-2">
+          <div className="relative flex-1 sm:max-w-xs">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="搜索名称 / SKU / Slug…"
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              className="pl-9"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as ProductStatus | 'all'); setCurrentPage(1); }}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="全部状态" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部状态</SelectItem>
+              <SelectItem value="draft">草稿</SelectItem>
+              <SelectItem value="published">已发布</SelectItem>
+              <SelectItem value="archived">已归档</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setCurrentPage(1); }}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="全部分类" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部分类</SelectItem>
+              {categories.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.displayName}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {(searchQuery || statusFilter !== 'all' || categoryFilter !== 'all') && (
+            <Button variant="ghost" size="sm" onClick={() => { setSearchQuery(''); setStatusFilter('all'); setCategoryFilter('all'); setCurrentPage(1); }}>
+              清除筛选
+            </Button>
+          )}
+        </div>
+        <Button onClick={openCreateDialog} className="shrink-0">
           <Plus className="mr-2 h-4 w-4" />
           新建产品
         </Button>
       </div>
+
+      {/* ─── 结果统计 ─── */}
+      <p className="text-xs text-muted-foreground">
+        共 {filteredProducts.length} 条{filteredProducts.length !== products.length ? `（已筛选，总 ${products.length}）` : ''}
+      </p>
 
       <div className="rounded-lg border border-border/50 bg-card">
         <Table>
@@ -561,53 +661,49 @@ export function ProductManagement({
             <TableRow className="border-border/50 hover:bg-transparent">
               <TableHead>名称</TableHead>
               <TableHead>SKU</TableHead>
-              <TableHead>Slug</TableHead>
               <TableHead>主分类</TableHead>
               <TableHead>状态</TableHead>
-              <TableHead>媒体</TableHead>
               <TableHead>完成度</TableHead>
               <TableHead>更新时间</TableHead>
               <TableHead className="w-40 text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedProducts.length === 0 ? (
+            {paginatedProducts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
-                  暂无产品
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  {searchQuery || statusFilter !== 'all' || categoryFilter !== 'all'
+                    ? '没有匹配的产品，请尝试调整筛选条件'
+                    : '暂无产品'}
                 </TableCell>
               </TableRow>
             ) : (
-              sortedProducts.map((item) => {
+              paginatedProducts.map((item) => {
                 const completion = getRowCompletion(item);
                 return (
                 <TableRow key={item.id} className="border-border/50">
-                  <TableCell>{item.displayName}</TableCell>
-                  <TableCell>{item.sku}</TableCell>
-                  <TableCell>{item.slug}</TableCell>
+                  <TableCell className="max-w-[200px]">
+                    <div className="truncate font-medium">{item.displayName}</div>
+                    <div className="truncate text-xs text-muted-foreground">{item.slug}</div>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">{item.sku}</TableCell>
                   <TableCell>{item.primaryCategoryName}</TableCell>
-                  <TableCell>{statusText(item.status as ProductStatus)}</TableCell>
                   <TableCell>
-                    {item.featuredImageId
-                      ? `主图 + ${item.galleryImageIds.length} 图集 + ${item.attachmentIds.length} 附件`
-                      : item.attachmentIds.length > 0
-                        ? `${item.attachmentIds.length} 附件`
-                        : '-'}
+                    <Badge variant={item.status === 'published' ? 'default' : item.status === 'archived' ? 'outline' : 'secondary'}>
+                      {statusText(item.status as ProductStatus)}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      <Badge variant="outline">
+                      <Badge variant="outline" className="text-[10px]">
                         i18n {completion.i18nCount}/{completion.i18nTotal}
                       </Badge>
-                      <Badge variant={completion.mediaReady ? 'secondary' : 'outline'}>
-                        {completion.mediaReady ? '媒体就绪' : '缺媒体'}
-                      </Badge>
-                      <Badge variant={completion.publishReady ? 'default' : 'outline'}>
+                      <Badge variant={completion.publishReady ? 'default' : 'outline'} className="text-[10px]">
                         {completion.publishReady ? '可发布' : '待完善'}
                       </Badge>
                     </div>
                   </TableCell>
-                  <TableCell>{formatDate(item.updatedAt)}</TableCell>
+                  <TableCell className="text-xs">{formatDate(item.updatedAt)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button
@@ -632,7 +728,7 @@ export function ProductManagement({
                         size="sm"
                         className="h-8 text-destructive hover:text-destructive"
                         disabled={isSubmitting}
-                        onClick={() => handleDelete(item)}
+                        onClick={() => setDeleteTarget(item)}
                       >
                         <Trash2 className="mr-1 h-3.5 w-3.5" />
                         删除
@@ -645,6 +741,23 @@ export function ProductManagement({
           </TableBody>
         </Table>
       </div>
+
+      {/* ─── 分页 ─── */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            第 {safePage} / {totalPages} 页
+          </p>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="sm" disabled={safePage <= 1} onClick={() => setCurrentPage(safePage - 1)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm" disabled={safePage >= totalPages} onClick={() => setCurrentPage(safePage + 1)}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
@@ -710,16 +823,14 @@ export function ProductManagement({
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">状态</label>
-                    <select
-                      className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value as ProductStatus)}
-                      disabled={isSubmitting}
-                    >
-                      <option value="draft">草稿</option>
-                      <option value="published">已发布</option>
-                      <option value="archived">已归档</option>
-                    </select>
+                    <Select value={status} onValueChange={(v) => setStatus(v as ProductStatus)} disabled={isSubmitting}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">草稿</SelectItem>
+                        <SelectItem value="published">已发布</SelectItem>
+                        <SelectItem value="archived">已归档</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">排序值</label>
@@ -735,18 +846,16 @@ export function ProductManagement({
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">主分类</label>
-                  <select
-                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                    value={primaryCategoryId}
-                    onChange={(e) => setPrimaryCategoryId(e.target.value)}
-                    disabled={isSubmitting}
-                  >
-                    {categories.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.displayName} ({item.slug})
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={primaryCategoryId} onValueChange={setPrimaryCategoryId} disabled={isSubmitting}>
+                    <SelectTrigger><SelectValue placeholder="选择分类" /></SelectTrigger>
+                    <SelectContent>
+                      {categories.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.displayName} ({item.slug})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -793,21 +902,19 @@ export function ProductManagement({
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">主图</label>
-                    <select
-                      className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                      value={featuredImageId}
-                      onChange={(e) => setFeaturedImageId(e.target.value)}
-                      disabled={isSubmitting}
-                    >
-                      <option value="">不设置主图</option>
-                      {mediaLibrary
-                        .filter((media) => media.mimeType.startsWith('image/'))
-                        .map((media) => (
-                          <option key={media.id} value={media.id}>
-                            {media.originalName}
-                          </option>
-                        ))}
-                    </select>
+                    <Select value={featuredImageId || '__none__'} onValueChange={(v) => setFeaturedImageId(v === '__none__' ? '' : v)} disabled={isSubmitting}>
+                      <SelectTrigger><SelectValue placeholder="不设置主图" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">不设置主图</SelectItem>
+                        {mediaLibrary
+                          .filter((media) => media.mimeType.startsWith('image/'))
+                          .map((media) => (
+                            <SelectItem key={media.id} value={media.id}>
+                              {media.originalName}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
                     <label className="inline-flex cursor-pointer items-center text-xs text-primary">
                       <input
                         type="file"
@@ -1048,14 +1155,14 @@ export function ProductManagement({
                             }
                             disabled={isSubmitting}
                           />
-                          <textarea
-                            rows={5}
-                            className="min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-sm sm:col-span-2"
-                            placeholder="详细描述 HTML（可选）"
-                            value={item.description}
-                            onChange={(e) => updateTranslation(item.locale, 'description', e.target.value)}
-                            disabled={isSubmitting}
-                          />
+                          <div className="sm:col-span-2">
+                            <RichTextEditor
+                              value={item.description}
+                              onChange={(html) => updateTranslation(item.locale, 'description', html)}
+                              placeholder="详细描述（可选）"
+                              disabled={isSubmitting}
+                            />
+                          </div>
                           <textarea
                             rows={2}
                             className="min-h-[64px] rounded-md border border-input bg-background px-3 py-2 text-sm sm:col-span-2"
@@ -1085,6 +1192,53 @@ export function ProductManagement({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ─── 删除确认 ─── */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>删除产品</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定删除产品 <strong>{deleteTarget?.displayName}</strong> 吗？此操作不可撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSubmitting}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDelete}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? '删除中…' : '确认删除'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ─── 未保存变更确认 ─── */}
+      <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>放弃修改？</AlertDialogTitle>
+            <AlertDialogDescription>
+              有未保存的修改，确认关闭吗？所有未保存的内容将丢失。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>继续编辑</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                setShowUnsavedDialog(false);
+                setDialogOpen(false);
+                setInitialSnapshot(null);
+              }}
+            >
+              放弃修改
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

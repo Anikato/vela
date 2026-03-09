@@ -5,6 +5,13 @@ import { GripVertical, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import {
   createFormFieldAction,
@@ -280,17 +287,16 @@ export function InquiryFormFieldManagement({ initialFields, languages }: Props) 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="text-sm font-medium mb-1 block">字段类型</label>
-              <select
-                value={editing.fieldType}
-                onChange={(e) => setEditing({ ...editing, fieldType: e.target.value })}
-                className="flex h-9 w-full rounded-md border bg-background px-3 text-sm"
-              >
-                {Object.entries(FIELD_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+              <Select value={editing.fieldType} onValueChange={(v) => setEditing({ ...editing, fieldType: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(FIELD_TYPE_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center gap-4 pt-5">
               <label className="flex items-center gap-2 text-sm">

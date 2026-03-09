@@ -25,6 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ConfirmDeleteDialog } from '@/components/admin/common/confirm-delete-dialog';
 
 interface TagManagementProps {
   initialTags: TagListItem[];
@@ -60,6 +61,7 @@ export function TagManagement({ initialTags, locales }: TagManagementProps) {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<TagListItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<TagListItem | null>(null);
   const [slug, setSlug] = useState('');
   const [translations, setTranslations] = useState<TranslationForm[]>(() =>
     buildTranslationForm(locales),
@@ -134,20 +136,20 @@ export function TagManagement({ initialTags, locales }: TagManagementProps) {
     }
   }
 
-  async function handleDelete(item: TagListItem) {
-    const confirmed = window.confirm(`确认删除标签“${item.displayName}”吗？`);
-    if (!confirmed) return;
+  async function handleDelete() {
+    if (!deleteTarget) return;
 
     setIsSubmitting(true);
     try {
-      const result = await deleteTagAction(item.id);
+      const result = await deleteTagAction(deleteTarget.id);
       if (!result.success) {
         toast.error(typeof result.error === 'string' ? result.error : '删除失败');
         return;
       }
 
-      setTags((prev) => prev.filter((row) => row.id !== item.id));
+      setTags((prev) => prev.filter((row) => row.id !== deleteTarget.id));
       toast.success('标签已删除');
+      setDeleteTarget(null);
       router.refresh();
     } finally {
       setIsSubmitting(false);
@@ -202,7 +204,7 @@ export function TagManagement({ initialTags, locales }: TagManagementProps) {
                         size="sm"
                         className="h-8 text-destructive hover:text-destructive"
                         disabled={isSubmitting}
-                        onClick={() => handleDelete(item)}
+                        onClick={() => setDeleteTarget(item)}
                       >
                         <Trash2 className="mr-1 h-3.5 w-3.5" />
                         删除
@@ -259,6 +261,14 @@ export function TagManagement({ initialTags, locales }: TagManagementProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        description={<>确定删除标签 <strong>{deleteTarget?.displayName}</strong> 吗？此操作不可撤销。</>}
+        onConfirm={handleDelete}
+        loading={isSubmitting}
+      />
     </div>
   );
 }

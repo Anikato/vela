@@ -23,6 +23,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import {
   Table,
@@ -32,6 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ConfirmDeleteDialog } from '@/components/admin/common/confirm-delete-dialog';
 function handleTextareaClassName() {
   return 'min-h-[72px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm';
 }
@@ -140,6 +148,7 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<CategoryListItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CategoryListItem | null>(null);
   const [slug, setSlug] = useState('');
   const [parentId, setParentId] = useState(EMPTY_ID);
   const [isActive, setIsActive] = useState(true);
@@ -240,17 +249,19 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
     }
   }
 
-  async function handleDelete(item: CategoryListItem) {
+  async function handleDelete() {
+    if (!deleteTarget) return;
     setIsSubmitting(true);
     try {
-      const result = await deleteCategoryAction(item.id);
+      const result = await deleteCategoryAction(deleteTarget.id);
       if (!result.success) {
         toast.error(typeof result.error === 'string' ? result.error : '删除失败');
         return;
       }
 
-      setCategories((prev) => prev.filter((row) => row.id !== item.id));
+      setCategories((prev) => prev.filter((row) => row.id !== deleteTarget.id));
       toast.success('分类已删除');
+      setDeleteTarget(null);
       router.refresh();
     } finally {
       setIsSubmitting(false);
@@ -431,7 +442,7 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
                         size="sm"
                         className="h-8 text-destructive hover:text-destructive"
                         disabled={isSubmitting}
-                        onClick={() => handleDelete(item)}
+                        onClick={() => setDeleteTarget(item)}
                       >
                         <Trash2 className="mr-1 h-3.5 w-3.5" />
                         删除
@@ -467,19 +478,17 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">父级分类</label>
-                <select
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  value={parentId}
-                  onChange={(e) => setParentId(e.target.value)}
-                  disabled={isSubmitting}
-                >
-                  <option value={EMPTY_ID}>无（顶级分类）</option>
-                  {parentOptions.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.displayName} ({item.slug})
-                    </option>
-                  ))}
-                </select>
+                <Select value={parentId} onValueChange={setParentId} disabled={isSubmitting}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={EMPTY_ID}>无（顶级分类）</SelectItem>
+                    {parentOptions.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.displayName} ({item.slug})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">排序值</label>
@@ -560,6 +569,14 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        description={<>确定删除分类 <strong>{deleteTarget?.displayName}</strong> 吗？此操作不可撤销。</>}
+        onConfirm={handleDelete}
+        loading={isSubmitting}
+      />
     </div>
   );
 }

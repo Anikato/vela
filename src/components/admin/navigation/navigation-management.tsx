@@ -22,6 +22,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import {
   Table,
@@ -31,6 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ConfirmDeleteDialog } from '@/components/admin/common/confirm-delete-dialog';
 
 interface NavigationOption {
   id: string;
@@ -72,6 +80,7 @@ export function NavigationManagement({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<NavigationListItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<NavigationListItem | null>(null);
 
   const [parentId, setParentId] = useState(EMPTY_ID);
   const [type, setType] = useState<LinkType>('internal');
@@ -189,19 +198,19 @@ export function NavigationManagement({
     }
   }
 
-  async function handleDelete(item: NavigationListItem) {
-    const confirmed = window.confirm(`确认删除菜单项“${item.displayLabel}”吗？`);
-    if (!confirmed) return;
+  async function handleDelete() {
+    if (!deleteTarget) return;
 
     setIsSubmitting(true);
     try {
-      const result = await deleteNavigationItemAction(item.id);
+      const result = await deleteNavigationItemAction(deleteTarget.id);
       if (!result.success) {
         toast.error(typeof result.error === 'string' ? result.error : '删除失败');
         return;
       }
-      setItems((prev) => prev.filter((row) => row.id !== item.id));
+      setItems((prev) => prev.filter((row) => row.id !== deleteTarget.id));
       toast.success('菜单项已删除');
+      setDeleteTarget(null);
       router.refresh();
     } finally {
       setIsSubmitting(false);
@@ -266,7 +275,7 @@ export function NavigationManagement({
                         size="sm"
                         className="h-8 text-destructive hover:text-destructive"
                         disabled={isSubmitting}
-                        onClick={() => handleDelete(item)}
+                        onClick={() => setDeleteTarget(item)}
                       >
                         <Trash2 className="mr-1 h-3.5 w-3.5" />
                         删除
@@ -291,33 +300,29 @@ export function NavigationManagement({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium">链接类型</label>
-                <select
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  value={type}
-                  onChange={(e) => setType(e.target.value as LinkType)}
-                  disabled={isSubmitting}
-                >
-                  <option value="internal">internal</option>
-                  <option value="external">external</option>
-                  <option value="category">category</option>
-                  <option value="page">page</option>
-                </select>
+                <Select value={type} onValueChange={(v) => setType(v as LinkType)} disabled={isSubmitting}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="internal">内部链接</SelectItem>
+                    <SelectItem value="external">外部链接</SelectItem>
+                    <SelectItem value="category">关联分类</SelectItem>
+                    <SelectItem value="page">关联页面</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">父级菜单</label>
-                <select
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  value={parentId}
-                  onChange={(e) => setParentId(e.target.value)}
-                  disabled={isSubmitting}
-                >
-                  <option value={EMPTY_ID}>无（顶级菜单）</option>
-                  {parentOptions.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.displayLabel}
-                    </option>
-                  ))}
-                </select>
+                <Select value={parentId} onValueChange={setParentId} disabled={isSubmitting}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={EMPTY_ID}>无（顶级菜单）</SelectItem>
+                    {parentOptions.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.displayLabel}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {(type === 'internal' || type === 'external') && (
@@ -335,38 +340,34 @@ export function NavigationManagement({
               {type === 'category' && (
                 <div className="space-y-2 sm:col-span-2">
                   <label className="text-sm font-medium">关联分类</label>
-                  <select
-                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    disabled={isSubmitting}
-                  >
-                    <option value={EMPTY_ID}>请选择分类</option>
-                    {categories.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.label} ({item.slug})
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={categoryId} onValueChange={setCategoryId} disabled={isSubmitting}>
+                    <SelectTrigger><SelectValue placeholder="请选择分类" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={EMPTY_ID}>请选择分类</SelectItem>
+                      {categories.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.label} ({item.slug})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
 
               {type === 'page' && (
                 <div className="space-y-2 sm:col-span-2">
                   <label className="text-sm font-medium">关联页面</label>
-                  <select
-                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                    value={pageId}
-                    onChange={(e) => setPageId(e.target.value)}
-                    disabled={isSubmitting}
-                  >
-                    <option value={EMPTY_ID}>请选择页面</option>
-                    {pages.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.label} ({item.slug})
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={pageId} onValueChange={setPageId} disabled={isSubmitting}>
+                    <SelectTrigger><SelectValue placeholder="请选择页面" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={EMPTY_ID}>请选择页面</SelectItem>
+                      {pages.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.label} ({item.slug})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
 
@@ -442,6 +443,14 @@ export function NavigationManagement({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        description={<>确定删除菜单项 <strong>{deleteTarget?.displayLabel}</strong> 吗？此操作不可撤销。</>}
+        onConfirm={handleDelete}
+        loading={isSubmitting}
+      />
     </div>
   );
 }

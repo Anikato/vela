@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Copy, ImageIcon, Loader2, Trash2, Upload } from 'lucide-react';
@@ -71,6 +71,7 @@ export function MediaManagement({ initialItems }: MediaManagementProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<MediaItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const sortedItems = useMemo(
     () =>
@@ -80,9 +81,9 @@ export function MediaManagement({ initialItems }: MediaManagementProps) {
     [items],
   );
 
-  async function handleUpload() {
-    const files = fileInputRef.current?.files;
-    if (!files || files.length === 0) {
+  async function uploadFiles(fileList: FileList | File[]) {
+    const files = Array.from(fileList);
+    if (files.length === 0) {
       toast.error('请先选择要上传的文件');
       return;
     }
@@ -92,7 +93,7 @@ export function MediaManagement({ initialItems }: MediaManagementProps) {
     let failedCount = 0;
 
     try {
-      for (const file of Array.from(files)) {
+      for (const file of files) {
         const formData = new FormData();
         formData.append('file', file);
         if (altText.trim()) {
@@ -166,6 +167,33 @@ export function MediaManagement({ initialItems }: MediaManagementProps) {
     }
   }
 
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+
+      const droppedFiles = e.dataTransfer.files;
+      if (droppedFiles.length > 0) {
+        uploadFiles(droppedFiles);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [altText],
+  );
+
   async function handleCopy(url: string) {
     try {
       await navigator.clipboard.writeText(url);
@@ -178,38 +206,66 @@ export function MediaManagement({ initialItems }: MediaManagementProps) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-border/50 bg-card p-4">
-        <div className="grid gap-3 md:grid-cols-[1fr_240px_auto]">
-          <Input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
-            multiple
-            disabled={isUploading}
-          />
+      {/* ─── 拖拽上传区域 ─── */}
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`relative rounded-lg border-2 border-dashed bg-card p-6 transition-colors ${
+          isDragging
+            ? 'border-primary bg-primary/5'
+            : 'border-border/50 hover:border-border'
+        }`}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+          multiple
+          disabled={isUploading}
+          className="hidden"
+          onChange={(e) => {
+            if (e.target.files && e.target.files.length > 0) uploadFiles(e.target.files);
+          }}
+        />
+
+        <div className="flex flex-col items-center gap-3 text-center">
+          {isUploading ? (
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          ) : (
+            <div className="rounded-full bg-primary/10 p-3">
+              <Upload className="h-6 w-6 text-primary" />
+            </div>
+          )}
+          <div>
+            <p className="text-sm font-medium">
+              {isUploading ? '上传中…' : isDragging ? '松开即可上传' : '拖拽文件到此处，或'}
+            </p>
+            {!isUploading && !isDragging && (
+              <Button
+                variant="link"
+                size="sm"
+                className="mt-0.5 h-auto p-0 text-sm"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                点击选择文件
+              </Button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            支持 jpg / png / webp / gif / svg，单文件最大 10MB
+          </p>
+        </div>
+
+        <div className="mt-3 flex items-center justify-center gap-2">
           <Input
             placeholder="统一 ALT 文本（可选）"
             value={altText}
             onChange={(e) => setAltText(e.target.value)}
             disabled={isUploading}
+            className="max-w-xs"
           />
-          <Button onClick={handleUpload} disabled={isUploading}>
-            {isUploading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                上传中...
-              </>
-            ) : (
-              <>
-                <Upload className="mr-2 h-4 w-4" />
-                上传文件
-              </>
-            )}
-          </Button>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          支持 jpg/png/webp/gif/svg，单文件最大 10MB；栅格图自动生成多尺寸版本。
-        </p>
       </div>
 
       <div className="rounded-lg border border-border/50 bg-card">

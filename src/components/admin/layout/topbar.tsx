@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { MobileSidebar } from './mobile-sidebar';
+import { Breadcrumb } from './breadcrumb';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +21,7 @@ interface TopbarProps {
 
 /**
  * 后台顶栏 — 暗色科技感
- * 包含：移动端菜单触发器、用户菜单
+ * 包含：移动端菜单触发器、面包屑、用户菜单
  */
 export function Topbar({ collapsed }: TopbarProps) {
   const { data: session } = useSession();
@@ -32,11 +33,15 @@ export function Topbar({ collapsed }: TopbarProps) {
     <header
       className={cn(
         'sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border/50 bg-background/80 px-4 backdrop-blur-sm transition-all duration-300',
-        'md:justify-end',
       )}
     >
-      {/* 移动端：汉堡菜单 */}
-      <MobileSidebar />
+      {/* 左侧：移动端菜单 + 面包屑 */}
+      <div className="flex items-center gap-3">
+        <MobileSidebar />
+        <div className="hidden md:block">
+          <Breadcrumb />
+        </div>
+      </div>
 
       {/* 右侧操作区 */}
       <div className="flex items-center gap-3">

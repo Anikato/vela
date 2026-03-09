@@ -32,6 +32,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { ConfirmDeleteDialog } from '@/components/admin/common/confirm-delete-dialog';
 import {
   Table,
   TableBody,
@@ -324,6 +325,7 @@ export function SectionItemsManagement({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<SectionItemForUI | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<SectionItemForUI | null>(null);
 
   // Form state
   const [iconName, setIconName] = useState('');
@@ -420,23 +422,21 @@ export function SectionItemsManagement({
     }
   }
 
-  async function handleDelete(item: SectionItemForUI) {
-    const confirmed = window.confirm(
-      `确认删除子项"${item.displayTitle}"吗？`,
-    );
-    if (!confirmed) return;
+  async function handleDelete() {
+    if (!deleteTarget) return;
 
     setIsSubmitting(true);
     try {
-      const result = await deleteSectionItemAction(item.id);
+      const result = await deleteSectionItemAction(deleteTarget.id);
       if (!result.success) {
         toast.error(
           typeof result.error === 'string' ? result.error : '删除失败',
         );
         return;
       }
-      setItems((prev) => prev.filter((x) => x.id !== item.id));
+      setItems((prev) => prev.filter((x) => x.id !== deleteTarget.id));
       toast.success('子项已删除');
+      setDeleteTarget(null);
       router.refresh();
     } finally {
       setIsSubmitting(false);
@@ -582,7 +582,7 @@ export function SectionItemsManagement({
                       variant="ghost"
                       size="sm"
                       className="text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(item)}
+                      onClick={() => setDeleteTarget(item)}
                       disabled={isSubmitting}
                     >
                       <Trash2 className="mr-1 h-3.5 w-3.5" />
@@ -737,6 +737,14 @@ export function SectionItemsManagement({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        description={<>确定删除子项 <strong>{deleteTarget?.displayTitle}</strong> 吗？此操作不可撤销。</>}
+        onConfirm={handleDelete}
+        loading={isSubmitting}
+      />
     </div>
   );
 }

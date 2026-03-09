@@ -4,6 +4,13 @@ import { useState, useTransition } from 'react';
 import { Globe, Loader2, Wand2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { translateBatchAction } from '@/server/actions/translation.actions';
 
 interface Language {
@@ -105,20 +112,22 @@ export function AutoTranslateManagement({ languages, defaultLocale }: Props) {
         {/* Source language */}
         <div>
           <label className="text-sm font-medium mb-2 block">源语言</label>
-          <select
+          <Select
             value={sourceLocale}
-            onChange={(e) => {
-              setSourceLocale(e.target.value);
-              setTargetLocales((prev) => prev.filter((c) => c !== e.target.value));
+            onValueChange={(v) => {
+              setSourceLocale(v);
+              setTargetLocales((prev) => prev.filter((c) => c !== v));
             }}
-            className="flex h-9 w-full max-w-xs rounded-md border bg-background px-3 text-sm"
           >
-            {languages.map((lang) => (
-              <option key={lang.code} value={lang.code}>
-                {lang.name} {lang.isDefault ? '（默认）' : ''}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="max-w-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {languages.map((lang) => (
+                <SelectItem key={lang.code} value={lang.code}>
+                  {lang.name} {lang.isDefault ? '（默认）' : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Target languages */}

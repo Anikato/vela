@@ -23,6 +23,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import {
   Table,
@@ -32,6 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ConfirmDeleteDialog } from '@/components/admin/common/confirm-delete-dialog';
 
 interface PageManagementProps {
   initialPages: PageListItem[];
@@ -73,6 +81,7 @@ export function PageManagement({ initialPages, locales }: PageManagementProps) {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<PageListItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PageListItem | null>(null);
   const [slug, setSlug] = useState('');
   const [status, setStatus] = useState<PageStatus>('draft');
   const [isHomepage, setIsHomepage] = useState(false);
@@ -167,20 +176,20 @@ export function PageManagement({ initialPages, locales }: PageManagementProps) {
     }
   }
 
-  async function handleDelete(item: PageListItem) {
-    const confirmed = window.confirm(`确认删除页面“${item.displayTitle}”吗？`);
-    if (!confirmed) return;
+  async function handleDelete() {
+    if (!deleteTarget) return;
 
     setIsSubmitting(true);
     try {
-      const result = await deletePageAction(item.id);
+      const result = await deletePageAction(deleteTarget.id);
       if (!result.success) {
         toast.error(typeof result.error === 'string' ? result.error : '删除失败');
         return;
       }
 
-      setPages((prev) => prev.filter((row) => row.id !== item.id));
+      setPages((prev) => prev.filter((row) => row.id !== deleteTarget.id));
       toast.success('页面已删除');
+      setDeleteTarget(null);
       router.refresh();
     } finally {
       setIsSubmitting(false);
@@ -257,7 +266,7 @@ export function PageManagement({ initialPages, locales }: PageManagementProps) {
                         size="sm"
                         className="h-8 text-destructive hover:text-destructive"
                         disabled={isSubmitting}
-                        onClick={() => handleDelete(item)}
+                        onClick={() => setDeleteTarget(item)}
                       >
                         <Trash2 className="mr-1 h-3.5 w-3.5" />
                         删除
@@ -302,15 +311,13 @@ export function PageManagement({ initialPages, locales }: PageManagementProps) {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">状态</label>
-                <select
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as PageStatus)}
-                  disabled={isSubmitting}
-                >
-                  <option value="draft">草稿</option>
-                  <option value="published">已发布</option>
-                </select>
+                <Select value={status} onValueChange={(v) => setStatus(v as PageStatus)} disabled={isSubmitting}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">草稿</SelectItem>
+                    <SelectItem value="published">已发布</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex items-end">
                 <label className="flex items-center gap-2 text-sm">
@@ -367,6 +374,14 @@ export function PageManagement({ initialPages, locales }: PageManagementProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        description={<>确定删除页面 <strong>{deleteTarget?.displayTitle}</strong> 吗？此操作不可撤销。</>}
+        onConfirm={handleDelete}
+        loading={isSubmitting}
+      />
     </div>
   );
 }

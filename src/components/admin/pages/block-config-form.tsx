@@ -1,6 +1,13 @@
 'use client';
 
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 
 /* ------------------------------------------------------------------
@@ -51,18 +58,16 @@ function ColumnsSelect({
   return (
     <div className="space-y-1.5">
       <label className="text-sm font-medium text-foreground">列数</label>
-      <select
-        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-        value={num(value, defaultValue)}
-        onChange={(e) => onChange(Number(e.target.value))}
-        disabled={disabled}
-      >
-        {options.map((n) => (
-          <option key={n} value={n}>
-            {n} 列
-          </option>
-        ))}
-      </select>
+      <Select value={String(num(value, defaultValue))} onValueChange={(v) => onChange(Number(v))} disabled={disabled}>
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {options.map((n) => (
+            <SelectItem key={n} value={String(n)}>
+              {n} 列
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
@@ -157,15 +162,13 @@ function NewsShowcaseConfig({ value, onChange, disabled }: Omit<BlockConfigFormP
       />
       <div className="space-y-1.5">
         <label className="text-sm font-medium text-foreground">布局方式</label>
-        <select
-          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-          value={str(value.layout, 'grid')}
-          onChange={(e) => onChange({ ...value, layout: e.target.value })}
-          disabled={disabled}
-        >
-          <option value="grid">网格（Grid）</option>
-          <option value="list">列表（List）</option>
-        </select>
+        <Select value={str(value.layout, 'grid')} onValueChange={(v) => onChange({ ...value, layout: v })} disabled={disabled}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="grid">网格（Grid）</SelectItem>
+            <SelectItem value="list">列表（List）</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
@@ -298,15 +301,13 @@ function VideoEmbedConfig({ value, onChange, disabled }: Omit<BlockConfigFormPro
       </div>
       <div className="space-y-1.5">
         <label className="text-sm font-medium text-foreground">宽高比</label>
-        <select
-          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-          value={str(value.aspect_ratio, '16/9')}
-          onChange={(e) => onChange({ ...value, aspect_ratio: e.target.value })}
-          disabled={disabled}
-        >
-          <option value="16/9">16:9（默认）</option>
-          <option value="4/3">4:3</option>
-        </select>
+        <Select value={str(value.aspect_ratio, '16/9')} onValueChange={(v) => onChange({ ...value, aspect_ratio: v })} disabled={disabled}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="16/9">16:9（默认）</SelectItem>
+            <SelectItem value="4/3">4:3</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );

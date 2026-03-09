@@ -22,6 +22,7 @@ import type {
   ProductOption,
 } from '@/types/admin';
 import { Button } from '@/components/ui/button';
+import { ConfirmDeleteDialog } from '@/components/admin/common/confirm-delete-dialog';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface ProductAttributeManagementProps {
   productOptions: ProductOption[];
@@ -92,6 +100,7 @@ export function ProductAttributeManagement({
 
   const [draggingGroupId, setDraggingGroupId] = useState<string | null>(null);
   const [draggingAttribute, setDraggingAttribute] = useState<{ id: string; groupId: string } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'group' | 'attribute'; id: string; label: string } | null>(null);
 
   const groupMap = useMemo(() => {
     const map = new Map<string, ProductAttributeEditorData['groups'][number]>();
@@ -199,9 +208,6 @@ export function ProductAttributeManagement({
   }
 
   async function handleDeleteGroup(groupId: string) {
-    const confirmed = window.confirm('确认删除该参数分组及其全部参数吗？');
-    if (!confirmed) return;
-
     setIsSubmitting(true);
     try {
       const result = await deleteAttributeGroupAction(groupId);
@@ -210,6 +216,7 @@ export function ProductAttributeManagement({
         return;
       }
       toast.success('分组已删除');
+      setDeleteConfirm(null);
       reload();
     } finally {
       setIsSubmitting(false);
@@ -261,9 +268,6 @@ export function ProductAttributeManagement({
   }
 
   async function handleDeleteAttribute(attributeId: string) {
-    const confirmed = window.confirm('确认删除该参数吗？');
-    if (!confirmed) return;
-
     setIsSubmitting(true);
     try {
       const result = await deleteAttributeAction(attributeId);
@@ -272,6 +276,7 @@ export function ProductAttributeManagement({
         return;
       }
       toast.success('参数已删除');
+      setDeleteConfirm(null);
       reload();
     } finally {
       setIsSubmitting(false);
@@ -368,18 +373,16 @@ export function ProductAttributeManagement({
     <div className="space-y-4">
       <div className="rounded-lg border border-border/50 bg-card p-4">
         <label className="mb-2 block text-sm font-medium">选择产品</label>
-        <select
-          value={selectedProductId}
-          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-          onChange={(e) => onChangeProduct(e.target.value)}
-          disabled={isSubmitting}
-        >
-          {productOptions.map((product) => (
-            <option key={product.id} value={product.id}>
-              {product.displayName} ({product.sku})
-            </option>
-          ))}
-        </select>
+        <Select value={selectedProductId} onValueChange={onChangeProduct} disabled={isSubmitting}>
+          <SelectTrigger><SelectValue placeholder="选择产品" /></SelectTrigger>
+          <SelectContent>
+            {productOptions.map((product) => (
+              <SelectItem key={product.id} value={product.id}>
+                {product.displayName} ({product.sku})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="flex justify-end">
@@ -436,7 +439,7 @@ export function ProductAttributeManagement({
                     variant="ghost"
                     size="sm"
                     className="h-8 text-destructive hover:text-destructive"
-                    onClick={() => handleDeleteGroup(group.id)}
+                    onClick={() => setDeleteConfirm({ type: 'group', id: group.id, label: group.displayName })}
                     disabled={isSubmitting}
                   >
                     <Trash2 className="mr-1 h-3.5 w-3.5" />
@@ -492,7 +495,7 @@ export function ProductAttributeManagement({
                           variant="ghost"
                           size="sm"
                           className="h-8 text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteAttribute(attribute.id)}
+                          onClick={() => setDeleteConfirm({ type: 'attribute', id: attribute.id, label: attribute.displayName })}
                           disabled={isSubmitting}
                         >
                           <Trash2 className="mr-1 h-3.5 w-3.5" />
@@ -553,18 +556,16 @@ export function ProductAttributeManagement({
           <div className="space-y-3 py-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">所属分组</label>
-              <select
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                value={attributeGroupId}
-                onChange={(e) => setAttributeGroupId(e.target.value)}
-                disabled={isSubmitting}
-              >
-                {data.groups.map((group) => (
-                  <option key={group.id} value={group.id}>
-                    {group.displayName}
-                  </option>
-                ))}
-              </select>
+              <Select value={attributeGroupId} onValueChange={setAttributeGroupId} disabled={isSubmitting}>
+                <SelectTrigger><SelectValue placeholder="选择分组" /></SelectTrigger>
+                <SelectContent>
+                  {data.groups.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.displayName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             {attributeTranslations.map((translation) => (
               <div key={translation.locale} className="space-y-2 rounded-md border border-border/50 p-3">
@@ -606,6 +607,21 @@ export function ProductAttributeManagement({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={!!deleteConfirm}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+        description={
+          deleteConfirm?.type === 'group'
+            ? <>确定删除参数分组 <strong>{deleteConfirm.label}</strong> 及其全部参数吗？此操作不可撤销。</>
+            : <>确定删除参数 <strong>{deleteConfirm?.label}</strong> 吗？此操作不可撤销。</>
+        }
+        onConfirm={() => {
+          if (deleteConfirm?.type === 'group') handleDeleteGroup(deleteConfirm.id);
+          else if (deleteConfirm?.type === 'attribute') handleDeleteAttribute(deleteConfirm.id);
+        }}
+        loading={isSubmitting}
+      />
     </div>
   );
 }

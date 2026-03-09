@@ -24,6 +24,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import {
   Table,
@@ -34,6 +43,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { RichTextEditor } from '@/components/admin/common/rich-text-editor';
+import { ConfirmDeleteDialog } from '@/components/admin/common/confirm-delete-dialog';
 import { BlockConfigForm } from './block-config-form';
 
 interface PageSectionsManagementProps {
@@ -93,6 +103,7 @@ export function PageSectionsManagement({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<SectionListItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<SectionListItem | null>(null);
 
   const [type, setType] = useState<SectionType>('hero');
   const [isActive, setIsActive] = useState(true);
@@ -193,19 +204,19 @@ export function PageSectionsManagement({
     }
   }
 
-  async function handleDelete(item: SectionListItem) {
-    const confirmed = window.confirm(`确认删除区块“${item.displayTitle}”吗？`);
-    if (!confirmed) return;
+  async function handleDelete() {
+    if (!deleteTarget) return;
 
     setIsSubmitting(true);
     try {
-      const result = await deleteSectionAction(item.id);
+      const result = await deleteSectionAction(deleteTarget.id);
       if (!result.success) {
         toast.error(typeof result.error === 'string' ? result.error : '删除失败');
         return;
       }
-      setSections((prev) => prev.filter((x) => x.id !== item.id));
+      setSections((prev) => prev.filter((x) => x.id !== deleteTarget.id));
       toast.success('区块已删除');
+      setDeleteTarget(null);
       router.refresh();
     } finally {
       setIsSubmitting(false);
@@ -323,7 +334,7 @@ export function PageSectionsManagement({
                         size="sm"
                         className="h-8 text-destructive hover:text-destructive"
                         disabled={isSubmitting}
-                        onClick={() => handleDelete(item)}
+                        onClick={() => setDeleteTarget(item)}
                       >
                         <Trash2 className="mr-1 h-3.5 w-3.5" />
                         删除
@@ -350,42 +361,45 @@ export function PageSectionsManagement({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium">区块类型</label>
-                <select
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  value={type}
-                  onChange={(e) => setType(e.target.value as SectionType)}
-                  disabled={isSubmitting}
-                >
-                  <optgroup label="布局类">
-                    <option value="hero">hero — 首屏横幅</option>
-                    <option value="two_column">two_column — 双栏布局</option>
-                    <option value="carousel_banner">carousel_banner — 轮播横幅</option>
-                  </optgroup>
-                  <optgroup label="内容类">
-                    <option value="rich_text">rich_text — 富文本</option>
-                    <option value="feature_grid">feature_grid — 特性网格</option>
-                    <option value="stats">stats — 数据统计</option>
-                    <option value="faq">faq — 常见问答</option>
-                    <option value="testimonials">testimonials — 客户评价</option>
-                    <option value="timeline">timeline — 时间线</option>
-                    <option value="team">team — 团队介绍</option>
-                  </optgroup>
-                  <optgroup label="媒体类">
-                    <option value="partner_logos">partner_logos — 合作伙伴Logo</option>
-                    <option value="image_gallery">image_gallery — 图片画廊</option>
-                    <option value="video_embed">video_embed — 视频嵌入</option>
-                  </optgroup>
-                  <optgroup label="交互类">
-                    <option value="product_showcase">product_showcase — 产品展示</option>
-                    <option value="category_nav">category_nav — 分类导航</option>
-                    <option value="news_showcase">news_showcase — 新闻展示</option>
-                    <option value="cta">cta — 行动号召</option>
-                    <option value="contact_form">contact_form — 联系表单</option>
-                  </optgroup>
-                  <optgroup label="其他">
-                    <option value="custom_html">custom_html — 自定义HTML</option>
-                  </optgroup>
-                </select>
+                <Select value={type} onValueChange={(v) => setType(v as SectionType)} disabled={isSubmitting}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>布局类</SelectLabel>
+                      <SelectItem value="hero">hero — 首屏横幅</SelectItem>
+                      <SelectItem value="two_column">two_column — 双栏布局</SelectItem>
+                      <SelectItem value="carousel_banner">carousel_banner — 轮播横幅</SelectItem>
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>内容类</SelectLabel>
+                      <SelectItem value="rich_text">rich_text — 富文本</SelectItem>
+                      <SelectItem value="feature_grid">feature_grid — 特性网格</SelectItem>
+                      <SelectItem value="stats">stats — 数据统计</SelectItem>
+                      <SelectItem value="faq">faq — 常见问答</SelectItem>
+                      <SelectItem value="testimonials">testimonials — 客户评价</SelectItem>
+                      <SelectItem value="timeline">timeline — 时间线</SelectItem>
+                      <SelectItem value="team">team — 团队介绍</SelectItem>
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>媒体类</SelectLabel>
+                      <SelectItem value="partner_logos">partner_logos — 合作伙伴Logo</SelectItem>
+                      <SelectItem value="image_gallery">image_gallery — 图片画廊</SelectItem>
+                      <SelectItem value="video_embed">video_embed — 视频嵌入</SelectItem>
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>交互类</SelectLabel>
+                      <SelectItem value="product_showcase">product_showcase — 产品展示</SelectItem>
+                      <SelectItem value="category_nav">category_nav — 分类导航</SelectItem>
+                      <SelectItem value="news_showcase">news_showcase — 新闻展示</SelectItem>
+                      <SelectItem value="cta">cta — 行动号召</SelectItem>
+                      <SelectItem value="contact_form">contact_form — 联系表单</SelectItem>
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>其他</SelectLabel>
+                      <SelectItem value="custom_html">custom_html — 自定义HTML</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">锚点 ID（可选）</label>
@@ -509,6 +523,14 @@ export function PageSectionsManagement({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        description={<>确定删除区块 <strong>{deleteTarget?.displayTitle}</strong> 吗？此操作不可撤销。</>}
+        onConfirm={handleDelete}
+        loading={isSubmitting}
+      />
     </div>
   );
 }

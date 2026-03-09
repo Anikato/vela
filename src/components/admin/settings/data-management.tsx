@@ -14,6 +14,13 @@ import {
 
 import { Button } from '@/components/ui/button';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   exportProductsCsvAction,
   getProductCsvTemplateAction,
   exportInquiriesCsvAction,
@@ -284,14 +291,13 @@ export function DataManagement({ defaultLocale }: DataManagementProps) {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <label className="text-sm text-muted-foreground">冲突处理：</label>
-                  <select
-                    value={importMode}
-                    onChange={(e) => setImportMode(e.target.value as 'skip' | 'update')}
-                    className="rounded border border-border bg-background px-2 py-1 text-sm"
-                  >
-                    <option value="skip">跳过已存在</option>
-                    <option value="update">覆盖已存在</option>
-                  </select>
+                  <Select value={importMode} onValueChange={(v) => setImportMode(v as 'skip' | 'update')}>
+                    <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="skip">跳过已存在</SelectItem>
+                      <SelectItem value="update">覆盖已存在</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Button
                   onClick={handleConfirmImport}
