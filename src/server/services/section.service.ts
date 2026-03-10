@@ -4,6 +4,7 @@ import { NotFoundError, ValidationError } from '@/lib/errors';
 import { getTranslation } from '@/lib/i18n';
 import { db } from '@/server/db';
 import {
+  categories,
   pageTranslations,
   pages,
   sectionTranslations,
@@ -83,7 +84,8 @@ export interface SectionTranslationInput {
 }
 
 export interface CreateSectionInput {
-  pageId: string;
+  pageId?: string;
+  categoryId?: string;
   type: string;
   placement?: 'main' | 'top' | 'bottom';
   config?: Record<string, unknown>;
@@ -95,7 +97,7 @@ export interface CreateSectionInput {
 }
 
 export type UpdateSectionInput = Partial<
-  Omit<CreateSectionInput, 'pageId' | 'translations'>
+  Omit<CreateSectionInput, 'pageId' | 'categoryId' | 'translations'>
 > & {
   translations?: SectionTranslationInput[];
 };
@@ -104,6 +106,13 @@ async function ensurePageExists(pageId: string): Promise<void> {
   const [page] = await db.select({ id: pages.id }).from(pages).where(eq(pages.id, pageId));
   if (!page) {
     throw new NotFoundError('Page', pageId);
+  }
+}
+
+async function ensureCategoryExists(categoryId: string): Promise<void> {
+  const [cat] = await db.select({ id: categories.id }).from(categories).where(eq(categories.id, categoryId));
+  if (!cat) {
+    throw new NotFoundError('Category', categoryId);
   }
 }
 
@@ -196,23 +205,36 @@ export async function getSectionById(id: string): Promise<SectionWithTranslation
 }
 
 export async function createSection(input: CreateSectionInput): Promise<SectionWithTranslations> {
-  await ensurePageExists(input.pageId);
+  if (!input.pageId && !input.categoryId) {
+    throw new ValidationError('Either pageId or categoryId is required');
+  }
+  if (input.pageId) {
+    await ensurePageExists(input.pageId);
+  }
+  if (input.categoryId) {
+    await ensureCategoryExists(input.categoryId);
+  }
   ensureValidType(input.type);
 
+  const placement = input.placement ?? 'main';
   let nextSortOrder = input.sortOrder;
   if (nextSortOrder === undefined) {
+    const ownerCondition = input.pageId
+      ? eq(sections.pageId, input.pageId)
+      : eq(sections.categoryId, input.categoryId!);
     const existing = await db
       .select({ id: sections.id })
       .from(sections)
-      .where(and(eq(sections.pageId, input.pageId), eq(sections.placement, 'main')));
+      .where(and(ownerCondition, eq(sections.placement, placement)));
     nextSortOrder = existing.length;
   }
 
   const [created] = await db
     .insert(sections)
     .values({
-      pageId: input.pageId,
-      placement: input.placement ?? 'main',
+      pageId: input.pageId ?? null,
+      categoryId: input.categoryId ?? null,
+      placement,
       type: input.type.trim(),
       config: input.config ?? {},
       sortOrder: nextSortOrder,
@@ -301,6 +323,121 @@ export async function reorderPageSections(pageId: string, orderedSectionIds: str
         .set({ sortOrder: index, updatedAt: new Date() })
         .where(eq(sections.id, orderedSectionIds[index]));
     }
+  });
+}
+
+// ─── Category Sections ───
+
+export async function getCategorySections(
+  categoryId: string,
+  locale: string,
+  defaultLocale: string,
+): Promise<SectionListItem[]> {
+  await ensureCategoryExists(categoryId);
+
+  const rows = await db.query.sections.findMany({
+    where: and(eq(sections.categoryId, categoryId), eq(sections.placement, 'main')),
+    with: { translations: true },
+    orderBy: [asc(sections.sortOrder), asc(sections.createdAt)],
+  });
+
+  return rows.map((item) => {
+    const display = getTranslation(item.translations, locale, defaultLocale);
+    return { ...item, displayTitle: display?.title ?? `(${item.type})` };
+  });
+}
+
+export async function reorderCategorySections(categoryId: string, orderedSectionIds: string[]): Promise<void> {
+  await ensureCategoryExists(categoryId);
+  if (orderedSectionIds.length === 0) return;
+
+  const existing = await db
+    .select({ id: sections.id, categoryId: sections.categoryId })
+    .from(sections)
+    .where(inArray(sections.id, orderedSectionIds));
+
+  if (existing.length !== orderedSectionIds.length) {
+    throw new ValidationError('Some sections do not exist');
+  }
+  if (existing.some((item) => item.categoryId !== categoryId)) {
+    throw new ValidationError('All sections must belong to the same category');
+  }
+
+  await db.transaction(async (tx) => {
+    for (let index = 0; index < orderedSectionIds.length; index++) {
+      await tx
+        .update(sections)
+        .set({ sortOrder: index, updatedAt: new Date() })
+        .where(eq(sections.id, orderedSectionIds[index]));
+    }
+  });
+}
+
+export async function getCategorySectionsForRender(
+  categoryId: string,
+  locale: string,
+  defaultLocale: string,
+): Promise<RenderSection[]> {
+  const rows = await db.query.sections.findMany({
+    where: and(
+      eq(sections.categoryId, categoryId),
+      eq(sections.placement, 'main'),
+      eq(sections.isActive, true),
+    ),
+    with: {
+      translations: true,
+      items: {
+        with: {
+          translations: true,
+          image: true,
+        },
+      },
+    },
+    orderBy: [asc(sections.sortOrder), asc(sections.createdAt)],
+  });
+
+  if (!rows.length) return [];
+
+  const storage = getStorageAdapter();
+
+  return rows.map((row) => {
+    const translated = getTranslation(row.translations, locale, defaultLocale);
+    const items = row.items
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((item) => {
+        const translatedItem = getTranslation(item.translations, locale, defaultLocale);
+        return {
+          id: item.id,
+          iconName: item.iconName,
+          imageUrl: item.image ? storage.getPublicUrl(item.image.filename) : null,
+          linkUrl: item.linkUrl,
+          config: item.config ?? {},
+          translation: {
+            title: typeof translatedItem?.title === 'string' ? translatedItem.title : null,
+            description: typeof translatedItem?.description === 'string' ? translatedItem.description : null,
+            content: typeof translatedItem?.content === 'string' ? translatedItem.content : null,
+          },
+        };
+      });
+
+    return {
+      id: row.id,
+      type: row.type,
+      config: row.config ?? {},
+      isActive: row.isActive,
+      anchorId: row.anchorId,
+      cssClass: row.cssClass,
+      translation: {
+        title: typeof translated?.title === 'string' ? translated.title : null,
+        subtitle: typeof translated?.subtitle === 'string' ? translated.subtitle : null,
+        content: typeof translated?.content === 'string' ? translated.content : null,
+        buttonText: typeof translated?.buttonText === 'string' ? translated.buttonText : null,
+        buttonLink: typeof translated?.buttonLink === 'string' ? translated.buttonLink : null,
+        secondaryButtonText: typeof translated?.secondaryButtonText === 'string' ? translated.secondaryButtonText : null,
+        secondaryButtonLink: typeof translated?.secondaryButtonLink === 'string' ? translated.secondaryButtonLink : null,
+      },
+      items,
+    };
   });
 }
 

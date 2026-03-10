@@ -102,11 +102,9 @@ export async function Footer({ locale, defaultLocale }: FooterProps) {
 
   return (
     <>
-      <footer className="border-t border-border bg-muted/40">
-        {/* Main footer */}
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {/* Column 1: Brand */}
+      <footer className="border-t border-border/40 bg-muted/30">
+        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-12">
             <div className="sm:col-span-2 lg:col-span-1">
               <Link href={homePath} className="inline-block">
                 {siteInfo.logoUrl ? (
@@ -115,34 +113,34 @@ export async function Footer({ locale, defaultLocale }: FooterProps) {
                     alt={siteInfo.siteName}
                     width={140}
                     height={40}
-                    className="h-8 w-auto"
+                    className="h-9 w-auto"
                   />
                 ) : (
-                  <span className="text-lg font-bold text-foreground">
+                  <span className="text-lg font-bold tracking-tight text-foreground">
                     {siteInfo.siteName}
                   </span>
                 )}
               </Link>
 
               {hasCompanyInfo && (
-                <div className="mt-3 space-y-1">
+                <div className="mt-4 space-y-1.5">
                   {siteInfo.slogan && (
-                    <p className="text-sm text-muted-foreground">{siteInfo.slogan}</p>
+                    <p className="text-sm leading-relaxed text-muted-foreground">{siteInfo.slogan}</p>
                   )}
                   {siteInfo.footerText && (
-                    <p className="text-sm text-muted-foreground">{siteInfo.footerText}</p>
+                    <p className="text-sm leading-relaxed text-muted-foreground">{siteInfo.footerText}</p>
                   )}
                 </div>
               )}
 
               {socialLinks.length > 0 && (
-                <div className="mt-4">
+                <div className="mt-6">
                   {ui['footer.followUs'] && (
-                    <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       {ui['footer.followUs']}
                     </p>
                   )}
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     {socialLinks.map((social) => (
                       <a
                         key={social.label}
@@ -150,7 +148,7 @@ export async function Footer({ locale, defaultLocale }: FooterProps) {
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={social.label}
-                        className="text-muted-foreground transition-colors hover:text-foreground"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg bg-foreground/5 text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary"
                       >
                         <SocialIconSvg d={social.d} />
                       </a>
@@ -160,13 +158,12 @@ export async function Footer({ locale, defaultLocale }: FooterProps) {
               )}
             </div>
 
-            {/* Column 2: Quick Links */}
             {quickLinks.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-foreground">
+                <h3 className="text-sm font-semibold tracking-tight text-foreground">
                   {ui['footer.quickLinks'] || 'Quick Links'}
                 </h3>
-                <ul className="mt-3 space-y-2">
+                <ul className="mt-4 space-y-2.5">
                   {quickLinks.map((item) => (
                     <li key={item.id}>
                       <Link
@@ -183,18 +180,17 @@ export async function Footer({ locale, defaultLocale }: FooterProps) {
               </div>
             )}
 
-            {/* Column 3: Contact */}
             {hasContact && (
               <div>
-                <h3 className="text-sm font-semibold text-foreground">
+                <h3 className="text-sm font-semibold tracking-tight text-foreground">
                   {ui['footer.contactUs'] || 'Contact Us'}
                 </h3>
-                <ul className="mt-3 space-y-3">
+                <ul className="mt-4 space-y-3.5">
                   {siteInfo.contactEmail && (
                     <li>
                       <a
                         href={`mailto:${siteInfo.contactEmail}`}
-                        className="flex items-start gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                        className="flex items-start gap-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
                       >
                         <Mail className="mt-0.5 h-4 w-4 shrink-0" />
                         <span>{siteInfo.contactEmail}</span>
@@ -205,7 +201,7 @@ export async function Footer({ locale, defaultLocale }: FooterProps) {
                     <li>
                       <a
                         href={`tel:${siteInfo.contactPhone}`}
-                        className="flex items-start gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                        className="flex items-start gap-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
                       >
                         <Phone className="mt-0.5 h-4 w-4 shrink-0" />
                         <span>{siteInfo.contactPhone}</span>
@@ -218,7 +214,7 @@ export async function Footer({ locale, defaultLocale }: FooterProps) {
                         href={`https://wa.me/${siteInfo.whatsapp.replace(/[^0-9]/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-start gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                        className="flex items-start gap-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
                       >
                         <MessageCircle className="mt-0.5 h-4 w-4 shrink-0" />
                         <span>WhatsApp</span>
@@ -226,7 +222,7 @@ export async function Footer({ locale, defaultLocale }: FooterProps) {
                     </li>
                   )}
                   {siteInfo.address && (
-                    <li className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2.5 text-sm text-muted-foreground">
                       <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
                       <span>{siteInfo.address}</span>
                     </li>
@@ -237,9 +233,8 @@ export async function Footer({ locale, defaultLocale }: FooterProps) {
           </div>
         </div>
 
-        {/* Copyright bar */}
-        <div className="border-t border-border">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+        <div className="border-t border-border/40">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
             <p className="text-xs text-muted-foreground">
               {siteInfo.copyright
                 ? siteInfo.copyright

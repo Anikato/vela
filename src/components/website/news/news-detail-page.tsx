@@ -34,11 +34,10 @@ export function NewsDetailPage({
   return (
     <div>
       <Breadcrumb items={crumbs} />
-      <article className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Header */}
-        <header className="mb-8">
+      <article className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+        <header className="mb-10">
           {article.publishedAt ? (
-            <time className="text-sm text-muted-foreground">
+            <time className="text-sm font-medium text-muted-foreground">
               {new Date(article.publishedAt).toLocaleDateString(locale, {
                 year: 'numeric',
                 month: 'long',
@@ -46,17 +45,16 @@ export function NewsDetailPage({
               })}
             </time>
           ) : null}
-          <h1 className="mt-2 text-3xl font-bold leading-tight sm:text-4xl">
+          <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
             {article.title}
           </h1>
           {article.summary ? (
-            <p className="mt-3 text-lg text-muted-foreground">{article.summary}</p>
+            <p className="mt-4 text-lg leading-relaxed text-muted-foreground sm:text-xl">{article.summary}</p>
           ) : null}
         </header>
 
-        {/* Cover image */}
         {article.coverImage ? (
-          <div className="relative mb-8 aspect-[16/9] overflow-hidden rounded-xl">
+          <div className="relative mb-10 aspect-[16/9] overflow-hidden rounded-2xl shadow-lg">
             <Image
               src={article.coverImage.url}
               alt={article.coverImage.alt || article.title}
@@ -68,10 +66,9 @@ export function NewsDetailPage({
           </div>
         ) : null}
 
-        {/* Content */}
         {article.content ? (
           <div
-            className="prose prose-neutral max-w-none dark:prose-invert"
+            className="prose prose-neutral max-w-none dark:prose-invert prose-headings:tracking-tight prose-a:text-primary prose-img:rounded-xl"
             dangerouslySetInnerHTML={{ __html: article.content }}
           />
         ) : null}

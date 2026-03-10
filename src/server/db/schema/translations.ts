@@ -9,7 +9,7 @@ export const uiTranslations = pgTable(
     key: varchar('key', { length: 255 }).notNull(), // 如 common.submit, product.addToInquiry
     category: varchar('category', { length: 50 }).notNull(), // 如 common, product, inquiry
     locale: varchar('locale', { length: 10 })
-      .references(() => languages.code)
+      .references(() => languages.code, { onDelete: 'cascade' })
       .notNull(),
     value: text('value'),
   },

@@ -29,7 +29,7 @@ export const navigationItemTranslations = pgTable(
       .references(() => navigationItems.id, { onDelete: 'cascade' })
       .notNull(),
     locale: varchar('locale', { length: 10 })
-      .references(() => languages.code)
+      .references(() => languages.code, { onDelete: 'cascade' })
       .notNull(),
     label: varchar('label', { length: 200 }),
   },

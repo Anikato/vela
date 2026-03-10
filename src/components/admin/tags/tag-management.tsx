@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { createTagAction, deleteTagAction, updateTagAction } from '@/server/actions/tag.actions';
@@ -25,6 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfirmDeleteDialog } from '@/components/admin/common/confirm-delete-dialog';
 
 interface TagManagementProps {
@@ -66,6 +67,11 @@ export function TagManagement({ initialTags, locales }: TagManagementProps) {
   const [translations, setTranslations] = useState<TranslationForm[]>(() =>
     buildTranslationForm(locales),
   );
+  const defaultLocale = useMemo(
+    () => locales.find((item) => item.isDefault)?.code ?? locales[0]?.code ?? '',
+    [locales],
+  );
+  const [expandedLocales, setExpandedLocales] = useState<string[]>([]);
 
   const sortedTags = useMemo(
     () =>
@@ -75,10 +81,27 @@ export function TagManagement({ initialTags, locales }: TagManagementProps) {
     [tags],
   );
 
+  function toggleLocalePanel(locale: string) {
+    setExpandedLocales((prev) =>
+      prev.includes(locale) ? prev.filter((item) => item !== locale) : [...prev, locale],
+    );
+  }
+
+  const orderedTranslations = useMemo(() => {
+    const list = [...translations];
+    list.sort((a, b) => {
+      if (a.locale === defaultLocale) return -1;
+      if (b.locale === defaultLocale) return 1;
+      return a.locale.localeCompare(b.locale);
+    });
+    return list;
+  }, [defaultLocale, translations]);
+
   function openCreateDialog() {
     setEditing(null);
     setSlug('');
     setTranslations(buildTranslationForm(locales));
+    setExpandedLocales(defaultLocale ? [defaultLocale] : []);
     setDialogOpen(true);
   }
 
@@ -94,6 +117,7 @@ export function TagManagement({ initialTags, locales }: TagManagementProps) {
         };
       }),
     );
+    setExpandedLocales(defaultLocale ? [defaultLocale] : []);
     setDialogOpen(true);
   }
 
@@ -219,37 +243,65 @@ export function TagManagement({ initialTags, locales }: TagManagementProps) {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>{editing ? '编辑标签' : '新建标签'}</DialogTitle>
             <DialogDescription>填写标签基础信息和多语言名称。</DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Slug</label>
-              <Input
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                placeholder="例如：hot-sale"
-                disabled={isSubmitting}
-              />
-            </div>
+          <Tabs defaultValue="basic">
+            <TabsList className="w-full">
+              <TabsTrigger value="basic" className="flex-1">基础信息</TabsTrigger>
+              <TabsTrigger value="i18n" className="flex-1">多语言内容</TabsTrigger>
+            </TabsList>
 
-            <div className="space-y-3">
-              {translations.map((item) => (
-                <div key={item.locale} className="rounded-md border border-border/50 p-3">
-                  <p className="mb-2 text-sm font-semibold">{item.locale}</p>
-                  <Input
-                    placeholder="标签名称"
-                    value={item.name}
-                    onChange={(e) => updateTranslation(item.locale, e.target.value)}
-                    disabled={isSubmitting}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
+            <TabsContent value="basic" className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Slug</label>
+                <Input
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  placeholder="例如：hot-sale"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="i18n" className="space-y-3 pt-4">
+              {orderedTranslations.map((item) => {
+                const expanded = expandedLocales.includes(item.locale);
+                const isDefault = item.locale === defaultLocale;
+                return (
+                  <div key={item.locale} className="rounded-md border border-border/50 p-3">
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between text-left"
+                      onClick={() => toggleLocalePanel(item.locale)}
+                    >
+                      <span className="text-sm font-semibold">
+                        {item.locale} {isDefault ? '(默认)' : ''}
+                      </span>
+                      {expanded ? (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                    {expanded ? (
+                      <div className="mt-2">
+                        <Input
+                          placeholder="标签名称"
+                          value={item.name}
+                          onChange={(e) => updateTranslation(item.locale, e.target.value)}
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </TabsContent>
+          </Tabs>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>

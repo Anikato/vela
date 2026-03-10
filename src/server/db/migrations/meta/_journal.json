@@ -8,6 +8,13 @@
       "when": 1772960648352,
       "tag": "0000_lumpy_human_torch",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1773196800000,
+      "tag": "0001_locale_cascade_delete",
+      "breakpoints": true
     }
   ]
 }

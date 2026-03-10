@@ -3,17 +3,15 @@ import { getCategoryList } from '@/server/services/category.service';
 import { getAllLanguages, getDefaultLanguage } from '@/server/services/language.service';
 import { listMedia } from '@/server/services/media.service';
 import { getProductList } from '@/server/services/product.service';
-import { getTagList } from '@/server/services/tag.service';
 
 export default async function ProductsPage() {
   const allLanguages = await getAllLanguages();
   const defaultLanguage = await getDefaultLanguage();
   const locale = defaultLanguage.code;
 
-  const [products, categories, tags, media] = await Promise.all([
+  const [products, categories, media] = await Promise.all([
     getProductList(locale, locale),
     getCategoryList(locale, locale),
-    getTagList(locale, locale),
     listMedia({ page: 1, pageSize: 200 }),
   ]);
 
@@ -31,7 +29,6 @@ export default async function ProductsPage() {
         initialProducts={products}
         locales={allLanguages}
         categories={categories}
-        tags={tags}
         mediaItems={media.items}
       />
     </div>

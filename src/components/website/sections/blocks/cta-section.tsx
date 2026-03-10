@@ -14,24 +14,34 @@ export function CtaSection({ section }: SectionComponentProps) {
   }
 
   return (
-    <div className="mx-auto max-w-4xl rounded-2xl border border-border/50 bg-card p-6 text-center sm:p-10">
-      {tr.title ? <h2 className="text-2xl font-semibold">{tr.title}</h2> : null}
-      {tr.subtitle ? <p className="mt-3 text-muted-foreground">{tr.subtitle}</p> : null}
+    <div className="relative mx-auto max-w-4xl overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary/80 p-8 text-center text-primary-foreground sm:p-12 lg:p-16">
+      <div className="absolute -left-12 -top-12 h-40 w-40 rounded-full bg-white/10" />
+      <div className="absolute -bottom-8 -right-8 h-32 w-32 rounded-full bg-white/10" />
+      <div className="absolute left-1/2 top-0 h-20 w-20 -translate-x-1/2 rounded-full bg-white/5" />
 
-      {hasPrimaryButton || hasSecondaryButton ? (
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          {hasPrimaryButton ? (
-            <Button asChild>
-              <Link href={tr.buttonLink!}>{tr.buttonText}</Link>
-            </Button>
-          ) : null}
-          {hasSecondaryButton ? (
-            <Button asChild variant="outline">
-              <Link href={tr.secondaryButtonLink!}>{tr.secondaryButtonText}</Link>
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
+      <div className="relative">
+        {tr.title ? (
+          <h2 className="text-2xl font-bold sm:text-3xl lg:text-4xl">{tr.title}</h2>
+        ) : null}
+        {tr.subtitle ? (
+          <p className="mx-auto mt-4 max-w-xl text-primary-foreground/80 sm:text-lg">{tr.subtitle}</p>
+        ) : null}
+
+        {hasPrimaryButton || hasSecondaryButton ? (
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            {hasPrimaryButton ? (
+              <Button asChild size="lg" variant="secondary" className="rounded-full px-8 text-base font-semibold shadow-lg">
+                <Link href={tr.buttonLink!}>{tr.buttonText}</Link>
+              </Button>
+            ) : null}
+            {hasSecondaryButton ? (
+              <Button asChild variant="outline" size="lg" className="rounded-full border-primary-foreground/30 px-8 text-base text-primary-foreground hover:bg-primary-foreground/10">
+                <Link href={tr.secondaryButtonLink!}>{tr.secondaryButtonText}</Link>
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

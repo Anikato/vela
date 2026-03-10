@@ -55,7 +55,7 @@ export const productTranslations = pgTable(
       .references(() => products.id, { onDelete: 'cascade' })
       .notNull(),
     locale: varchar('locale', { length: 10 })
-      .references(() => languages.code)
+      .references(() => languages.code, { onDelete: 'cascade' })
       .notNull(),
     name: varchar('name', { length: 500 }),
     shortDescription: text('short_description'),
@@ -144,7 +144,7 @@ export const productAttributeGroupTranslations = pgTable(
       .references(() => productAttributeGroups.id, { onDelete: 'cascade' })
       .notNull(),
     locale: varchar('locale', { length: 10 })
-      .references(() => languages.code)
+      .references(() => languages.code, { onDelete: 'cascade' })
       .notNull(),
     name: varchar('name', { length: 255 }),
   },
@@ -168,7 +168,7 @@ export const productAttributeTranslations = pgTable(
       .references(() => productAttributes.id, { onDelete: 'cascade' })
       .notNull(),
     locale: varchar('locale', { length: 10 })
-      .references(() => languages.code)
+      .references(() => languages.code, { onDelete: 'cascade' })
       .notNull(),
     name: varchar('name', { length: 255 }), // 参数名，如"功率"
     value: varchar('value', { length: 500 }), // 参数值，如"5.5 kW"

@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import {
   createSectionAction,
   deleteSectionAction,
+  reorderCategorySectionsAction,
   reorderPageSectionsAction,
   updateSectionAction,
 } from '@/server/actions/section.actions';
@@ -47,9 +48,11 @@ import { ConfirmDeleteDialog } from '@/components/admin/common/confirm-delete-di
 import { BlockConfigForm } from './block-config-form';
 
 interface PageSectionsManagementProps {
-  pageId: string;
+  pageId?: string;
+  categoryId?: string;
   initialSections: SectionListItem[];
   locales: Language[];
+  itemsBasePath?: string;
 }
 
 type TranslationForm = {
@@ -95,9 +98,12 @@ const richTextBlockTypes = new Set([
 
 export function PageSectionsManagement({
   pageId,
+  categoryId,
   initialSections,
   locales,
+  itemsBasePath,
 }: PageSectionsManagementProps) {
+  const resolvedItemsBase = itemsBasePath ?? `/admin/pages/${pageId}/sections`;
   const router = useRouter();
   const [sections, setSections] = useState(initialSections);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -166,8 +172,9 @@ export function PageSectionsManagement({
   }
 
   async function saveSection() {
+    const ownerFields = categoryId ? { categoryId } : { pageId: pageId! };
     const payload = {
-      pageId,
+      ...ownerFields,
       type,
       config: configObj,
       isActive,
@@ -237,10 +244,15 @@ export function PageSectionsManagement({
 
     setIsSubmitting(true);
     try {
-      const result = await reorderPageSectionsAction({
-        pageId,
-        orderedSectionIds: next.map((item) => item.id),
-      });
+      const result = categoryId
+        ? await reorderCategorySectionsAction({
+            categoryId,
+            orderedSectionIds: next.map((item) => item.id),
+          })
+        : await reorderPageSectionsAction({
+            pageId: pageId!,
+            orderedSectionIds: next.map((item) => item.id),
+          });
       if (!result.success) {
         toast.error(typeof result.error === 'string' ? result.error : '排序失败');
         return;
@@ -323,7 +335,7 @@ export function PageSectionsManagement({
                       </Button>
                       {itemBasedBlockTypes.has(item.type) && (
                         <Button asChild variant="ghost" size="sm" className="h-8">
-                          <Link href={`/admin/pages/${pageId}/sections/${item.id}/items`}>
+                          <Link href={`${resolvedItemsBase}/${item.id}/items`}>
                             <Layers className="mr-1 h-3.5 w-3.5" />
                             子项
                           </Link>

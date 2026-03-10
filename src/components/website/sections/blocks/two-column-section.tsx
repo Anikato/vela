@@ -1,5 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
+
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 import type { SectionComponentProps } from '../types';
@@ -13,41 +15,39 @@ export function TwoColumnSection({ section }: SectionComponentProps) {
   if (!hasText && !imageUrl) return null;
 
   return (
-    <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
-      {/* Image column */}
-      <div className={reversed ? 'lg:order-2' : ''}>
+    <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+      <div className={cn(reversed ? 'lg:order-2' : '')}>
         {imageUrl ? (
-          <div className="relative aspect-[4/3] overflow-hidden rounded-xl">
+          <div className="group relative aspect-[4/3] overflow-hidden rounded-2xl shadow-xl">
             <Image
               src={imageUrl}
               alt={tr.title ?? ''}
               fill
-              className="object-cover"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
               sizes="(max-width: 1024px) 100vw, 50vw"
             />
           </div>
         ) : (
-          <div className="aspect-[4/3] rounded-xl bg-muted/30" />
+          <div className="aspect-[4/3] rounded-2xl bg-muted/20" />
         )}
       </div>
 
-      {/* Text column */}
-      <div className={reversed ? 'lg:order-1' : ''}>
+      <div className={cn(reversed ? 'lg:order-1' : '')}>
         {tr.title && (
-          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">{tr.title}</h2>
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">{tr.title}</h2>
         )}
         {tr.subtitle && (
-          <p className="mt-3 text-lg text-muted-foreground">{tr.subtitle}</p>
+          <p className="mt-4 text-lg text-muted-foreground">{tr.subtitle}</p>
         )}
         {tr.content && (
           <div
-            className="prose prose-sm mt-4 max-w-none text-foreground"
+            className="prose prose-sm mt-5 max-w-none text-foreground/80"
             dangerouslySetInnerHTML={{ __html: tr.content }}
           />
         )}
         {tr.buttonText && tr.buttonLink && (
-          <div className="mt-6">
-            <Button asChild>
+          <div className="mt-8">
+            <Button asChild size="lg" className="rounded-full px-8">
               <Link href={tr.buttonLink}>{tr.buttonText}</Link>
             </Button>
           </div>

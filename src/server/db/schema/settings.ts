@@ -65,7 +65,7 @@ export const siteSettingTranslations = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     locale: varchar('locale', { length: 10 })
-      .references(() => languages.code)
+      .references(() => languages.code, { onDelete: 'cascade' })
       .notNull(),
     siteName: varchar('site_name', { length: 200 }),
     siteDescription: text('site_description'),

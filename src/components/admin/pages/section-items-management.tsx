@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowDown,
   ArrowUp,
+  ChevronDown,
+  ChevronRight,
   GripVertical,
   ImageIcon,
   Pencil,
@@ -41,6 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // ─── Types ───
 
@@ -335,6 +338,11 @@ export function SectionItemsManagement({
   const [translations, setTranslations] = useState<TranslationForm[]>(() =>
     buildTranslationForm(locales),
   );
+  const defaultLocale = useMemo(
+    () => locales.find((item) => item.isDefault)?.code ?? locales[0]?.code ?? '',
+    [locales],
+  );
+  const [expandedLocales, setExpandedLocales] = useState<string[]>([]);
 
   const fields = FIELDS_BY_TYPE[sectionType] ?? DEFAULT_FIELDS;
 
@@ -343,6 +351,22 @@ export function SectionItemsManagement({
     [items],
   );
 
+  function toggleLocalePanel(locale: string) {
+    setExpandedLocales((prev) =>
+      prev.includes(locale) ? prev.filter((item) => item !== locale) : [...prev, locale],
+    );
+  }
+
+  const orderedTranslations = useMemo(() => {
+    const list = [...translations];
+    list.sort((a, b) => {
+      if (a.locale === defaultLocale) return -1;
+      if (b.locale === defaultLocale) return 1;
+      return a.locale.localeCompare(b.locale);
+    });
+    return list;
+  }, [defaultLocale, translations]);
+
   function openCreateDialog() {
     setEditing(null);
     setIconName('');
@@ -350,6 +374,7 @@ export function SectionItemsManagement({
     setImageUrl(null);
     setLinkUrl('');
     setTranslations(buildTranslationForm(locales));
+    setExpandedLocales(defaultLocale ? [defaultLocale] : []);
     setDialogOpen(true);
   }
 
@@ -372,6 +397,7 @@ export function SectionItemsManagement({
         };
       }),
     );
+    setExpandedLocales(defaultLocale ? [defaultLocale] : []);
     setDialogOpen(true);
   }
 
@@ -598,7 +624,7 @@ export function SectionItemsManagement({
 
       {/* ─── 创建/编辑 Dialog ─── */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>
               {editing ? '编辑' : '新增'}
@@ -607,121 +633,142 @@ export function SectionItemsManagement({
             <DialogDescription>{fields.hint}</DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-2">
-            {/* Image picker */}
-            {fields.showImage && (
-              <ImagePicker
-                label="图片"
-                currentUrl={imageUrl}
-                mediaItems={mediaItems}
-                onSelect={(id, url) => {
-                  setImageId(id);
-                  setImageUrl(url);
-                }}
-                onClear={() => {
-                  setImageId(null);
-                  setImageUrl(null);
-                }}
-              />
-            )}
+          <Tabs defaultValue="basic">
+            <TabsList className="w-full">
+              <TabsTrigger value="basic" className="flex-1">基础信息</TabsTrigger>
+              <TabsTrigger value="i18n" className="flex-1">多语言内容</TabsTrigger>
+            </TabsList>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              {/* Icon name */}
-              {fields.showIcon && (
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">
-                    图标名称（Lucide）
-                  </label>
-                  <Input
-                    placeholder="例如 Shield, Zap, Globe, Award"
-                    value={iconName}
-                    onChange={(e) => setIconName(e.target.value)}
-                    disabled={isSubmitting}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    使用{' '}
-                    <a
-                      href="https://lucide.dev/icons"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary underline"
-                    >
-                      Lucide 图标
-                    </a>{' '}
-                    名称，首字母大写
-                  </p>
-                </div>
+            <TabsContent value="basic" className="space-y-4 pt-4">
+              {fields.showImage && (
+                <ImagePicker
+                  label="图片"
+                  currentUrl={imageUrl}
+                  mediaItems={mediaItems}
+                  onSelect={(id, url) => {
+                    setImageId(id);
+                    setImageUrl(url);
+                  }}
+                  onClear={() => {
+                    setImageId(null);
+                    setImageUrl(null);
+                  }}
+                />
               )}
 
-              {/* Link URL */}
-              {fields.showLink && (
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">链接 URL（可选）</label>
-                  <Input
-                    placeholder="例如 /products 或 https://example.com"
-                    value={linkUrl}
-                    onChange={(e) => setLinkUrl(e.target.value)}
-                    disabled={isSubmitting}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Translations */}
-            <div className="space-y-3">
-              <label className="text-sm font-medium">多语言内容</label>
-              {translations.map((item) => (
-                <div
-                  key={item.locale}
-                  className="rounded-md border border-border/50 p-3"
-                >
-                  <p className="mb-2 text-sm font-semibold">{item.locale}</p>
-                  <div className="grid gap-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {fields.showIcon && (
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">
+                      图标名称（Lucide）
+                    </label>
                     <Input
-                      placeholder="标题"
-                      value={item.title}
-                      onChange={(e) =>
-                        updateTranslation(item.locale, 'title', e.target.value)
-                      }
+                      placeholder="例如 Shield, Zap, Globe, Award"
+                      value={iconName}
+                      onChange={(e) => setIconName(e.target.value)}
                       disabled={isSubmitting}
                     />
-                    {fields.showDescription && (
-                      <textarea
-                        rows={3}
-                        className="min-h-[72px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        placeholder="描述"
-                        value={item.description}
-                        onChange={(e) =>
-                          updateTranslation(
-                            item.locale,
-                            'description',
-                            e.target.value,
-                          )
-                        }
-                        disabled={isSubmitting}
-                      />
-                    )}
-                    {fields.showContent && (
-                      <textarea
-                        rows={4}
-                        className="min-h-[96px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        placeholder="富文本内容（可选，支持 HTML）"
-                        value={item.content}
-                        onChange={(e) =>
-                          updateTranslation(
-                            item.locale,
-                            'content',
-                            e.target.value,
-                          )
-                        }
-                        disabled={isSubmitting}
-                      />
-                    )}
+                    <p className="text-xs text-muted-foreground">
+                      使用{' '}
+                      <a
+                        href="https://lucide.dev/icons"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary underline"
+                      >
+                        Lucide 图标
+                      </a>{' '}
+                      名称，首字母大写
+                    </p>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
+                )}
+
+                {fields.showLink && (
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">链接 URL（可选）</label>
+                    <Input
+                      placeholder="例如 /products 或 https://example.com"
+                      value={linkUrl}
+                      onChange={(e) => setLinkUrl(e.target.value)}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="i18n" className="space-y-3 pt-4">
+              {orderedTranslations.map((item) => {
+                const expanded = expandedLocales.includes(item.locale);
+                const isDefault = item.locale === defaultLocale;
+                return (
+                  <div
+                    key={item.locale}
+                    className="rounded-md border border-border/50 p-3"
+                  >
+                    <button
+                      type="button"
+                      className="mb-2 flex w-full items-center justify-between text-left"
+                      onClick={() => toggleLocalePanel(item.locale)}
+                    >
+                      <span className="text-sm font-semibold">
+                        {item.locale} {isDefault ? '(默认)' : ''}
+                      </span>
+                      {expanded ? (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                    {expanded ? (
+                      <div className="grid gap-3">
+                        <Input
+                          placeholder="标题"
+                          value={item.title}
+                          onChange={(e) =>
+                            updateTranslation(item.locale, 'title', e.target.value)
+                          }
+                          disabled={isSubmitting}
+                        />
+                        {fields.showDescription && (
+                          <textarea
+                            rows={3}
+                            className="min-h-[72px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            placeholder="描述"
+                            value={item.description}
+                            onChange={(e) =>
+                              updateTranslation(
+                                item.locale,
+                                'description',
+                                e.target.value,
+                              )
+                            }
+                            disabled={isSubmitting}
+                          />
+                        )}
+                        {fields.showContent && (
+                          <textarea
+                            rows={4}
+                            className="min-h-[96px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            placeholder="富文本内容（可选，支持 HTML）"
+                            value={item.content}
+                            onChange={(e) =>
+                              updateTranslation(
+                                item.locale,
+                                'content',
+                                e.target.value,
+                              )
+                            }
+                            disabled={isSubmitting}
+                          />
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </TabsContent>
+          </Tabs>
 
           <DialogFooter>
             <Button

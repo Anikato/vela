@@ -193,9 +193,9 @@ export async function updateLanguage(
 }
 
 /**
- * 删除语言
+ * 删除语言及其所有关联翻译数据
  * @throws NotFoundError 如果语言不存在
- * @throws ValidationError 如果试图删除默认语言
+ * @throws ValidationError 如果试图删除默认语言或系统仅剩一种语言
  */
 export async function deleteLanguage(code: string): Promise<void> {
   const normalizedCode = normalizeLanguageCode(code);
@@ -203,6 +203,11 @@ export async function deleteLanguage(code: string): Promise<void> {
 
   if (lang.isDefault) {
     throw new ValidationError('Cannot delete the default language. Set another language as default first.');
+  }
+
+  const allLangs = await db.select().from(languages);
+  if (allLangs.length <= 1) {
+    throw new ValidationError('Cannot delete the last remaining language. The system requires at least one language.');
   }
 
   await db.delete(languages).where(eq(languages.code, normalizedCode));

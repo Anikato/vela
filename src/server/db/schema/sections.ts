@@ -45,7 +45,7 @@ export const sectionTranslations = pgTable(
       .references(() => sections.id, { onDelete: 'cascade' })
       .notNull(),
     locale: varchar('locale', { length: 10 })
-      .references(() => languages.code)
+      .references(() => languages.code, { onDelete: 'cascade' })
       .notNull(),
     title: varchar('title', { length: 500 }),
     subtitle: varchar('subtitle', { length: 500 }),
@@ -87,7 +87,7 @@ export const sectionItemTranslations = pgTable(
       .references(() => sectionItems.id, { onDelete: 'cascade' })
       .notNull(),
     locale: varchar('locale', { length: 10 })
-      .references(() => languages.code)
+      .references(() => languages.code, { onDelete: 'cascade' })
       .notNull(),
     title: varchar('title', { length: 500 }),
     description: text('description'),

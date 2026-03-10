@@ -12,20 +12,19 @@ export function TimelineSection({ section }: SectionComponentProps) {
   return (
     <div>
       {(tr.title || tr.subtitle) && (
-        <div className="mb-12 text-center">
-          {tr.title && <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">{tr.title}</h2>}
+        <div className="mb-14 text-center">
+          {tr.title && <h2 className="text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">{tr.title}</h2>}
           {tr.subtitle && (
-            <p className="mt-3 text-muted-foreground sm:text-lg">{tr.subtitle}</p>
+            <p className="mx-auto mt-4 max-w-2xl text-muted-foreground sm:text-lg">{tr.subtitle}</p>
           )}
         </div>
       )}
 
       <div className="relative mx-auto max-w-4xl">
-        {/* Vertical line */}
-        <div className="absolute left-4 top-0 hidden h-full w-0.5 bg-border md:left-1/2 md:block md:-translate-x-px" />
-        <div className="absolute left-4 top-0 h-full w-0.5 bg-border md:hidden" />
+        <div className="absolute left-4 top-0 hidden h-full w-px bg-gradient-to-b from-primary/20 via-primary/40 to-primary/20 md:left-1/2 md:block md:-translate-x-px" />
+        <div className="absolute left-4 top-0 h-full w-px bg-gradient-to-b from-primary/20 via-primary/40 to-primary/20 md:hidden" />
 
-        <div className="space-y-8 md:space-y-12">
+        <div className="space-y-10 md:space-y-14">
           {items.map((item, idx) => (
             <TimelineItem key={item.id} item={item} index={idx} />
           ))}
@@ -41,12 +40,9 @@ function TimelineItem({ item, index }: { item: WebsiteSectionItem; index: number
 
   return (
     <div className="relative pl-12 md:pl-0">
-      {/* Dot indicator - mobile */}
-      <div className="absolute left-2.5 top-1.5 h-3 w-3 rounded-full border-2 border-primary bg-background md:hidden" />
+      <div className="absolute left-[11px] top-1.5 h-4 w-4 rounded-full border-[3px] border-primary bg-background shadow-[0_0_0_4px_hsl(var(--primary)/0.15)] md:hidden" />
 
-      {/* Desktop layout: alternating left/right */}
       <div className="md:flex md:items-start md:gap-8">
-        {/* Left content */}
         <div className={cn('hidden md:block md:w-1/2', isEven ? 'md:text-right' : 'md:order-2')}>
           {isEven ? (
             <TimelineContent item={item} align="right" />
@@ -55,12 +51,10 @@ function TimelineItem({ item, index }: { item: WebsiteSectionItem; index: number
           )}
         </div>
 
-        {/* Center dot - desktop */}
         <div className="relative z-10 hidden md:flex md:shrink-0">
-          <div className="h-4 w-4 rounded-full border-[3px] border-primary bg-background" />
+          <div className="h-5 w-5 rounded-full border-[3px] border-primary bg-background shadow-[0_0_0_4px_hsl(var(--primary)/0.15)]" />
         </div>
 
-        {/* Right content */}
         <div className={cn('hidden md:block md:w-1/2', isEven ? '' : 'md:order-1 md:text-right')}>
           {isEven ? (
             <YearBadge year={year} align="left" />
@@ -69,10 +63,9 @@ function TimelineItem({ item, index }: { item: WebsiteSectionItem; index: number
           )}
         </div>
 
-        {/* Mobile: always left-aligned */}
         <div className="md:hidden">
           {year && (
-            <span className="mb-1 inline-block rounded-full bg-primary/10 px-3 py-0.5 text-xs font-semibold text-primary">
+            <span className="mb-2 inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
               {year}
             </span>
           )}
@@ -87,7 +80,7 @@ function YearBadge({ year, align }: { year: string | null; align: 'left' | 'righ
   if (!year) return <div />;
   return (
     <div className={cn('mt-0.5', align === 'right' ? 'text-right' : '')}>
-      <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
+      <span className="inline-block rounded-full bg-primary/10 px-4 py-1.5 text-sm font-bold text-primary">
         {year}
       </span>
     </div>
@@ -98,22 +91,22 @@ function TimelineContent({ item, align }: { item: WebsiteSectionItem; align: 'le
   return (
     <div className={cn(align === 'right' ? 'text-right' : '')}>
       {item.translation.title && (
-        <h3 className="text-base font-semibold sm:text-lg">{item.translation.title}</h3>
+        <h3 className="text-base font-semibold tracking-tight sm:text-lg">{item.translation.title}</h3>
       )}
       {item.translation.description && (
-        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           {item.translation.description}
         </p>
       )}
       {item.imageUrl && (
-        <div className="mt-3">
+        <div className="mt-4">
           <Image
             src={item.imageUrl}
             alt={item.translation.title ?? ''}
             width={300}
             height={200}
             className={cn(
-              'rounded-lg object-cover',
+              'rounded-xl object-cover shadow-sm',
               align === 'right' ? 'ml-auto' : '',
             )}
           />

@@ -1,6 +1,6 @@
 import Image from 'next/image';
-import { Quote } from 'lucide-react';
 
+import { cn } from '@/lib/utils';
 import type { SectionComponentProps, WebsiteSectionItem } from '../types';
 
 export function TestimonialsSection({ section }: SectionComponentProps) {
@@ -12,7 +12,7 @@ export function TestimonialsSection({ section }: SectionComponentProps) {
   const columns = Number(section.config.columns) || 3;
   const gridCols =
     columns === 1
-      ? 'sm:grid-cols-1'
+      ? 'sm:grid-cols-1 max-w-2xl mx-auto'
       : columns === 2
         ? 'sm:grid-cols-2'
         : 'sm:grid-cols-2 lg:grid-cols-3';
@@ -20,15 +20,15 @@ export function TestimonialsSection({ section }: SectionComponentProps) {
   return (
     <div>
       {(tr.title || tr.subtitle) && (
-        <div className="mb-10 text-center">
-          {tr.title && <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">{tr.title}</h2>}
+        <div className="mb-12 text-center">
+          {tr.title && <h2 className="text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">{tr.title}</h2>}
           {tr.subtitle && (
-            <p className="mt-3 text-muted-foreground sm:text-lg">{tr.subtitle}</p>
+            <p className="mx-auto mt-4 max-w-2xl text-muted-foreground sm:text-lg">{tr.subtitle}</p>
           )}
         </div>
       )}
 
-      <div className={`grid gap-6 ${gridCols}`}>
+      <div className={cn('grid gap-6 lg:gap-8', gridCols)}>
         {items.map((item) => (
           <TestimonialCard key={item.id} item={item} />
         ))}
@@ -41,21 +41,13 @@ function TestimonialCard({ item }: { item: WebsiteSectionItem }) {
   const rating = Number(item.config.rating) || 0;
 
   return (
-    <div className="flex flex-col rounded-xl border border-border/60 bg-card p-6">
-      <Quote className="mb-3 h-6 w-6 text-primary/30" />
-
-      {item.translation.description && (
-        <p className="flex-1 text-sm leading-relaxed text-muted-foreground">
-          {item.translation.description}
-        </p>
-      )}
-
+    <div className="group flex flex-col rounded-2xl border border-border/40 bg-card p-6 transition-all duration-300 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 lg:p-8">
       {rating > 0 && (
-        <div className="mt-4 flex gap-0.5">
+        <div className="mb-4 flex gap-0.5">
           {Array.from({ length: 5 }, (_, i) => (
             <svg
               key={i}
-              className={`h-4 w-4 ${i < rating ? 'text-amber-400' : 'text-muted/40'}`}
+              className={cn('h-4.5 w-4.5', i < rating ? 'text-amber-400' : 'text-muted/30')}
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -65,15 +57,25 @@ function TestimonialCard({ item }: { item: WebsiteSectionItem }) {
         </div>
       )}
 
-      <div className="mt-4 flex items-center gap-3 border-t border-border/40 pt-4">
-        {item.imageUrl && (
+      {item.translation.description && (
+        <blockquote className="flex-1 text-sm leading-relaxed text-foreground/80 lg:text-base">
+          &ldquo;{item.translation.description}&rdquo;
+        </blockquote>
+      )}
+
+      <div className="mt-6 flex items-center gap-3.5 border-t border-border/30 pt-5">
+        {item.imageUrl ? (
           <Image
             src={item.imageUrl}
             alt={item.translation.title ?? ''}
-            width={44}
-            height={44}
-            className="h-11 w-11 rounded-full object-cover"
+            width={48}
+            height={48}
+            className="h-12 w-12 rounded-full object-cover ring-2 ring-background"
           />
+        ) : (
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+            {(item.translation.title ?? '?')[0]?.toUpperCase()}
+          </div>
         )}
         <div>
           {item.translation.title && (

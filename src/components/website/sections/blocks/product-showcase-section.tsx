@@ -15,46 +15,54 @@ export function ProductShowcaseSection({ section }: SectionComponentProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div>
       {(tr.title || tr.subtitle) && (
-        <div className="text-center">
-          {tr.title ? <h2 className="text-2xl font-semibold sm:text-3xl">{tr.title}</h2> : null}
-          {tr.subtitle ? <p className="mt-2 text-muted-foreground">{tr.subtitle}</p> : null}
+        <div className="mb-12 text-center">
+          {tr.title ? <h2 className="text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">{tr.title}</h2> : null}
+          {tr.subtitle ? <p className="mx-auto mt-4 max-w-2xl text-muted-foreground sm:text-lg">{tr.subtitle}</p> : null}
         </div>
       )}
 
       {products.length ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
           {products.map((product) => (
             <article
               key={product.id}
-              className="overflow-hidden rounded-xl border border-border/60 bg-card"
+              className="group overflow-hidden rounded-2xl border border-border/40 bg-card transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5"
             >
-              <div className="relative aspect-[4/3] bg-muted/40">
+              <div className="relative aspect-[4/3] overflow-hidden bg-muted/20">
                 {product.featuredImage ? (
                   <Image
                     src={product.featuredImage.url}
                     alt={product.featuredImage.alt || product.name}
                     fill
-                    className="object-cover"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />
-                ) : null}
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <svg className="h-12 w-12 text-muted-foreground/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                )}
               </div>
-              <div className="space-y-3 p-4">
-                <p className="text-xs text-muted-foreground">{product.sku}</p>
-                <h3 className="line-clamp-2 text-lg font-medium">{product.name}</h3>
+              <div className="p-5">
+                <p className="font-mono text-[11px] tracking-wider text-muted-foreground/70 uppercase">{product.sku}</p>
+                <h3 className="mt-2 line-clamp-2 text-lg font-semibold leading-snug tracking-tight transition-colors group-hover:text-primary">
+                  {product.name}
+                </h3>
                 {product.shortDescription ? (
-                  <p className="line-clamp-3 text-sm text-muted-foreground">
-                    {product.shortDescription}
-                  </p>
+                  <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{product.shortDescription}</p>
                 ) : null}
                 {detailButtonText ? (
-                  <Button asChild variant="outline" size="sm">
-                    <Link href={`/products/${product.primaryCategorySlug}/${product.slug}`}>
-                      {detailButtonText}
-                    </Link>
-                  </Button>
+                  <div className="mt-4">
+                    <Button asChild variant="outline" size="sm" className="rounded-full">
+                      <Link href={`/products/${product.primaryCategorySlug}/${product.slug}`}>
+                        {detailButtonText} →
+                      </Link>
+                    </Button>
+                  </div>
                 ) : null}
               </div>
             </article>

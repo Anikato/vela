@@ -74,7 +74,13 @@ function handleError(error: unknown): ActionResult<never> {
   }
 
   console.error('Unexpected error:', error);
-  return { success: false, error: 'An unexpected error occurred' };
+
+  const msg = error instanceof Error ? error.message : '';
+  if (msg.includes('foreign key') || msg.includes('violates')) {
+    return { success: false, error: 'Operation failed: data is referenced by other records. Please check related content first.' };
+  }
+
+  return { success: false, error: 'An unexpected error occurred. Please try again or contact support.' };
 }
 
 function formatZodErrors(error: z.ZodError): Record<string, string[]> {

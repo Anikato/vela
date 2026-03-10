@@ -7,7 +7,9 @@ import { auth } from '@/server/auth';
 import {
   createSection,
   deleteSection,
+  getCategorySections,
   getPageSections,
+  reorderCategorySections,
   reorderPageSections,
   updateSection,
   type SectionListItem,
@@ -27,7 +29,8 @@ const translationSchema = z.object({
 });
 
 const createSectionSchema = z.object({
-  pageId: z.string().uuid(),
+  pageId: z.string().uuid().optional(),
+  categoryId: z.string().uuid().optional(),
   type: z.string().min(1).max(50),
   placement: z.enum(['main', 'top', 'bottom']).optional(),
   config: z.record(z.string(), z.unknown()).optional(),
@@ -171,6 +174,53 @@ export async function reorderPageSectionsAction(
 
   try {
     await reorderPageSections(parsed.data.pageId, parsed.data.orderedSectionIds);
+    return { success: true, data: undefined };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+// ─── Category section actions ───
+
+export async function getCategorySectionsAction(
+  categoryId: string,
+  locale: string,
+  defaultLocale: string,
+): Promise<ActionResult<SectionListItem[]>> {
+  const unauthed = await ensureAuthed();
+  if (unauthed) return unauthed;
+
+  const parsedId = z.string().uuid().safeParse(categoryId);
+  if (!parsedId.success) {
+    return { success: false, error: 'Invalid category id' };
+  }
+
+  try {
+    const data = await getCategorySections(parsedId.data, locale, defaultLocale);
+    return { success: true, data };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+const reorderCategorySectionsSchema = z.object({
+  categoryId: z.string().uuid(),
+  orderedSectionIds: z.array(z.string().uuid()),
+});
+
+export async function reorderCategorySectionsAction(
+  input: z.input<typeof reorderCategorySectionsSchema>,
+): Promise<ActionResult<void>> {
+  const unauthed = await ensureAuthed();
+  if (unauthed) return unauthed;
+
+  const parsed = reorderCategorySectionsSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: formatZodErrors(parsed.error) };
+  }
+
+  try {
+    await reorderCategorySections(parsed.data.categoryId, parsed.data.orderedSectionIds);
     return { success: true, data: undefined };
   } catch (error) {
     return handleError(error);

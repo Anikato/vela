@@ -21,7 +21,7 @@ export const pageTranslations = pgTable(
       .references(() => pages.id, { onDelete: 'cascade' })
       .notNull(),
     locale: varchar('locale', { length: 10 })
-      .references(() => languages.code)
+      .references(() => languages.code, { onDelete: 'cascade' })
       .notNull(),
     title: varchar('title', { length: 500 }),
     seoTitle: varchar('seo_title', { length: 200 }),

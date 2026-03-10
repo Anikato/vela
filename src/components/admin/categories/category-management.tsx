@@ -2,7 +2,8 @@
 
 import { useMemo, useState, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { GripVertical, Pencil, Plus, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { ChevronDown, ChevronRight, GripVertical, Layers, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -39,6 +40,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfirmDeleteDialog } from '@/components/admin/common/confirm-delete-dialog';
 function handleTextareaClassName() {
   return 'min-h-[72px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm';
@@ -158,6 +160,11 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
   const [translations, setTranslations] = useState<TranslationForm[]>(() =>
     buildTranslationForm(locales),
   );
+  const defaultLocale = useMemo(
+    () => locales.find((item) => item.isDefault)?.code ?? locales[0]?.code ?? '',
+    [locales],
+  );
+  const [expandedLocales, setExpandedLocales] = useState<string[]>([]);
 
   const treeRows = useMemo(() => buildTreeRows(categories), [categories]);
   const sortedCategories = useMemo(
@@ -169,6 +176,12 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
     return sortedCategories.filter((item) => item.id !== editing?.id);
   }, [editing?.id, sortedCategories]);
 
+  function toggleLocalePanel(locale: string) {
+    setExpandedLocales((prev) =>
+      prev.includes(locale) ? prev.filter((item) => item !== locale) : [...prev, locale],
+    );
+  }
+
   function openCreateDialog() {
     setEditing(null);
     setSlug('');
@@ -176,6 +189,7 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
     setIsActive(true);
     setSortOrder(categories.length);
     setTranslations(buildTranslationForm(locales));
+    setExpandedLocales(defaultLocale ? [defaultLocale] : []);
     setDialogOpen(true);
   }
 
@@ -197,6 +211,7 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
         };
       }),
     );
+    setExpandedLocales(defaultLocale ? [defaultLocale] : []);
     setDialogOpen(true);
   }
 
@@ -267,6 +282,16 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
       setIsSubmitting(false);
     }
   }
+
+  const orderedTranslations = useMemo(() => {
+    const list = [...translations];
+    list.sort((a, b) => {
+      if (a.locale === defaultLocale) return -1;
+      if (b.locale === defaultLocale) return 1;
+      return a.locale.localeCompare(b.locale);
+    });
+    return list;
+  }, [defaultLocale, translations]);
 
   async function persistTree(nextList: CategoryListItem[], fallbackList: CategoryListItem[]) {
     const result = await reorderCategoryTreeAction({
@@ -437,6 +462,12 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
                         <Pencil className="mr-1 h-3.5 w-3.5" />
                         编辑
                       </Button>
+                      <Button asChild variant="ghost" size="sm" className="h-8">
+                        <Link href={`/admin/categories/${item.id}/sections`}>
+                          <Layers className="mr-1 h-3.5 w-3.5" />
+                          区块
+                        </Link>
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -457,7 +488,7 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>{editing ? '编辑分类' : '新建分类'}</DialogTitle>
             <DialogDescription>
@@ -465,99 +496,125 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-2">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Slug</label>
-                <Input
-                  value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
-                  placeholder="例如：industrial-equipment"
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">父级分类</label>
-                <Select value={parentId} onValueChange={setParentId} disabled={isSubmitting}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={EMPTY_ID}>无（顶级分类）</SelectItem>
-                    {parentOptions.map((item) => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {item.displayName} ({item.slug})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">排序值</label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(Number(e.target.value || 0))}
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div className="flex items-end">
-                <label className="flex items-center gap-2 text-sm">
-                  <Switch
-                    checked={isActive}
-                    onCheckedChange={setIsActive}
+          <Tabs defaultValue="basic">
+            <TabsList className="w-full">
+              <TabsTrigger value="basic" className="flex-1">基础信息</TabsTrigger>
+              <TabsTrigger value="i18n" className="flex-1">多语言内容</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="basic" className="space-y-4 pt-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Slug</label>
+                  <Input
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    placeholder="例如：industrial-equipment"
                     disabled={isSubmitting}
                   />
-                  启用分类
-                </label>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {translations.map((item) => (
-                <div key={item.locale} className="rounded-md border border-border/50 p-3">
-                  <p className="mb-2 text-sm font-semibold">{item.locale}</p>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <Input
-                      placeholder="分类名称"
-                      value={item.name}
-                      onChange={(e) => updateTranslation(item.locale, 'name', e.target.value)}
-                      disabled={isSubmitting}
-                    />
-                    <Input
-                      placeholder="SEO 标题（可选）"
-                      value={item.seoTitle}
-                      onChange={(e) => updateTranslation(item.locale, 'seoTitle', e.target.value)}
-                      disabled={isSubmitting}
-                    />
-                    <div className="sm:col-span-2">
-                      <textarea
-                        rows={3}
-                        className={handleTextareaClassName()}
-                        placeholder="分类描述（可选）"
-                        value={item.description}
-                        onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-                          updateTranslation(item.locale, 'description', e.target.value)
-                        }
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <textarea
-                        rows={2}
-                        className={handleTextareaClassName()}
-                        placeholder="SEO 描述（可选）"
-                        value={item.seoDescription}
-                        onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-                          updateTranslation(item.locale, 'seoDescription', e.target.value)
-                        }
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">父级分类</label>
+                  <Select value={parentId} onValueChange={setParentId} disabled={isSubmitting}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={EMPTY_ID}>无（顶级分类）</SelectItem>
+                      {parentOptions.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.displayName} ({item.slug})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">排序值</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(Number(e.target.value || 0))}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <label className="flex items-center gap-2 text-sm">
+                    <Switch
+                      checked={isActive}
+                      onCheckedChange={setIsActive}
+                      disabled={isSubmitting}
+                    />
+                    启用分类
+                  </label>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="i18n" className="space-y-3 pt-4">
+              {orderedTranslations.map((item) => {
+                const expanded = expandedLocales.includes(item.locale);
+                const isDefault = item.locale === defaultLocale;
+                return (
+                  <div key={item.locale} className="rounded-md border border-border/50 p-3">
+                    <button
+                      type="button"
+                      className="mb-2 flex w-full items-center justify-between text-left"
+                      onClick={() => toggleLocalePanel(item.locale)}
+                    >
+                      <span className="text-sm font-semibold">
+                        {item.locale} {isDefault ? '(默认)' : ''}
+                      </span>
+                      {expanded ? (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                    {expanded ? (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <Input
+                          placeholder="分类名称"
+                          value={item.name}
+                          onChange={(e) => updateTranslation(item.locale, 'name', e.target.value)}
+                          disabled={isSubmitting}
+                        />
+                        <Input
+                          placeholder="SEO 标题（可选）"
+                          value={item.seoTitle}
+                          onChange={(e) => updateTranslation(item.locale, 'seoTitle', e.target.value)}
+                          disabled={isSubmitting}
+                        />
+                        <div className="sm:col-span-2">
+                          <textarea
+                            rows={3}
+                            className={handleTextareaClassName()}
+                            placeholder="分类描述（可选）"
+                            value={item.description}
+                            onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+                              updateTranslation(item.locale, 'description', e.target.value)
+                            }
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <textarea
+                            rows={2}
+                            className={handleTextareaClassName()}
+                            placeholder="SEO 描述（可选）"
+                            value={item.seoDescription}
+                            onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+                              updateTranslation(item.locale, 'seoDescription', e.target.value)
+                            }
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </TabsContent>
+          </Tabs>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>

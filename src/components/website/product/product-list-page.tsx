@@ -84,12 +84,11 @@ export function ProductListPage({
   return (
     <div>
       <Breadcrumb items={crumbs} />
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-6 lg:flex-row">
-          {/* Sidebar: category tree */}
-          <aside className="w-full shrink-0 lg:w-60">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-8 lg:flex-row">
+          <aside className="w-full shrink-0 lg:w-64">
             <div className="sticky top-20 space-y-4">
-              <h2 className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <h2 className="px-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 {uiLabels.categories}
               </h2>
               <CategoryTree
@@ -130,9 +129,8 @@ export function ProductListPage({
               </div>
             </div>
 
-            {/* Product grid */}
             {data.items.length ? (
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 {data.items.map((item) => {
                   const href = buildLocalizedPath(
                     `/products/${item.primaryCategorySlug}/${item.slug}`,
@@ -143,31 +141,30 @@ export function ProductListPage({
                 })}
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-border p-10 text-center text-muted-foreground">
+              <div className="rounded-2xl border border-dashed border-border/60 p-14 text-center text-muted-foreground">
                 {uiLabels.noProducts}
               </div>
             )}
 
-            {/* Pagination */}
             {data.totalPages > 1 ? (
-              <div className="mt-6 flex items-center justify-center gap-2">
+              <div className="mt-8 flex items-center justify-center gap-2">
                 {data.page > 1 ? (
                   <Link
                     href={buildPageHref(basePath, data.page - 1, filterParams)}
                     aria-label="Previous page"
-                    className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-accent"
+                    className="rounded-lg border border-border/60 px-3.5 py-2 text-sm transition-colors hover:bg-accent"
                   >
                     ‹
                   </Link>
                 ) : null}
-                <span className="text-sm text-muted-foreground">
+                <span className="px-2 text-sm font-medium text-muted-foreground">
                   {data.page} / {data.totalPages}
                 </span>
                 {data.page < data.totalPages ? (
                   <Link
                     href={buildPageHref(basePath, data.page + 1, filterParams)}
                     aria-label="Next page"
-                    className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-accent"
+                    className="rounded-lg border border-border/60 px-3.5 py-2 text-sm transition-colors hover:bg-accent"
                   >
                     ›
                   </Link>

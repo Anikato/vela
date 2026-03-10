@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import { buildSeoMetadata, type AlternateLocale } from '@/lib/seo';
 import { WebsiteShell } from '@/components/website/layout/website-shell';
+import { SectionRenderer } from '@/components/website/sections/section-renderer';
 import { ProductListPage } from '@/components/website/product/product-list-page';
 import {
   getCachedActiveLanguages,
@@ -16,6 +17,7 @@ import {
   getPublishedProductList,
   type ProductSortOption,
 } from '@/server/services/product-public.service';
+import { getCategorySectionsForRender } from '@/server/services/section.service';
 
 interface CategoryProductsPageProps {
   params: Promise<{ categorySlug: string }>;
@@ -98,8 +100,13 @@ export default async function CategoryProductsPage({
     notFound();
   }
 
+  const categorySections = await getCategorySectionsForRender(data.category.id, locale, locale);
+
   return (
     <WebsiteShell locale={locale} defaultLocale={locale}>
+      {categorySections.length > 0 && (
+        <SectionRenderer sections={categorySections} />
+      )}
       <ProductListPage
         locale={locale}
         defaultLocale={locale}

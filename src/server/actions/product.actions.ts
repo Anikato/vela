@@ -29,25 +29,33 @@ const translationSchema = z.object({
 
 const productStatusSchema = z.enum(PRODUCT_STATUSES);
 
+const videoLinkSchema = z.preprocess(
+  (val) => {
+    if (!Array.isArray(val)) return val;
+    return val.filter((v) => typeof v === 'string' && v.trim().length > 0);
+  },
+  z.array(z.string().url('视频链接格式无效')).optional(),
+);
+
 const createProductSchema = z.object({
-  sku: z.string().min(1).max(100),
+  sku: z.string().min(1, 'SKU 不能为空').max(100),
   slug: z
     .string()
-    .min(1)
+    .min(1, 'Slug 不能为空')
     .max(255)
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug must be kebab-case'),
-  primaryCategoryId: z.string().uuid(),
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug 只能包含小写字母、数字和连字符'),
+  primaryCategoryId: z.string().uuid('请选择主分类'),
   status: productStatusSchema.optional(),
   sortOrder: z.number().int().min(0).optional(),
   featuredImageId: z.string().uuid().nullable().optional(),
-  videoLinks: z.array(z.string().url()).optional(),
+  videoLinks: videoLinkSchema,
   moq: z.number().int().min(0).nullable().optional(),
   leadTimeDays: z.number().int().min(0).nullable().optional(),
   tradeTerms: z.string().max(50).nullable().optional(),
   paymentTerms: z.string().max(255).nullable().optional(),
   packagingDetails: z.string().nullable().optional(),
   customizationSupport: z.boolean().optional(),
-  translations: z.array(translationSchema).min(1),
+  translations: z.array(translationSchema).min(1, '至少需要一个语言翻译'),
   additionalCategoryIds: z.array(z.string().uuid()).optional(),
   tagIds: z.array(z.string().uuid()).optional(),
   galleryImageIds: z.array(z.string().uuid()).optional(),
@@ -55,18 +63,18 @@ const createProductSchema = z.object({
 });
 
 const updateProductSchema = z.object({
-  sku: z.string().min(1).max(100).optional(),
+  sku: z.string().min(1, 'SKU 不能为空').max(100).optional(),
   slug: z
     .string()
-    .min(1)
+    .min(1, 'Slug 不能为空')
     .max(255)
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug must be kebab-case')
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug 只能包含小写字母、数字和连字符')
     .optional(),
   primaryCategoryId: z.string().uuid().optional(),
   status: productStatusSchema.optional(),
   sortOrder: z.number().int().min(0).optional(),
   featuredImageId: z.string().uuid().nullable().optional(),
-  videoLinks: z.array(z.string().url()).optional(),
+  videoLinks: videoLinkSchema,
   moq: z.number().int().min(0).nullable().optional(),
   leadTimeDays: z.number().int().min(0).nullable().optional(),
   tradeTerms: z.string().max(50).nullable().optional(),
@@ -80,22 +88,31 @@ const updateProductSchema = z.object({
   attachmentIds: z.array(z.string().uuid()).optional(),
 });
 
-function formatZodErrors(error: z.ZodError): Record<string, string[]> {
-  const fieldErrors: Record<string, string[]> = {};
+function formatZodErrors(error: z.ZodError): string {
+  const messages: string[] = [];
   for (const issue of error.issues) {
-    const path = issue.path.join('.') || '_root';
-    if (!fieldErrors[path]) fieldErrors[path] = [];
-    fieldErrors[path].push(issue.message);
+    const path = issue.path.join('.');
+    messages.push(path ? `${path}: ${issue.message}` : issue.message);
   }
-  return fieldErrors;
+  return messages.length > 0 ? messages.join('；') : '输入数据校验失败';
 }
 
 function handleError(error: unknown): ActionResult<never> {
   if (error instanceof NotFoundError) return { success: false, error: error.message };
   if (error instanceof DuplicateError) return { success: false, error: error.message };
   if (error instanceof ValidationError) return { success: false, error: error.message };
+
   console.error('Product action error:', error);
-  return { success: false, error: 'An unexpected error occurred' };
+
+  const msg = error instanceof Error ? error.message : '';
+  if (msg.includes('foreign key') || msg.includes('violates')) {
+    return { success: false, error: '操作失败：数据被其他记录引用，请检查关联内容' };
+  }
+  if (msg.includes('unique') || msg.includes('duplicate')) {
+    return { success: false, error: '操作失败：SKU 或 Slug 已存在' };
+  }
+
+  return { success: false, error: msg ? `操作失败：${msg}` : '操作失败，请重试或联系管理员' };
 }
 
 async function ensureAuthed(): Promise<ActionResult<never> | null> {

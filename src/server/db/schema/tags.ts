@@ -17,7 +17,7 @@ export const tagTranslations = pgTable(
       .references(() => tags.id, { onDelete: 'cascade' })
       .notNull(),
     locale: varchar('locale', { length: 10 })
-      .references(() => languages.code)
+      .references(() => languages.code, { onDelete: 'cascade' })
       .notNull(),
     name: varchar('name', { length: 100 }),
   },

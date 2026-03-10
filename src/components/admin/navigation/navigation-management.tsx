@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -38,6 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfirmDeleteDialog } from '@/components/admin/common/confirm-delete-dialog';
 
 interface NavigationOption {
@@ -95,6 +96,11 @@ export function NavigationManagement({
   const [translations, setTranslations] = useState<TranslationForm[]>(() =>
     buildTranslationForm(locales),
   );
+  const defaultLocale = useMemo(
+    () => locales.find((item) => item.isDefault)?.code ?? locales[0]?.code ?? '',
+    [locales],
+  );
+  const [expandedLocales, setExpandedLocales] = useState<string[]>([]);
 
   const sortedItems = useMemo(
     () =>
@@ -111,6 +117,12 @@ export function NavigationManagement({
     return sortedItems.filter((item) => item.id !== editing?.id);
   }, [editing?.id, sortedItems]);
 
+  function toggleLocalePanel(locale: string) {
+    setExpandedLocales((prev) =>
+      prev.includes(locale) ? prev.filter((item) => item !== locale) : [...prev, locale],
+    );
+  }
+
   function openCreateDialog() {
     setEditing(null);
     setParentId(EMPTY_ID);
@@ -124,6 +136,7 @@ export function NavigationManagement({
     setSortOrder(items.length);
     setIsActive(true);
     setTranslations(buildTranslationForm(locales));
+    setExpandedLocales(defaultLocale ? [defaultLocale] : []);
     setDialogOpen(true);
   }
 
@@ -148,6 +161,7 @@ export function NavigationManagement({
         };
       }),
     );
+    setExpandedLocales(defaultLocale ? [defaultLocale] : []);
     setDialogOpen(true);
   }
 
@@ -156,6 +170,16 @@ export function NavigationManagement({
       prev.map((item) => (item.locale === locale ? { ...item, label: value } : item)),
     );
   }
+
+  const orderedTranslations = useMemo(() => {
+    const list = [...translations];
+    list.sort((a, b) => {
+      if (a.locale === defaultLocale) return -1;
+      if (b.locale === defaultLocale) return 1;
+      return a.locale.localeCompare(b.locale);
+    });
+    return list;
+  }, [defaultLocale, translations]);
 
   function buildPayload() {
     return {
@@ -290,148 +314,176 @@ export function NavigationManagement({
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>{editing ? '编辑菜单项' : '新建菜单项'}</DialogTitle>
             <DialogDescription>支持内部链接、外部链接、关联分类、关联页面四种类型。</DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-2">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">链接类型</label>
-                <Select value={type} onValueChange={(v) => setType(v as LinkType)} disabled={isSubmitting}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="internal">内部链接</SelectItem>
-                    <SelectItem value="external">外部链接</SelectItem>
-                    <SelectItem value="category">关联分类</SelectItem>
-                    <SelectItem value="page">关联页面</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">父级菜单</label>
-                <Select value={parentId} onValueChange={setParentId} disabled={isSubmitting}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={EMPTY_ID}>无（顶级菜单）</SelectItem>
-                    {parentOptions.map((item) => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {item.displayLabel}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          <Tabs defaultValue="basic">
+            <TabsList className="w-full">
+              <TabsTrigger value="basic" className="flex-1">基础信息</TabsTrigger>
+              <TabsTrigger value="i18n" className="flex-1">多语言内容</TabsTrigger>
+            </TabsList>
 
-              {(type === 'internal' || type === 'external') && (
-                <div className="space-y-2 sm:col-span-2">
-                  <label className="text-sm font-medium">URL</label>
-                  <Input
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    placeholder={type === 'internal' ? '/about' : 'https://example.com'}
-                    disabled={isSubmitting}
-                  />
-                </div>
-              )}
-
-              {type === 'category' && (
-                <div className="space-y-2 sm:col-span-2">
-                  <label className="text-sm font-medium">关联分类</label>
-                  <Select value={categoryId} onValueChange={setCategoryId} disabled={isSubmitting}>
-                    <SelectTrigger><SelectValue placeholder="请选择分类" /></SelectTrigger>
+            <TabsContent value="basic" className="space-y-4 pt-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">链接类型</label>
+                  <Select value={type} onValueChange={(v) => setType(v as LinkType)} disabled={isSubmitting}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={EMPTY_ID}>请选择分类</SelectItem>
-                      {categories.map((item) => (
+                      <SelectItem value="internal">内部链接</SelectItem>
+                      <SelectItem value="external">外部链接</SelectItem>
+                      <SelectItem value="category">关联分类</SelectItem>
+                      <SelectItem value="page">关联页面</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">父级菜单</label>
+                  <Select value={parentId} onValueChange={setParentId} disabled={isSubmitting}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={EMPTY_ID}>无（顶级菜单）</SelectItem>
+                      {parentOptions.map((item) => (
                         <SelectItem key={item.id} value={item.id}>
-                          {item.label} ({item.slug})
+                          {item.displayLabel}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-              )}
 
-              {type === 'page' && (
-                <div className="space-y-2 sm:col-span-2">
-                  <label className="text-sm font-medium">关联页面</label>
-                  <Select value={pageId} onValueChange={setPageId} disabled={isSubmitting}>
-                    <SelectTrigger><SelectValue placeholder="请选择页面" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={EMPTY_ID}>请选择页面</SelectItem>
-                      {pages.map((item) => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.label} ({item.slug})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+                {(type === 'internal' || type === 'external') && (
+                  <div className="space-y-2 sm:col-span-2">
+                    <label className="text-sm font-medium">URL</label>
+                    <Input
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      placeholder={type === 'internal' ? '/about' : 'https://example.com'}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                )}
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">图标（可选）</label>
-                <Input
-                  value={icon}
-                  onChange={(e) => setIcon(e.target.value)}
-                  placeholder="例如：Home"
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">排序值</label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(Number(e.target.value || 0))}
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div className="flex items-end gap-6 sm:col-span-2">
-                <label className="flex items-center gap-2 text-sm">
-                  <Switch
-                    checked={showChildren}
-                    onCheckedChange={setShowChildren}
-                    disabled={isSubmitting}
-                  />
-                  显示子菜单
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <Switch
-                    checked={openNewTab}
-                    onCheckedChange={setOpenNewTab}
-                    disabled={isSubmitting}
-                  />
-                  新窗口打开
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <Switch
-                    checked={isActive}
-                    onCheckedChange={setIsActive}
-                    disabled={isSubmitting}
-                  />
-                  启用菜单项
-                </label>
-              </div>
-            </div>
+                {type === 'category' && (
+                  <div className="space-y-2 sm:col-span-2">
+                    <label className="text-sm font-medium">关联分类</label>
+                    <Select value={categoryId} onValueChange={setCategoryId} disabled={isSubmitting}>
+                      <SelectTrigger><SelectValue placeholder="请选择分类" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={EMPTY_ID}>请选择分类</SelectItem>
+                        {categories.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.label} ({item.slug})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
-            <div className="space-y-3">
-              {translations.map((item) => (
-                <div key={item.locale} className="rounded-md border border-border/50 p-3">
-                  <p className="mb-2 text-sm font-semibold">{item.locale}</p>
+                {type === 'page' && (
+                  <div className="space-y-2 sm:col-span-2">
+                    <label className="text-sm font-medium">关联页面</label>
+                    <Select value={pageId} onValueChange={setPageId} disabled={isSubmitting}>
+                      <SelectTrigger><SelectValue placeholder="请选择页面" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={EMPTY_ID}>请选择页面</SelectItem>
+                        {pages.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.label} ({item.slug})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">图标（可选）</label>
                   <Input
-                    placeholder="菜单名称"
-                    value={item.label}
-                    onChange={(e) => updateTranslation(item.locale, e.target.value)}
+                    value={icon}
+                    onChange={(e) => setIcon(e.target.value)}
+                    placeholder="例如：Home"
                     disabled={isSubmitting}
                   />
                 </div>
-              ))}
-            </div>
-          </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">排序值</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(Number(e.target.value || 0))}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="flex items-end gap-6 sm:col-span-2">
+                  <label className="flex items-center gap-2 text-sm">
+                    <Switch
+                      checked={showChildren}
+                      onCheckedChange={setShowChildren}
+                      disabled={isSubmitting}
+                    />
+                    显示子菜单
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <Switch
+                      checked={openNewTab}
+                      onCheckedChange={setOpenNewTab}
+                      disabled={isSubmitting}
+                    />
+                    新窗口打开
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <Switch
+                      checked={isActive}
+                      onCheckedChange={setIsActive}
+                      disabled={isSubmitting}
+                    />
+                    启用菜单项
+                  </label>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="i18n" className="space-y-3 pt-4">
+              {orderedTranslations.map((item) => {
+                const expanded = expandedLocales.includes(item.locale);
+                const isDefault = item.locale === defaultLocale;
+                return (
+                  <div key={item.locale} className="rounded-md border border-border/50 p-3">
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between text-left"
+                      onClick={() => toggleLocalePanel(item.locale)}
+                    >
+                      <span className="text-sm font-semibold">
+                        {item.locale} {isDefault ? '(默认)' : ''}
+                      </span>
+                      {expanded ? (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                    {expanded ? (
+                      <div className="mt-2">
+                        <Input
+                          placeholder="菜单名称"
+                          value={item.label}
+                          onChange={(e) => updateTranslation(item.locale, e.target.value)}
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </TabsContent>
+          </Tabs>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>

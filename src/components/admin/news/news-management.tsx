@@ -1,9 +1,9 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Copy, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Copy, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -73,6 +73,17 @@ export function NewsManagement({ initialNews, locales, mediaItems }: NewsManagem
   const [coverImageId, setCoverImageId] = useState<string>('');
   const [activeTab, setActiveTab] = useState('basic');
   const [translations, setTranslations] = useState<TranslationForm[]>([]);
+  const defaultLocale = useMemo(
+    () => locales.find((item) => item.isDefault)?.code ?? locales[0]?.code ?? '',
+    [locales],
+  );
+  const [expandedLocales, setExpandedLocales] = useState<string[]>([]);
+
+  function toggleLocalePanel(locale: string) {
+    setExpandedLocales((prev) =>
+      prev.includes(locale) ? prev.filter((item) => item !== locale) : [...prev, locale],
+    );
+  }
 
   const resetForm = () => {
     setSlug('');
@@ -89,6 +100,7 @@ export function NewsManagement({ initialNews, locales, mediaItems }: NewsManagem
         seoDescription: '',
       })),
     );
+    setExpandedLocales(defaultLocale ? [defaultLocale] : []);
   };
 
   const openCreate = () => {
@@ -103,6 +115,7 @@ export function NewsManagement({ initialNews, locales, mediaItems }: NewsManagem
     setStatus(item.status as 'draft' | 'published');
     setCoverImageId(item.coverImage?.id ?? '');
     setActiveTab('basic');
+    setExpandedLocales(defaultLocale ? [defaultLocale] : []);
 
     startTransition(async () => {
       const result = await getNewsByIdAction(item.id);
@@ -204,6 +217,16 @@ export function NewsManagement({ initialNews, locales, mediaItems }: NewsManagem
       prev.map((t) => (t.locale === locale ? { ...t, [field]: value } : t)),
     );
   };
+
+  const orderedTranslations = useMemo(() => {
+    const list = [...translations];
+    list.sort((a, b) => {
+      if (a.locale === defaultLocale) return -1;
+      if (b.locale === defaultLocale) return 1;
+      return a.locale.localeCompare(b.locale);
+    });
+    return list;
+  }, [defaultLocale, translations]);
 
   const imageOptions = mediaItems.filter((m) => m.mimeType.startsWith('image/'));
   const selectedCover = imageOptions.find((m) => m.id === coverImageId);
@@ -317,7 +340,7 @@ export function NewsManagement({ initialNews, locales, mediaItems }: NewsManagem
 
       {/* Create/Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId ? '编辑新闻' : '新建新闻'}</DialogTitle>
             <DialogDescription>
@@ -353,7 +376,6 @@ export function NewsManagement({ initialNews, locales, mediaItems }: NewsManagem
                 </div>
               </div>
 
-              {/* Cover image */}
               <div>
                 <label className="mb-1.5 block text-sm font-medium">封面图片</label>
                 {selectedCover ? (
@@ -390,58 +412,76 @@ export function NewsManagement({ initialNews, locales, mediaItems }: NewsManagem
               </div>
             </TabsContent>
 
-            <TabsContent value="i18n" className="space-y-6 pt-4">
-              {translations.map((t) => {
+            <TabsContent value="i18n" className="space-y-3 pt-4">
+              {orderedTranslations.map((t) => {
                 const lang = locales.find((l) => l.code === t.locale);
+                const expanded = expandedLocales.includes(t.locale);
+                const isDefault = t.locale === defaultLocale;
                 return (
-                  <div key={t.locale} className="space-y-3 rounded-lg border border-border p-4">
-                    <h3 className="text-sm font-semibold">
-                      {lang?.nativeName ?? t.locale}
-                      <span className="ml-2 text-xs text-muted-foreground">{t.locale}</span>
-                    </h3>
-                    <div>
-                      <label className="mb-1 block text-xs text-muted-foreground">标题</label>
-                      <Input
-                        value={t.title}
-                        onChange={(e) => updateTranslation(t.locale, 'title', e.target.value)}
-                        placeholder="文章标题"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs text-muted-foreground">摘要</label>
-                      <textarea
-                        value={t.summary}
-                        onChange={(e) => updateTranslation(t.locale, 'summary', e.target.value)}
-                        rows={2}
-                        className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
-                        placeholder="简短摘要，用于列表展示"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs text-muted-foreground">正文</label>
-                      <RichTextEditor
-                        value={t.content}
-                        onChange={(val) => updateTranslation(t.locale, 'content', val)}
-                      />
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <label className="mb-1 block text-xs text-muted-foreground">SEO 标题</label>
-                        <Input
-                          value={t.seoTitle}
-                          onChange={(e) => updateTranslation(t.locale, 'seoTitle', e.target.value)}
-                          placeholder="SEO 标题"
-                        />
+                  <div key={t.locale} className="rounded-lg border border-border p-4">
+                    <button
+                      type="button"
+                      className="mb-2 flex w-full items-center justify-between text-left"
+                      onClick={() => toggleLocalePanel(t.locale)}
+                    >
+                      <span className="text-sm font-semibold">
+                        {lang?.nativeName ?? t.locale}
+                        <span className="ml-2 text-xs text-muted-foreground">{t.locale}</span>
+                        {isDefault ? <span className="ml-2 text-xs text-muted-foreground">(默认)</span> : null}
+                      </span>
+                      {expanded ? (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                    {expanded ? (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="mb-1 block text-xs text-muted-foreground">标题</label>
+                          <Input
+                            value={t.title}
+                            onChange={(e) => updateTranslation(t.locale, 'title', e.target.value)}
+                            placeholder="文章标题"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs text-muted-foreground">摘要</label>
+                          <textarea
+                            value={t.summary}
+                            onChange={(e) => updateTranslation(t.locale, 'summary', e.target.value)}
+                            rows={2}
+                            className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+                            placeholder="简短摘要，用于列表展示"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs text-muted-foreground">正文</label>
+                          <RichTextEditor
+                            value={t.content}
+                            onChange={(val) => updateTranslation(t.locale, 'content', val)}
+                          />
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <label className="mb-1 block text-xs text-muted-foreground">SEO 标题</label>
+                            <Input
+                              value={t.seoTitle}
+                              onChange={(e) => updateTranslation(t.locale, 'seoTitle', e.target.value)}
+                              placeholder="SEO 标题"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs text-muted-foreground">SEO 描述</label>
+                            <Input
+                              value={t.seoDescription}
+                              onChange={(e) => updateTranslation(t.locale, 'seoDescription', e.target.value)}
+                              placeholder="SEO 描述"
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <label className="mb-1 block text-xs text-muted-foreground">SEO 描述</label>
-                        <Input
-                          value={t.seoDescription}
-                          onChange={(e) => updateTranslation(t.locale, 'seoDescription', e.target.value)}
-                          placeholder="SEO 描述"
-                        />
-                      </div>
-                    </div>
+                    ) : null}
                   </div>
                 );
               })}

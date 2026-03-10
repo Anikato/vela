@@ -13,25 +13,31 @@ export function StatsSection({ section }: SectionComponentProps) {
   return (
     <div>
       {(tr.title || tr.subtitle) && (
-        <div className="mb-10 text-center">
-          {tr.title && <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">{tr.title}</h2>}
+        <div className="mb-12 text-center">
+          {tr.title && <h2 className="text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">{tr.title}</h2>}
           {tr.subtitle && (
-            <p className="mt-3 text-muted-foreground sm:text-lg">{tr.subtitle}</p>
+            <p className="mx-auto mt-4 max-w-2xl text-muted-foreground sm:text-lg">{tr.subtitle}</p>
           )}
         </div>
       )}
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((item) => {
           const numericValue = parseFloat(item.translation.description ?? '0');
           const suffix = item.translation.content ?? '';
 
           return (
-            <div key={item.id} className="text-center">
-              <AnimatedNumber value={numericValue} suffix={suffix} />
-              {item.translation.title && (
-                <p className="mt-2 text-sm text-muted-foreground">{item.translation.title}</p>
-              )}
+            <div
+              key={item.id}
+              className="group relative overflow-hidden rounded-2xl border border-border/40 bg-card p-6 text-center transition-all duration-300 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 lg:p-8"
+            >
+              <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-primary/5 transition-transform duration-500 group-hover:scale-150" />
+              <div className="relative">
+                <AnimatedNumber value={numericValue} suffix={suffix} />
+                {item.translation.title && (
+                  <p className="mt-2 text-sm font-medium text-muted-foreground">{item.translation.title}</p>
+                )}
+              </div>
             </div>
           );
         })}
@@ -53,12 +59,12 @@ function AnimatedNumber({ value, suffix }: { value: number; suffix: string }) {
       ([entry]) => {
         if (entry.isIntersecting && !started.current) {
           started.current = true;
-          const duration = 1500;
+          const duration = 1800;
           const startTime = performance.now();
 
           function tick(now: number) {
             const progress = Math.min((now - startTime) / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3);
+            const eased = 1 - Math.pow(1 - progress, 4);
             setDisplayed(Math.round(value * eased));
             if (progress < 1) requestAnimationFrame(tick);
           }
@@ -72,11 +78,9 @@ function AnimatedNumber({ value, suffix }: { value: number; suffix: string }) {
     return () => observer.disconnect();
   }, [value]);
 
-  const isInteger = Number.isInteger(value);
-
   return (
     <div ref={ref} className="text-4xl font-bold tracking-tight text-primary sm:text-5xl">
-      {isInteger ? displayed.toLocaleString() : displayed}
+      {displayed.toLocaleString()}
       {suffix}
     </div>
   );

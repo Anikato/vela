@@ -94,21 +94,18 @@ export function ProductDetailPage({
         ]}
       />
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        {/* Top section: gallery + info */}
-        <div className="grid gap-8 lg:grid-cols-2">
-          {/* Left: Gallery */}
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
           <ProductGallery
             featuredImage={product.featuredImage}
             galleryImages={product.galleryImages}
             productName={product.name}
           />
 
-          {/* Right: Product info */}
-          <div className="space-y-5">
+          <div className="space-y-6">
             <div>
-              <p className="text-sm text-muted-foreground">{product.sku}</p>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight">{product.name}</h1>
+              <p className="font-mono text-xs tracking-wider text-muted-foreground/70 uppercase">{product.sku}</p>
+              <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">{product.name}</h1>
             </div>
 
             {/* Tags */}
@@ -129,9 +126,8 @@ export function ProductDetailPage({
               <p className="text-muted-foreground leading-relaxed">{product.shortDescription}</p>
             )}
 
-            {/* Commercial info table */}
             {hasCommercialInfo && (
-              <div className="overflow-hidden rounded-lg border border-border/60">
+              <div className="overflow-hidden rounded-xl border border-border/40">
                 <table className="w-full text-sm">
                   <tbody>
                     {product.moq !== null && (
@@ -202,27 +198,25 @@ export function ProductDetailPage({
           </div>
         </div>
 
-        {/* Rich text description */}
         {product.description && (
           <div
-            className="prose prose-sm mt-10 max-w-none text-foreground sm:prose"
+            className="prose prose-sm mt-12 max-w-none border-t border-border/30 pt-10 text-foreground sm:prose lg:mt-16"
             dangerouslySetInnerHTML={{ __html: product.description }}
           />
         )}
 
-        {/* Specifications */}
         {product.attributeGroups.length > 0 && (
-          <div className="mt-10 space-y-6">
-            <h2 className="text-xl font-semibold">{uiLabels.specifications}</h2>
+          <div className="mt-12 space-y-6 border-t border-border/30 pt-10 lg:mt-16">
+            <h2 className="text-xl font-bold tracking-tight sm:text-2xl">{uiLabels.specifications}</h2>
             {product.attributeGroups.map((group) => (
               <section key={group.id} className="space-y-3">
                 <h3 className="text-lg font-medium">{group.name}</h3>
-                <div className="overflow-hidden rounded-lg border border-border/60">
+                <div className="overflow-hidden rounded-xl border border-border/40">
                   <table className="w-full text-sm">
                     <tbody>
                       {group.attributes.map((attr) => (
-                        <tr key={attr.id} className="border-t border-border/50 first:border-t-0">
-                          <td className="w-1/3 bg-muted/20 px-4 py-3">{attr.name}</td>
+                        <tr key={attr.id} className="border-t border-border/30 first:border-t-0">
+                          <td className="w-1/3 bg-muted/20 px-4 py-3 font-medium">{attr.name}</td>
                           <td className="px-4 py-3">{attr.value}</td>
                         </tr>
                       ))}
@@ -234,16 +228,15 @@ export function ProductDetailPage({
           </div>
         )}
 
-        {/* Videos */}
         {product.videoLinks.length > 0 && (
-          <div className="mt-10 space-y-4">
-            <h2 className="text-xl font-semibold">{uiLabels.videos}</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
+          <div className="mt-12 space-y-4 border-t border-border/30 pt-10 lg:mt-16">
+            <h2 className="text-xl font-bold tracking-tight sm:text-2xl">{uiLabels.videos}</h2>
+            <div className="grid gap-6 sm:grid-cols-2">
               {product.videoLinks.map((url, idx) => {
                 const ytId = extractYouTubeId(url);
                 if (ytId) {
                   return (
-                    <div key={idx} className="relative aspect-video overflow-hidden rounded-lg border border-border/60">
+                    <div key={idx} className="relative aspect-video overflow-hidden rounded-xl border border-border/40 shadow-sm">
                       <iframe
                         src={`https://www.youtube-nocookie.com/embed/${ytId}`}
                         title={`${product.name} video ${idx + 1}`}
@@ -272,10 +265,9 @@ export function ProductDetailPage({
           </div>
         )}
 
-        {/* Attachments */}
         {product.attachments.length > 0 && (
-          <div className="mt-10 space-y-4">
-            <h2 className="text-xl font-semibold">{uiLabels.attachments}</h2>
+          <div className="mt-12 space-y-4 border-t border-border/30 pt-10 lg:mt-16">
+            <h2 className="text-xl font-bold tracking-tight sm:text-2xl">{uiLabels.attachments}</h2>
             <div className="space-y-2">
               {product.attachments.map((file) => (
                 <a
@@ -283,7 +275,7 @@ export function ProductDetailPage({
                   href={file.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 rounded-lg border border-border p-3 text-sm transition hover:bg-accent"
+                  className="flex items-center gap-3 rounded-xl border border-border/40 p-4 text-sm transition-all duration-200 hover:border-primary/20 hover:bg-primary/[0.02] hover:shadow-sm"
                 >
                   <FileText className="h-5 w-5 shrink-0 text-primary" />
                   <span className="truncate">{file.name}</span>
@@ -293,11 +285,10 @@ export function ProductDetailPage({
           </div>
         )}
 
-        {/* Related products */}
         {relatedProducts.length > 0 && (
-          <section className="mt-10 space-y-4">
-            <h2 className="text-xl font-semibold">{uiLabels.relatedProducts}</h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <section className="mt-12 space-y-6 border-t border-border/30 pt-10 lg:mt-16">
+            <h2 className="text-xl font-bold tracking-tight sm:text-2xl">{uiLabels.relatedProducts}</h2>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
               {relatedProducts.map((item) => (
                 <ProductCard
                   key={item.id}
