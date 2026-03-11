@@ -14,6 +14,12 @@ const FALLBACK_DEFAULT_LOCALE = 'en-US';
 
 const PUBLIC_FILE_REGEX = /\.[^/]+$/;
 
+function getInternalOrigin(request: NextRequest): string {
+  const proto = request.headers.get('x-forwarded-proto') ?? 'http';
+  const host = request.headers.get('host') ?? `localhost:${process.env.PORT ?? 3000}`;
+  return `${proto}://${host}`;
+}
+
 let redirectCache: {
   expiresAt: number;
   data: Record<string, { toPath: string; statusCode: number }>;
@@ -26,7 +32,7 @@ async function getRedirectMap(
     return redirectCache.data;
   }
   try {
-    const url = new URL('/api/redirects', request.nextUrl.origin);
+    const url = new URL('/api/redirects', getInternalOrigin(request));
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) return {};
     const payload = (await res.json()) as {
@@ -60,7 +66,7 @@ async function getLocaleConfig(request: NextRequest): Promise<{
   }
 
   try {
-    const url = new URL('/api/i18n/locales', request.nextUrl.origin);
+    const url = new URL('/api/i18n/locales', getInternalOrigin(request));
     const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) throw new Error(`Fetch locales failed: ${response.status}`);
 
@@ -141,8 +147,10 @@ export default auth(async (request) => {
 
   const redirectMap = await getRedirectMap(request);
   const match = redirectMap[pathname.toLowerCase()];
+  const origin = getInternalOrigin(request);
+
   if (match) {
-    const target = new URL(match.toPath, request.nextUrl.origin);
+    const target = new URL(match.toPath, origin);
     return NextResponse.redirect(target, match.statusCode as 301 | 302 | 307 | 308);
   }
 
@@ -152,11 +160,10 @@ export default auth(async (request) => {
   const firstSegment = pathSegments[0];
 
   if (firstSegment && localeSet.has(firstSegment)) {
-    // 默认语言不带前缀：/en-US/about -> /about
     if (firstSegment === defaultLocale) {
       const restPath = `/${pathSegments.slice(1).join('/')}`;
       const normalizedPath = restPath === '/' ? '/' : restPath;
-      const redirectUrl = new URL(`${normalizedPath}${search}`, request.nextUrl.origin);
+      const redirectUrl = new URL(`${normalizedPath}${search}`, origin);
       const response = NextResponse.redirect(redirectUrl, 308);
       setLocaleCookie(response, defaultLocale);
       return response;
@@ -172,9 +179,8 @@ export default auth(async (request) => {
     ? cookieLocale
     : matchLocale(request.headers.get('accept-language'), activeLocales, defaultLocale);
 
-  // 默认语言保持无前缀；非默认语言重定向到带前缀 URL
   if (preferredLocale !== defaultLocale) {
-    const redirectUrl = new URL(`/${preferredLocale}${pathname}${search}`, request.nextUrl.origin);
+    const redirectUrl = new URL(`/${preferredLocale}${pathname}${search}`, origin);
     const response = NextResponse.redirect(redirectUrl, 307);
     setLocaleCookie(response, preferredLocale);
     return response;
