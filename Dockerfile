@@ -34,12 +34,14 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Migration script dependencies (postgres is zero-dep, safe to copy directly)
+# Script dependencies (postgres + bcryptjs are both zero-dep, safe to copy directly)
 COPY --from=deps /app/node_modules/postgres ./node_modules/postgres
+COPY --from=deps /app/node_modules/bcryptjs ./node_modules/bcryptjs
 
-# Migration files and entrypoint script
+# Migration/seed files and entrypoint script
 COPY --from=builder --chown=nextjs:nodejs /app/src/server/db/migrations ./migrations
 COPY --from=builder --chown=nextjs:nodejs /app/scripts/migrate.mjs ./scripts/migrate.mjs
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/seed.mjs ./scripts/seed.mjs
 COPY --from=builder --chown=nextjs:nodejs /app/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 

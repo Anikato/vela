@@ -1,13 +1,32 @@
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: vela-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vela
+      POSTGRES_USER: vela
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-VelaSecure2026}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vela"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   app:
     image: ${VELA_IMAGE:-l97312/vela:latest}
     container_name: vela-app
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
-      - '127.0.0.1:3000:3000'
+      - '${APP_PORT:-127.0.0.1:3000}:3000'
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      AUTH_SECRET: ${NEXTAUTH_SECRET}
+      DATABASE_URL: postgresql://vela:${DB_PASSWORD:-VelaSecure2026}@db:5432/vela
+      AUTH_SECRET: ${AUTH_SECRET}
       AUTH_TRUST_HOST: "true"
       AUTH_URL: ${SITE_URL:-http://localhost:3000}
       NEXT_PUBLIC_SITE_URL: ${SITE_URL:-http://localhost:3000}
@@ -21,9 +40,3 @@ services:
       SMTP_ENCRYPTION_KEY: ${SMTP_ENCRYPTION_KEY:-}
     volumes:
       - ./data/uploads:/app/public/uploads
-    networks:
-      - 1panel-network
-
-networks:
-  1panel-network:
-    external: true
