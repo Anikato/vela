@@ -1,7 +1,7 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
-import { MobileSidebar } from './mobile-sidebar';
 import { Breadcrumb } from './breadcrumb';
 import {
   DropdownMenu,
@@ -11,9 +11,24 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, ExternalLink } from 'lucide-react';
+import { Menu, LogOut, ExternalLink } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
+
+const MobileSidebar = dynamic(
+  () => import('./mobile-sidebar').then((m) => ({ default: m.MobileSidebar })),
+  {
+    ssr: false,
+    loading: () => (
+      <button
+        className="flex h-10 w-10 items-center justify-center rounded-md border border-border/50 text-muted-foreground md:hidden"
+        aria-label="打开菜单"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+    ),
+  },
+);
 
 interface TopbarProps {
   collapsed: boolean;

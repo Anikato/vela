@@ -390,47 +390,133 @@ const noConfigTypes = new Set([
   'contact_form',
 ]);
 
+/* ---- 通用外观配置（所有区块共享） ---- */
+function CommonAppearanceConfig({ value, onChange, disabled }: Omit<BlockConfigFormProps, 'type'>) {
+  return (
+    <div className="space-y-4">
+      <p className="text-sm font-medium">外观设置</p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-foreground">背景色</label>
+          <Select value={str(value.background, 'white')} onValueChange={(v) => onChange({ ...value, background: v })} disabled={disabled}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="white">白色</SelectItem>
+              <SelectItem value="gray">浅灰</SelectItem>
+              <SelectItem value="primary">主题色</SelectItem>
+              <SelectItem value="secondary">副色</SelectItem>
+              <SelectItem value="gradient">渐变</SelectItem>
+              <SelectItem value="dark">深色</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-foreground">容器宽度</label>
+          <Select value={str(value.container_width, 'default')} onValueChange={(v) => onChange({ ...value, container_width: v })} disabled={disabled}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="narrow">窄 (max-w-3xl)</SelectItem>
+              <SelectItem value="default">默认 (max-w-5xl)</SelectItem>
+              <SelectItem value="wide">宽 (max-w-7xl)</SelectItem>
+              <SelectItem value="full">全宽</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-foreground">上间距</label>
+          <Select value={str(value.padding_top, 'md')} onValueChange={(v) => onChange({ ...value, padding_top: v })} disabled={disabled}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">无</SelectItem>
+              <SelectItem value="sm">小</SelectItem>
+              <SelectItem value="md">中（默认）</SelectItem>
+              <SelectItem value="lg">大</SelectItem>
+              <SelectItem value="xl">特大</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-foreground">下间距</label>
+          <Select value={str(value.padding_bottom, 'md')} onValueChange={(v) => onChange({ ...value, padding_bottom: v })} disabled={disabled}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">无</SelectItem>
+              <SelectItem value="sm">小</SelectItem>
+              <SelectItem value="md">中（默认）</SelectItem>
+              <SelectItem value="lg">大</SelectItem>
+              <SelectItem value="xl">特大</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <label className="text-sm font-medium text-foreground">背景图片 URL（可选）</label>
+          <Input
+            placeholder="如：/uploads/bg.jpg 或 https://..."
+            value={str(value.background_image)}
+            onChange={(e) => onChange({ ...value, background_image: e.target.value || undefined })}
+            disabled={disabled}
+          />
+          <p className="text-xs text-muted-foreground">设置后将覆盖背景色，内容显示在图片之上</p>
+        </div>
+        {str(value.background_image) && (
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-foreground">遮罩层不透明度 (%)</label>
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              value={num(value.overlay_opacity, 40)}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                if (Number.isFinite(n)) onChange({ ...value, overlay_opacity: Math.max(0, Math.min(100, n)) });
+              }}
+              disabled={disabled}
+            />
+            <p className="text-xs text-muted-foreground">0 = 无遮罩，100 = 全黑</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function BlockConfigForm({ type, value, onChange, disabled }: BlockConfigFormProps) {
   const FormComponent = configFormRegistry[type];
 
-  if (FormComponent) {
-    return (
-      <div className="space-y-2">
-        <label className="text-sm font-medium">区块配置</label>
-        <FormComponent value={value} onChange={onChange} disabled={disabled} />
-      </div>
-    );
-  }
-
-  if (noConfigTypes.has(type)) {
-    return (
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-muted-foreground">区块配置</label>
-        <p className="text-xs text-muted-foreground">此区块无需额外配置。</p>
-      </div>
-    );
-  }
-
-  /* 降级：未知类型展示 JSON 编辑 */
   return (
-    <div className="space-y-2">
-      <label className="text-sm font-medium">配置 JSON（高级）</label>
-      <textarea
-        rows={6}
-        className="min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm"
-        value={JSON.stringify(value, null, 2)}
-        onChange={(e) => {
-          try {
-            const parsed = JSON.parse(e.target.value) as Record<string, unknown>;
-            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-              onChange(parsed);
-            }
-          } catch {
-            // 输入中的 JSON 还不合法，暂不更新
-          }
-        }}
-        disabled={disabled}
-      />
+    <div className="space-y-6">
+      {/* Type-specific config */}
+      {FormComponent && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium">区块配置</label>
+          <FormComponent value={value} onChange={onChange} disabled={disabled} />
+        </div>
+      )}
+
+      {!FormComponent && !noConfigTypes.has(type) && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium">配置 JSON（高级）</label>
+          <textarea
+            rows={6}
+            className="min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm"
+            value={JSON.stringify(value, null, 2)}
+            onChange={(e) => {
+              try {
+                const parsed = JSON.parse(e.target.value) as Record<string, unknown>;
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                  onChange(parsed);
+                }
+              } catch {
+                /* JSON not valid yet */
+              }
+            }}
+            disabled={disabled}
+          />
+        </div>
+      )}
+
+      {/* Common appearance config for all types */}
+      <CommonAppearanceConfig value={value} onChange={onChange} disabled={disabled} />
     </div>
   );
 }

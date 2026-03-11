@@ -49,8 +49,9 @@ function getSnapshot(): InquiryBasketItem[] {
   return readItems();
 }
 
+const EMPTY_ITEMS: InquiryBasketItem[] = [];
 function getServerSnapshot(): InquiryBasketItem[] {
-  return [];
+  return EMPTY_ITEMS;
 }
 
 export function useInquiryBasket() {

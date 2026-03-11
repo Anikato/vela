@@ -54,9 +54,12 @@ export function SectionWrapper({ section, children }: SectionWrapperProps) {
   const spacingTop = getConfigString(section.config, 'padding_top') ?? 'md';
   const spacingBottom = getConfigString(section.config, 'padding_bottom') ?? 'md';
   const containerWidth = getConfigString(section.config, 'container_width') ?? 'default';
+  const backgroundImage = getConfigString(section.config, 'background_image');
+  const overlayOpacity = Number(section.config.overlay_opacity) || 0;
 
   const sectionClassName = cn(
-    BACKGROUND_CLASS_MAP[background] ?? BACKGROUND_CLASS_MAP.white,
+    'relative',
+    !backgroundImage && (BACKGROUND_CLASS_MAP[background] ?? BACKGROUND_CLASS_MAP.white),
     SPACING_TOP_CLASS_MAP[spacingTop] ?? SPACING_TOP_CLASS_MAP.md,
     SPACING_BOTTOM_CLASS_MAP[spacingBottom] ?? SPACING_BOTTOM_CLASS_MAP.md,
     section.cssClass,
@@ -64,9 +67,23 @@ export function SectionWrapper({ section, children }: SectionWrapperProps) {
 
   return (
     <section ref={ref} id={section.anchorId ?? undefined} className={sectionClassName}>
+      {backgroundImage && (
+        <>
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${backgroundImage})` }}
+          />
+          {overlayOpacity > 0 && (
+            <div
+              className="absolute inset-0 bg-black"
+              style={{ opacity: overlayOpacity / 100 }}
+            />
+          )}
+        </>
+      )}
       <div
         className={cn(
-          'mx-auto px-4 sm:px-6 lg:px-8',
+          'relative mx-auto px-4 sm:px-6 lg:px-8',
           CONTAINER_CLASS_MAP[containerWidth] ?? CONTAINER_CLASS_MAP.default,
         )}
       >

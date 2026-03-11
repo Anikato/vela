@@ -1,10 +1,6 @@
 services:
   app:
-    build:
-      context: .
-      args:
-        DATABASE_URL: postgresql://vela:VelaP@ss2026!@127.0.0.1:5432/vela
-      network: host
+    image: ${VELA_IMAGE:-l97312/vela:latest}
     container_name: vela-app
     restart: unless-stopped
     ports:

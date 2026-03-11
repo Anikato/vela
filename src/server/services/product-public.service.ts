@@ -596,6 +596,41 @@ export async function getRelatedPublishedProducts(
   });
 }
 
+/**
+ * 获取某个分类及其所有后代分类的 ID 集合。
+ * 用于"子分类产品向上汇聚"：查看父分类时，自动包含所有子/孙分类的产品。
+ */
+async function getAllDescendantCategoryIds(categoryId: string): Promise<string[]> {
+  const allActive = await db.query.categories.findMany({
+    where: eq(categories.isActive, true),
+    columns: { id: true, parentId: true },
+  });
+
+  const childMap = new Map<string, string[]>();
+  for (const cat of allActive) {
+    if (cat.parentId) {
+      const arr = childMap.get(cat.parentId);
+      if (arr) arr.push(cat.id);
+      else childMap.set(cat.parentId, [cat.id]);
+    }
+  }
+
+  const result: string[] = [categoryId];
+  const queue = [categoryId];
+  while (queue.length > 0) {
+    const current = queue.pop()!;
+    const children = childMap.get(current);
+    if (children) {
+      for (const childId of children) {
+        result.push(childId);
+        queue.push(childId);
+      }
+    }
+  }
+
+  return result;
+}
+
 export async function getPublishedProductList(
   locale: string,
   defaultLocale: string,
@@ -623,15 +658,17 @@ export async function getPublishedProductList(
   let filteredIds: Set<string> | null = null;
 
   if (category) {
+    const categoryIds = await getAllDescendantCategoryIds(category.id);
+
     const primaryRows = await db
       .select({ id: products.id })
       .from(products)
-      .where(and(eq(products.status, 'published'), eq(products.primaryCategoryId, category.id)));
+      .where(and(eq(products.status, 'published'), inArray(products.primaryCategoryId, categoryIds)));
     const additionalRows = await db
       .select({ id: productCategories.productId })
       .from(productCategories)
       .innerJoin(products, eq(productCategories.productId, products.id))
-      .where(and(eq(productCategories.categoryId, category.id), eq(products.status, 'published')));
+      .where(and(inArray(productCategories.categoryId, categoryIds), eq(products.status, 'published')));
 
     filteredIds = new Set([
       ...primaryRows.map((item) => item.id),
@@ -781,6 +818,34 @@ export async function getPublicCategoryTree(
     .groupBy(productCategories.categoryId);
   const additionalCountMap = new Map(additionalCountRows.map((r) => [r.categoryId, r.cnt]));
 
+  const directCountMap = new Map<string, number>();
+  for (const cat of allCategories) {
+    directCountMap.set(
+      cat.id,
+      (primaryCountMap.get(cat.id) ?? 0) + (additionalCountMap.get(cat.id) ?? 0),
+    );
+  }
+
+  const childMap = new Map<string, string[]>();
+  for (const cat of allCategories) {
+    if (cat.parentId) {
+      const arr = childMap.get(cat.parentId);
+      if (arr) arr.push(cat.id);
+      else childMap.set(cat.parentId, [cat.id]);
+    }
+  }
+
+  function getAggregatedCount(catId: string): number {
+    let total = directCountMap.get(catId) ?? 0;
+    const children = childMap.get(catId);
+    if (children) {
+      for (const childId of children) {
+        total += getAggregatedCount(childId);
+      }
+    }
+    return total;
+  }
+
   const nodeMap = new Map<string, PublicCategoryTreeNode>();
   for (const cat of allCategories) {
     const translated = getTranslation(cat.translations, locale, defaultLocale);
@@ -788,7 +853,7 @@ export async function getPublicCategoryTree(
       id: cat.id,
       slug: cat.slug,
       name: translated?.name ?? cat.slug,
-      productCount: (primaryCountMap.get(cat.id) ?? 0) + (additionalCountMap.get(cat.id) ?? 0),
+      productCount: getAggregatedCount(cat.id),
       children: [],
     });
   }

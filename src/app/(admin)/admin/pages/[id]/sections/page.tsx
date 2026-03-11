@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
-import { PageSectionsManagement } from '@/components/admin/pages/page-sections-management';
+import { SectionList } from '@/components/admin/pages/section-list';
 import { Button } from '@/components/ui/button';
-import { getAllLanguages, getDefaultLanguage } from '@/server/services/language.service';
+import { getDefaultLanguage } from '@/server/services/language.service';
 import { getPageById } from '@/server/services/page.service';
 import { getPageSections } from '@/server/services/section.service';
 
@@ -14,10 +14,13 @@ interface PageProps {
 export default async function PageSectionsPage({ params }: PageProps) {
   const { id } = await params;
 
-  const allLanguages = await getAllLanguages();
-  const defaultLanguage = await getDefaultLanguage();
-  const page = await getPageById(id);
+  const [defaultLanguage, page] = await Promise.all([
+    getDefaultLanguage(),
+    getPageById(id),
+  ]);
   const sections = await getPageSections(id, defaultLanguage.code, defaultLanguage.code);
+
+  const previewSlug = page.isHomepage ? '/' : `/${page.slug}`;
 
   return (
     <div>
@@ -38,7 +41,12 @@ export default async function PageSectionsPage({ params }: PageProps) {
         </div>
       </div>
 
-      <PageSectionsManagement pageId={id} initialSections={sections} locales={allLanguages} />
+      <SectionList
+        pageId={id}
+        sections={sections}
+        editBasePath={`/admin/pages/${id}/sections`}
+        previewUrl={previewSlug}
+      />
     </div>
   );
 }

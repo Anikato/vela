@@ -223,6 +223,16 @@ export const productAttributeGroupsRelations = relations(
   }),
 );
 
+export const productAttributeGroupTranslationsRelations = relations(
+  productAttributeGroupTranslations,
+  ({ one }) => ({
+    group: one(productAttributeGroups, {
+      fields: [productAttributeGroupTranslations.groupId],
+      references: [productAttributeGroups.id],
+    }),
+  }),
+);
+
 export const productAttributesRelations = relations(productAttributes, ({ one, many }) => ({
   group: one(productAttributeGroups, {
     fields: [productAttributes.groupId],
@@ -230,3 +240,13 @@ export const productAttributesRelations = relations(productAttributes, ({ one, m
   }),
   translations: many(productAttributeTranslations),
 }));
+
+export const productAttributeTranslationsRelations = relations(
+  productAttributeTranslations,
+  ({ one }) => ({
+    attribute: one(productAttributes, {
+      fields: [productAttributeTranslations.attributeId],
+      references: [productAttributes.id],
+    }),
+  }),
+);

@@ -2,9 +2,9 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
 import { getTranslation } from '@/lib/i18n';
-import { PageSectionsManagement } from '@/components/admin/pages/page-sections-management';
+import { SectionList } from '@/components/admin/pages/section-list';
 import { Button } from '@/components/ui/button';
-import { getAllLanguages, getDefaultLanguage } from '@/server/services/language.service';
+import { getDefaultLanguage } from '@/server/services/language.service';
 import { getCategorySections } from '@/server/services/section.service';
 import { getCategoryById } from '@/server/services/category.service';
 
@@ -15,11 +15,7 @@ interface PageProps {
 export default async function CategorySectionsPage({ params }: PageProps) {
   const { id } = await params;
 
-  const [allLanguages, defaultLanguage] = await Promise.all([
-    getAllLanguages(),
-    getDefaultLanguage(),
-  ]);
-
+  const defaultLanguage = await getDefaultLanguage();
   const category = await getCategoryById(id);
   const categoryName = getTranslation(category.translations, defaultLanguage.code, defaultLanguage.code)?.name ?? category.slug;
   const sections = await getCategorySections(id, defaultLanguage.code, defaultLanguage.code);
@@ -28,14 +24,12 @@ export default async function CategorySectionsPage({ params }: PageProps) {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/admin/categories">
-                <ArrowLeft className="mr-1 h-4 w-4" />
-                返回分类管理
-              </Link>
-            </Button>
-          </div>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/admin/categories">
+              <ArrowLeft className="mr-1 h-4 w-4" />
+              返回分类管理
+            </Link>
+          </Button>
           <h1 className="text-2xl font-bold">分类区块管理</h1>
           <p className="text-sm text-muted-foreground">
             分类：{categoryName}
@@ -43,11 +37,10 @@ export default async function CategorySectionsPage({ params }: PageProps) {
         </div>
       </div>
 
-      <PageSectionsManagement
+      <SectionList
         categoryId={id}
-        initialSections={sections}
-        locales={allLanguages}
-        itemsBasePath={`/admin/categories/${id}/sections`}
+        sections={sections}
+        editBasePath={`/admin/categories/${id}/sections`}
       />
     </div>
   );

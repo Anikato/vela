@@ -16,6 +16,8 @@ const geistMono = Geist_Mono({
   display: 'swap',
 });
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Vela',
   description: 'Vela — Multilingual B2B Website System',

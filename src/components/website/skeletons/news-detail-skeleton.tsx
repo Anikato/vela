@@ -1,5 +1,8 @@
 import { Skeleton } from '@/components/ui/skeleton';
 
+const PARAGRAPH_1_WIDTHS = [95, 88, 92, 78, 100, 85, 73, 90];
+const PARAGRAPH_2_WIDTHS = [82, 96, 70, 88, 76];
+
 export function NewsDetailSkeleton() {
   return (
     <div>
@@ -29,20 +32,12 @@ export function NewsDetailSkeleton() {
 
         {/* Content */}
         <div className="space-y-3">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton
-              key={i}
-              className="h-4"
-              style={{ width: `${70 + Math.random() * 30}%` }}
-            />
+          {PARAGRAPH_1_WIDTHS.map((w, i) => (
+            <Skeleton key={i} className="h-4" style={{ width: `${w}%` }} />
           ))}
           <Skeleton className="my-6 h-48 w-full rounded-lg" />
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton
-              key={`p2-${i}`}
-              className="h-4"
-              style={{ width: `${65 + Math.random() * 35}%` }}
-            />
+          {PARAGRAPH_2_WIDTHS.map((w, i) => (
+            <Skeleton key={`p2-${i}`} className="h-4" style={{ width: `${w}%` }} />
           ))}
         </div>
       </article>

@@ -39,7 +39,7 @@ yarn-error.log*
 
 # persistent data (uploads, backups)
 /data/
-
+/public/uploads/
 # vercel
 .vercel
 

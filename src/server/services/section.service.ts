@@ -7,6 +7,8 @@ import {
   categories,
   pageTranslations,
   pages,
+  sectionItems,
+  sectionItemTranslations,
   sectionTranslations,
   sections,
 } from '@/server/db/schema';
@@ -298,6 +300,87 @@ export async function deleteSection(id: string): Promise<void> {
   }
 }
 
+export async function cloneSection(id: string): Promise<SectionWithTranslations> {
+  const existing = await db.query.sections.findFirst({
+    where: eq(sections.id, id),
+    with: {
+      translations: true,
+      items: { with: { translations: true } },
+    },
+  });
+
+  if (!existing) throw new NotFoundError('Section', id);
+
+  const ownerCondition = existing.pageId
+    ? eq(sections.pageId, existing.pageId)
+    : eq(sections.categoryId, existing.categoryId!);
+  const siblings = await db
+    .select({ id: sections.id })
+    .from(sections)
+    .where(and(ownerCondition, eq(sections.placement, existing.placement)));
+
+  const [cloned] = await db
+    .insert(sections)
+    .values({
+      pageId: existing.pageId,
+      categoryId: existing.categoryId,
+      placement: existing.placement,
+      type: existing.type,
+      config: existing.config,
+      sortOrder: siblings.length,
+      isActive: false,
+      anchorId: existing.anchorId ? `${existing.anchorId}-copy` : null,
+      cssClass: existing.cssClass,
+    })
+    .returning();
+
+  if (existing.translations.length > 0) {
+    await db.insert(sectionTranslations).values(
+      existing.translations.map((tr) => ({
+        sectionId: cloned.id,
+        locale: tr.locale,
+        title: tr.title ? `${tr.title} (副本)` : null,
+        subtitle: tr.subtitle,
+        content: tr.content,
+        buttonText: tr.buttonText,
+        buttonLink: tr.buttonLink,
+        secondaryButtonText: tr.secondaryButtonText,
+        secondaryButtonLink: tr.secondaryButtonLink,
+      })),
+    );
+  }
+
+  if (existing.items.length > 0) {
+    for (const item of existing.items) {
+      const [clonedItem] = await db
+        .insert(sectionItems)
+        .values({
+          sectionId: cloned.id,
+          iconName: item.iconName,
+          imageId: item.imageId,
+          linkUrl: item.linkUrl,
+          config: item.config,
+          sortOrder: item.sortOrder,
+        })
+        .returning();
+
+      if (item.translations.length > 0) {
+        await db.insert(sectionItemTranslations).values(
+          item.translations.map((tr) => ({
+            itemId: clonedItem.id,
+            locale: tr.locale,
+            title: tr.title,
+            description: tr.description,
+            content: tr.content,
+          })),
+        );
+      }
+    }
+  }
+
+  return getSectionById(cloned.id);
+}
+
 export async function reorderPageSections(pageId: string, orderedSectionIds: string[]): Promise<void> {
   await ensurePageExists(pageId);
 
@@ -456,6 +539,25 @@ export async function getPublishedHomepagePageId(): Promise<string | null> {
     .orderBy(asc(pages.createdAt));
 
   return fallback?.id ?? null;
+}
+
+/**
+ * 获取系统路由页面的区块（如 /products、/news），供前端渲染。
+ * 如果该系统路由页面不存在或未发布，返回空数组。
+ */
+export async function getSystemRouteSectionsForRender(
+  systemRoute: string,
+  locale: string,
+  defaultLocale: string,
+): Promise<RenderSection[]> {
+  const [page] = await db
+    .select({ id: pages.id })
+    .from(pages)
+    .where(and(eq(pages.systemRoute, systemRoute), eq(pages.status, 'published')));
+
+  if (!page) return [];
+
+  return getPageSectionsForRender(page.id, locale, defaultLocale);
 }
 
 export async function getPublishedHomepageMeta(

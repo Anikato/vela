@@ -80,7 +80,7 @@ export async function generateMetadata({ params }: LocaleProductDetailRoutePageP
     activeLocales,
     pagePath: `/products/${categorySlug}/${productSlug}`,
     ogImage: product.featuredImage?.url ?? siteInfo.ogImageUrl,
-    ogType: 'product',
+    ogType: 'website',
   });
 }
 

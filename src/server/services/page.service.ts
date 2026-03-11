@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, isNotNull, ne } from 'drizzle-orm';
 
 import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
 import { getTranslation } from '@/lib/i18n';
@@ -212,6 +212,57 @@ export async function deletePage(id: string): Promise<void> {
   if (existing.isHomepage) {
     throw new ValidationError('Homepage cannot be deleted. Please set another page as homepage first.');
   }
+  if (existing.systemRoute) {
+    throw new ValidationError('系统页面不可删除');
+  }
 
   await db.delete(pages).where(eq(pages.id, id));
+}
+
+/** 系统路由定义 */
+export const SYSTEM_ROUTES = {
+  products: { slug: '__system_products', title: '产品中心' },
+  news: { slug: '__system_news', title: '新闻中心' },
+} as const;
+
+export type SystemRouteKey = keyof typeof SYSTEM_ROUTES;
+
+/**
+ * 确保系统路由页面存在。如果不存在则自动创建（已发布状态）。
+ * 返回页面 ID。
+ */
+export async function ensureSystemRoutePage(route: SystemRouteKey): Promise<string> {
+  const [existing] = await db
+    .select({ id: pages.id })
+    .from(pages)
+    .where(eq(pages.systemRoute, route));
+
+  if (existing) return existing.id;
+
+  const def = SYSTEM_ROUTES[route];
+  const [created] = await db
+    .insert(pages)
+    .values({
+      slug: def.slug,
+      status: 'published',
+      isHomepage: false,
+      systemRoute: route,
+    })
+    .returning();
+
+  await db.insert(pageTranslations).values({
+    pageId: created.id,
+    locale: 'en-US',
+    title: def.title,
+  });
+
+  return created.id;
+}
+
+/** 获取所有系统路由页面（含翻译），用于后台展示 */
+export async function getSystemRoutePages(): Promise<PageWithTranslations[]> {
+  return db.query.pages.findMany({
+    where: isNotNull(pages.systemRoute),
+    with: { translations: true },
+  });
 }

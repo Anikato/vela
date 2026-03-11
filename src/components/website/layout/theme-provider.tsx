@@ -14,7 +14,8 @@ function buildCssVariables(config: ThemeConfig): string {
 
   for (const [key, value] of Object.entries(config.colors)) {
     const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
-    vars.push(`--${cssKey}: ${value};`);
+    const isAlreadyFunction = /^(hsl|oklch|rgb|lab|lch|hwb|color)\(/.test(value.trim());
+    vars.push(`--${cssKey}: ${isAlreadyFunction ? value : `hsl(${value})`};`);
   }
 
   vars.push(`--font-latin: ${config.fonts.latin};`);

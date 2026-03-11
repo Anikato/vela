@@ -9,6 +9,7 @@ export const pages = pgTable('pages', {
   status: varchar('status', { length: 20 }).default('draft').notNull(), // draft | published
   isHomepage: boolean('is_homepage').default(false).notNull(),
   template: varchar('template', { length: 50 }),
+  systemRoute: varchar('system_route', { length: 50 }).unique(), // 系统路由标识，如 'products'、'news'，非空时该页面为系统页面不可删除
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

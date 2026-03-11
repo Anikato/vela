@@ -10,11 +10,12 @@ import {
   createNews,
   deleteNews,
   getNewsById,
-  getNewsList,
+  getNewsListPaginated,
   NEWS_STATUSES,
   updateNews,
+  type AdminNewsListParams,
+  type AdminNewsListResult,
   type NewsDetail,
-  type NewsListItem,
 } from '@/server/services/news.service';
 
 // ─── Schemas ───
@@ -40,6 +41,7 @@ const createNewsSchema = z.object({
   coverImageId: z.string().uuid().nullable().optional(),
   publishedAt: z.string().nullable().optional(),
   translations: z.array(translationSchema).min(1),
+  tagIds: z.array(z.string().uuid()).optional(),
 });
 
 const updateNewsSchema = z.object({
@@ -53,21 +55,21 @@ const updateNewsSchema = z.object({
   coverImageId: z.string().uuid().nullable().optional(),
   publishedAt: z.string().nullable().optional(),
   translations: z.array(translationSchema).min(1).optional(),
+  tagIds: z.array(z.string().uuid()).optional(),
 });
 
 // ─── Actions ───
 
-/** 后台：新闻列表 */
+/** 后台：新闻列表（分页） */
 export async function getNewsListAction(
-  locale: string,
-  defaultLocale: string,
-): Promise<ActionResult<NewsListItem[]>> {
+  params: Omit<AdminNewsListParams, 'locale' | 'defaultLocale'> & { locale: string; defaultLocale: string },
+): Promise<ActionResult<AdminNewsListResult>> {
   const session = await auth();
   if (!session?.user) return { success: false, error: 'Unauthorized' };
 
   try {
-    const items = await getNewsList(locale, defaultLocale);
-    return { success: true, data: items };
+    const result = await getNewsListPaginated(params);
+    return { success: true, data: result };
   } catch {
     return { success: false, error: 'Failed to load news' };
   }

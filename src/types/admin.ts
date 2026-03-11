@@ -154,6 +154,35 @@ export interface NewsListItem {
   updatedAt: Date;
 }
 
+export interface AdminNewsListResult {
+  items: NewsListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface NewsDetail {
+  id: string;
+  slug: string;
+  status: string;
+  coverImageId: string | null;
+  publishedAt: Date | null;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+  tagIds: string[];
+  translations: Array<{
+    id: string;
+    locale: string;
+    title: string | null;
+    summary: string | null;
+    content: string | null;
+    seoTitle: string | null;
+    seoDescription: string | null;
+  }>;
+}
+
 // ─── Redirect ───
 export type Redirect = typeof redirects.$inferSelect;
 

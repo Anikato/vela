@@ -46,7 +46,7 @@ export interface SeoMetadataOptions {
   activeLocales: AlternateLocale[];
   pagePath: string;
   ogImage?: string | null;
-  ogType?: 'website' | 'article' | 'product';
+  ogType?: 'website' | 'article';
   publishedTime?: string | null;
   modifiedTime?: string | null;
   noindex?: boolean;
@@ -87,7 +87,7 @@ export function buildSeoMetadata(options: SeoMetadataOptions): Metadata {
       url: canonical,
       siteName: siteName ?? undefined,
       locale,
-      type: ogType as 'website' | 'article',
+      type: ogType,
       ...(ogImage ? { images: [{ url: buildAbsoluteUrl(ogImage) }] } : {}),
       ...(publishedTime ? { publishedTime } : {}),
       ...(modifiedTime ? { modifiedTime } : {}),

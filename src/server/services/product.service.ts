@@ -2,6 +2,14 @@ import { and, asc, desc, eq, inArray, max } from 'drizzle-orm';
 
 import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
 import { getTranslation } from '@/lib/i18n';
+import {
+  normalizeNullableText,
+  normalizeSku,
+  normalizeSlug,
+  normalizeIds,
+  ensureValidStatus,
+  ensureTranslationHasField,
+} from '@/lib/validators';
 import { db } from '@/server/db';
 import {
   categories,
@@ -14,6 +22,8 @@ import {
   products,
   tags,
 } from '@/server/db/schema';
+
+type DbClient = typeof db;
 
 export const PRODUCT_STATUSES = ['draft', 'published', 'archived'] as const;
 export type ProductStatus = (typeof PRODUCT_STATUSES)[number];
@@ -70,39 +80,16 @@ export type UpdateProductInput = Partial<
   translations?: ProductTranslationInput[];
 };
 
-function normalizeNullableText(value?: string | null): string | null | undefined {
-  if (value === undefined) return undefined;
-  if (value === null) return null;
-  const trimmed = value.trim();
-  return trimmed ? trimmed : null;
-}
-
-function normalizeSku(sku: string): string {
-  return sku.trim().toUpperCase();
-}
-
-function normalizeSlug(slug: string): string {
-  return slug.trim().toLowerCase();
-}
-
-function normalizeIds(ids?: string[]): string[] {
-  if (!ids) return [];
-  const set = new Set(ids.map((item) => item.trim()).filter(Boolean));
-  return Array.from(set);
-}
-
-function ensureValidStatus(status?: string): void {
-  if (!status) return;
-  if (!PRODUCT_STATUSES.includes(status as ProductStatus)) {
-    throw new ValidationError(`Invalid product status: ${status}`);
-  }
+function ensureProductStatus(status?: string): void {
+  ensureValidStatus(status, PRODUCT_STATUSES, 'product');
 }
 
 function ensureTranslationHasName(translations: ProductTranslationInput[]): void {
-  const hasName = translations.some((item) => Boolean(item.name?.trim()));
-  if (!hasName) {
-    throw new ValidationError('At least one translation name is required');
-  }
+  ensureTranslationHasField(
+    translations as Array<Record<string, unknown>>,
+    'name',
+    'At least one translation name is required',
+  );
 }
 
 async function ensureCategoryExists(categoryId: string): Promise<void> {
@@ -144,6 +131,7 @@ async function ensureMediaExist(mediaIds: string[]): Promise<void> {
 async function upsertProductTranslations(
   productId: string,
   translationsInput: ProductTranslationInput[],
+  client: DbClient = db,
 ): Promise<void> {
   for (const translation of translationsInput) {
     const locale = translation.locale.trim();
@@ -157,7 +145,7 @@ async function upsertProductTranslations(
       seoDescription: translation.seoDescription?.trim() || null,
     };
 
-    const [existing] = await db
+    const [existing] = await client
       .select()
       .from(productTranslations)
       .where(
@@ -168,14 +156,14 @@ async function upsertProductTranslations(
       );
 
     if (existing) {
-      await db
+      await client
         .update(productTranslations)
         .set(values)
         .where(eq(productTranslations.id, existing.id));
       continue;
     }
 
-    await db.insert(productTranslations).values({
+    await client.insert(productTranslations).values({
       productId,
       locale,
       ...values,
@@ -187,16 +175,17 @@ async function replaceAdditionalCategories(
   productId: string,
   primaryCategoryId: string,
   additionalCategoryIds: string[],
+  client: DbClient = db,
 ): Promise<void> {
   const cleanIds = normalizeIds(additionalCategoryIds).filter((id) => id !== primaryCategoryId);
   for (const categoryId of cleanIds) {
     await ensureCategoryExists(categoryId);
   }
 
-  await db.delete(productCategories).where(eq(productCategories.productId, productId));
+  await client.delete(productCategories).where(eq(productCategories.productId, productId));
   if (cleanIds.length === 0) return;
 
-  await db.insert(productCategories).values(
+  await client.insert(productCategories).values(
     cleanIds.map((categoryId) => ({
       productId,
       categoryId,
@@ -204,14 +193,14 @@ async function replaceAdditionalCategories(
   );
 }
 
-async function replaceProductTags(productId: string, tagIds: string[]): Promise<void> {
+async function replaceProductTags(productId: string, tagIds: string[], client: DbClient = db): Promise<void> {
   const cleanIds = normalizeIds(tagIds);
   await ensureTagsExist(cleanIds);
 
-  await db.delete(productTags).where(eq(productTags.productId, productId));
+  await client.delete(productTags).where(eq(productTags.productId, productId));
   if (cleanIds.length === 0) return;
 
-  await db.insert(productTags).values(
+  await client.insert(productTags).values(
     cleanIds.map((tagId) => ({
       productId,
       tagId,
@@ -219,13 +208,13 @@ async function replaceProductTags(productId: string, tagIds: string[]): Promise<
   );
 }
 
-async function replaceProductImages(productId: string, mediaIds: string[]): Promise<void> {
+async function replaceProductImages(productId: string, mediaIds: string[], client: DbClient = db): Promise<void> {
   const cleanIds = normalizeIds(mediaIds);
   await ensureMediaExist(cleanIds);
-  await db.delete(productImages).where(eq(productImages.productId, productId));
+  await client.delete(productImages).where(eq(productImages.productId, productId));
   if (cleanIds.length === 0) return;
 
-  await db.insert(productImages).values(
+  await client.insert(productImages).values(
     cleanIds.map((mediaId, index) => ({
       productId,
       mediaId,
@@ -234,13 +223,13 @@ async function replaceProductImages(productId: string, mediaIds: string[]): Prom
   );
 }
 
-async function replaceProductAttachments(productId: string, mediaIds: string[]): Promise<void> {
+async function replaceProductAttachments(productId: string, mediaIds: string[], client: DbClient = db): Promise<void> {
   const cleanIds = normalizeIds(mediaIds);
   await ensureMediaExist(cleanIds);
-  await db.delete(productAttachments).where(eq(productAttachments.productId, productId));
+  await client.delete(productAttachments).where(eq(productAttachments.productId, productId));
   if (cleanIds.length === 0) return;
 
-  await db.insert(productAttachments).values(
+  await client.insert(productAttachments).values(
     cleanIds.map((mediaId, index) => ({
       productId,
       mediaId,
@@ -394,7 +383,7 @@ export async function getProductList(
 export async function createProduct(input: CreateProductInput): Promise<ProductWithRelations> {
   const sku = normalizeSku(input.sku);
   const slug = normalizeSlug(input.slug);
-  ensureValidStatus(input.status);
+  ensureProductStatus(input.status);
 
   if (!sku) throw new ValidationError('SKU is required');
   if (!slug) throw new ValidationError('Slug is required');
@@ -439,15 +428,16 @@ export async function createProduct(input: CreateProductInput): Promise<ProductW
       })
       .returning();
 
-    await upsertProductTranslations(created.id, input.translations);
+    await upsertProductTranslations(created.id, input.translations, tx);
     await replaceAdditionalCategories(
       created.id,
       created.primaryCategoryId,
       input.additionalCategoryIds ?? [],
+      tx,
     );
-    await replaceProductTags(created.id, input.tagIds ?? []);
-    await replaceProductImages(created.id, input.galleryImageIds ?? []);
-    await replaceProductAttachments(created.id, input.attachmentIds ?? []);
+    await replaceProductTags(created.id, input.tagIds ?? [], tx);
+    await replaceProductImages(created.id, input.galleryImageIds ?? [], tx);
+    await replaceProductAttachments(created.id, input.attachmentIds ?? [], tx);
 
     return created.id;
   });
@@ -460,7 +450,7 @@ export async function updateProduct(
   input: UpdateProductInput,
 ): Promise<ProductWithRelations> {
   const existing = await getProductById(id);
-  ensureValidStatus(input.status);
+  ensureProductStatus(input.status);
 
   const sku = input.sku !== undefined ? normalizeSku(input.sku) : existing.sku;
   const slug = input.slug !== undefined ? normalizeSlug(input.slug) : existing.slug;
@@ -525,19 +515,19 @@ export async function updateProduct(
       .where(eq(products.id, id));
 
     if (input.translations) {
-      await upsertProductTranslations(id, input.translations);
+      await upsertProductTranslations(id, input.translations, tx);
     }
     if (input.additionalCategoryIds) {
-      await replaceAdditionalCategories(id, nextPrimaryCategoryId, input.additionalCategoryIds);
+      await replaceAdditionalCategories(id, nextPrimaryCategoryId, input.additionalCategoryIds, tx);
     }
     if (input.tagIds) {
-      await replaceProductTags(id, input.tagIds);
+      await replaceProductTags(id, input.tagIds, tx);
     }
     if (input.galleryImageIds) {
-      await replaceProductImages(id, input.galleryImageIds);
+      await replaceProductImages(id, input.galleryImageIds, tx);
     }
     if (input.attachmentIds) {
-      await replaceProductAttachments(id, input.attachmentIds);
+      await replaceProductAttachments(id, input.attachmentIds, tx);
     }
   });
 
@@ -574,7 +564,7 @@ export async function cloneProduct(
 ): Promise<ProductWithRelations> {
   const source = await getProductById(sourceId);
 
-  return db.transaction(async (tx) => {
+  const createdId = await db.transaction(async (tx) => {
     const [created] = await tx
       .insert(products)
       .values({
@@ -647,6 +637,8 @@ export async function cloneProduct(
       );
     }
 
-    return getProductById(created.id);
+    return created.id;
   });
+
+  return getProductById(createdId);
 }

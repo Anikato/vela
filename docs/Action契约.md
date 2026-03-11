@@ -976,28 +976,48 @@ targetGroupId: string; // uuid
 > 文件：`server/actions/news.actions.ts`  
 > 新增日期：2026-03-08
 
-### 1) `getNewsListAction(locale, defaultLocale)` — 后台新闻列表
+### 1) `getNewsListAction(params)` — 后台新闻列表（分页）
 
 - **权限**：需登录
-- **入参**：`locale: string`, `defaultLocale: string`
+- **入参**：
+
+```typescript
+{
+  locale: string;
+  defaultLocale: string;
+  page?: number;       // 默认 1
+  pageSize?: number;   // 默认 20，最大 50
+  search?: string;     // 按标题/Slug 模糊搜索
+  status?: 'draft' | 'published' | 'all';  // 默认 all
+}
+```
+
 - **返回**：
 
 ```typescript
 {
   success: true,
-  data: Array<{
-    id: string;
-    slug: string;
-    status: string;
-    coverImage: { id: string; url: string; alt: string | null } | null;
-    publishedAt: Date | null;
-    title: string;
-    summary: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-  }>
+  data: {
+    items: Array<{
+      id: string;
+      slug: string;
+      status: string;
+      coverImage: { id: string; url: string; alt: string | null } | null;
+      publishedAt: Date | null;
+      title: string;
+      summary: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  }
 }
 ```
+
+- **变更记录**：2026-03-10 从无分页改为分页 + 搜索 + 状态筛选
 
 ### 2) `getNewsByIdAction(id)` — 后台新闻详情
 
@@ -1017,6 +1037,7 @@ targetGroupId: string; // uuid
     sortOrder: number;
     createdAt: Date;
     updatedAt: Date;
+    tagIds: string[];
     translations: Array<{
       id: string;
       locale: string;
@@ -1031,6 +1052,7 @@ targetGroupId: string; // uuid
 ```
 
 - **错误码**：`'Unauthorized'` / `'Invalid news id'` / `'News not found'`
+- **变更记录**：2026-03-10 新增 `tagIds` 字段
 
 ### 3) `createNewsAction(input)` — 后台创建新闻
 
@@ -1043,6 +1065,7 @@ targetGroupId: string; // uuid
   status?: 'draft' | 'published';
   coverImageId?: string | null;
   publishedAt?: string | null;
+  tagIds?: string[];          // UUID 数组
   translations: Array<{
     locale: string;
     title?: string;
@@ -1055,12 +1078,14 @@ targetGroupId: string; // uuid
 ```
 
 - **返回**：`{ success: true, data: { id: string } }` 或错误
+- **变更记录**：2026-03-10 新增 `tagIds` 字段
 
 ### 4) `updateNewsAction(id, input)` — 后台更新新闻
 
 - **权限**：需登录
 - **入参**：`id: string`（UUID），`input` 同创建（所有字段可选）
 - **返回**：`{ success: true, data: void }` 或错误
+- **变更记录**：2026-03-10 新增 `tagIds` 字段
 
 ### 5) `deleteNewsAction(id)` — 后台删除新闻
 

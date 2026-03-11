@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 import { buildSeoMetadata, type AlternateLocale } from '@/lib/seo';
 import { WebsiteShell } from '@/components/website/layout/website-shell';
+import { SectionRenderer } from '@/components/website/sections/section-renderer';
 import { ProductListPage } from '@/components/website/product/product-list-page';
 import {
   getCachedActiveLanguages,
@@ -15,6 +16,7 @@ import {
   getPublishedProductList,
   type ProductSortOption,
 } from '@/server/services/product-public.service';
+import { getSystemRouteSectionsForRender } from '@/server/services/section.service';
 
 export async function generateMetadata(): Promise<Metadata> {
   const [defaultLanguage, activeLanguages] = await Promise.all([
@@ -75,7 +77,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const defaultLanguage = await getCachedDefaultLanguage();
   const locale = defaultLanguage.code;
 
-  const [data, categoryTree, tagList, uiMap] = await Promise.all([
+  const [data, categoryTree, tagList, uiMap, systemSections] = await Promise.all([
     getPublishedProductList(locale, locale, {
       page: Number.isFinite(pageNum) ? pageNum : 1,
       tagSlug: tag,
@@ -84,10 +86,14 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     getPublicCategoryTree(locale, locale),
     getPublicTagList(locale, locale),
     getCachedUiTranslationMap(locale, locale, UI_KEYS),
+    getSystemRouteSectionsForRender('products', locale, locale),
   ]);
 
   return (
     <WebsiteShell locale={locale} defaultLocale={locale}>
+      {systemSections.length > 0 && (
+        <SectionRenderer sections={systemSections} />
+      )}
       <ProductListPage
         locale={locale}
         defaultLocale={locale}

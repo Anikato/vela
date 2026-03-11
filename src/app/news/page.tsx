@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 import { buildSeoMetadata, type AlternateLocale } from '@/lib/seo';
 import { WebsiteShell } from '@/components/website/layout/website-shell';
+import { SectionRenderer } from '@/components/website/sections/section-renderer';
 import { NewsListPage } from '@/components/website/news/news-list-page';
 import {
   getCachedActiveLanguages,
@@ -10,6 +11,7 @@ import {
   getCachedUiTranslationMap,
 } from '@/lib/data-cache';
 import { getPublishedNewsList } from '@/server/services/news.service';
+import { getSystemRouteSectionsForRender } from '@/server/services/section.service';
 
 export async function generateMetadata(): Promise<Metadata> {
   const [defaultLanguage, activeLanguages] = await Promise.all([
@@ -53,15 +55,19 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
   const defaultLanguage = await getCachedDefaultLanguage();
   const locale = defaultLanguage.code;
 
-  const [data, uiMap] = await Promise.all([
+  const [data, uiMap, systemSections] = await Promise.all([
     getPublishedNewsList(locale, locale, {
       page: Number.isFinite(pageNum) ? pageNum : 1,
     }),
     getCachedUiTranslationMap(locale, locale, UI_KEYS),
+    getSystemRouteSectionsForRender('news', locale, locale),
   ]);
 
   return (
     <WebsiteShell locale={locale} defaultLocale={locale}>
+      {systemSections.length > 0 && (
+        <SectionRenderer sections={systemSections} />
+      )}
       <NewsListPage
         locale={locale}
         defaultLocale={locale}

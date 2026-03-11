@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 import { auth } from '@/server/auth';
 import {
+  cloneSection,
   createSection,
   deleteSection,
   getCategorySections,
@@ -175,6 +176,25 @@ export async function reorderPageSectionsAction(
   try {
     await reorderPageSections(parsed.data.pageId, parsed.data.orderedSectionIds);
     return { success: true, data: undefined };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+export async function cloneSectionAction(
+  sectionId: string,
+): Promise<ActionResult<SectionWithTranslations>> {
+  const unauthed = await ensureAuthed();
+  if (unauthed) return unauthed;
+
+  const parsedId = z.string().uuid().safeParse(sectionId);
+  if (!parsedId.success) {
+    return { success: false, error: 'Invalid section id' };
+  }
+
+  try {
+    const data = await cloneSection(parsedId.data);
+    return { success: true, data };
   } catch (error) {
     return handleError(error);
   }

@@ -96,11 +96,19 @@ export function PageManagement({ initialPages, locales }: PageManagementProps) {
   );
   const [expandedLocales, setExpandedLocales] = useState<string[]>([]);
 
+  const SYSTEM_ROUTE_LABELS: Record<string, string> = {
+    products: '产品中心',
+    news: '新闻中心',
+  };
+
   const sortedPages = useMemo(
     () =>
-      [...pages].sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-      ),
+      [...pages].sort((a, b) => {
+        const aSystem = a.systemRoute ? 1 : 0;
+        const bSystem = b.systemRoute ? 1 : 0;
+        if (aSystem !== bSystem) return bSystem - aSystem;
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      }),
     [pages],
   );
 
@@ -250,55 +258,72 @@ export function PageManagement({ initialPages, locales }: PageManagementProps) {
                 </TableCell>
               </TableRow>
             ) : (
-              sortedPages.map((item) => (
-                <TableRow key={item.id} className="border-border/50">
-                  <TableCell>{item.displayTitle}</TableCell>
-                  <TableCell>{item.slug}</TableCell>
-                  <TableCell>
-                    <Badge variant={item.status === 'published' ? 'default' : 'secondary'}>
-                      {item.status === 'published' ? '已发布' : '草稿'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {item.isHomepage ? (
-                      <Badge variant="default">是</Badge>
-                    ) : (
-                      <Badge variant="secondary">否</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>{item.template || '-'}</TableCell>
-                  <TableCell>{formatDate(item.updatedAt)}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button asChild variant="ghost" size="sm" className="h-8">
-                        <Link href={`/admin/pages/${item.id}/sections`}>
-                          <Blocks className="mr-1 h-3.5 w-3.5" />
-                          区块
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8"
-                        onClick={() => openEditDialog(item)}
-                      >
-                        <Pencil className="mr-1 h-3.5 w-3.5" />
-                        编辑
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 text-destructive hover:text-destructive"
-                        disabled={isSubmitting}
-                        onClick={() => setDeleteTarget(item)}
-                      >
-                        <Trash2 className="mr-1 h-3.5 w-3.5" />
-                        删除
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
+              sortedPages.map((item) => {
+                const isSystem = Boolean(item.systemRoute);
+                const systemLabel = item.systemRoute ? SYSTEM_ROUTE_LABELS[item.systemRoute] : null;
+                return (
+                  <TableRow key={item.id} className="border-border/50">
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {item.displayTitle}
+                        {isSystem && (
+                          <Badge variant="outline" className="text-xs text-blue-400 border-blue-400/50">
+                            系统 · {systemLabel ?? item.systemRoute}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>{isSystem ? `/${item.systemRoute}` : item.slug}</TableCell>
+                    <TableCell>
+                      <Badge variant={item.status === 'published' ? 'default' : 'secondary'}>
+                        {item.status === 'published' ? '已发布' : '草稿'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {item.isHomepage ? (
+                        <Badge variant="default">是</Badge>
+                      ) : (
+                        <Badge variant="secondary">否</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>{item.template || '-'}</TableCell>
+                    <TableCell>{formatDate(item.updatedAt)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button asChild variant="ghost" size="sm" className="h-8">
+                          <Link href={`/admin/pages/${item.id}/sections`}>
+                            <Blocks className="mr-1 h-3.5 w-3.5" />
+                            区块
+                          </Link>
+                        </Button>
+                        {!isSystem && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8"
+                              onClick={() => openEditDialog(item)}
+                            >
+                              <Pencil className="mr-1 h-3.5 w-3.5" />
+                              编辑
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 text-destructive hover:text-destructive"
+                              disabled={isSubmitting}
+                              onClick={() => setDeleteTarget(item)}
+                            >
+                              <Trash2 className="mr-1 h-3.5 w-3.5" />
+                              删除
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

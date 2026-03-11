@@ -82,7 +82,7 @@ export async function generateMetadata({ params }: ProductDetailRoutePageProps):
     activeLocales,
     pagePath: `/products/${categorySlug}/${productSlug}`,
     ogImage: ogImg,
-    ogType: 'product',
+    ogType: 'website',
   });
 }
 

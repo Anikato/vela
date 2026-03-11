@@ -17,6 +17,9 @@ import { useState } from 'react';
 /**
  * 移动端后台侧边栏 — 暗色科技感
  * 使用 Sheet 组件实现滑出抽屉
+ *
+ * 通过 next/dynamic ssr:false 导入（见 topbar.tsx），
+ * 确保 Radix Sheet 仅在客户端渲染，避免 hydration mismatch。
  */
 export function MobileSidebar() {
   const pathname = usePathname();

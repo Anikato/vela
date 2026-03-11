@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import * as LucideIcons from 'lucide-react';
 
@@ -48,10 +49,13 @@ function FeatureCard({ item, variant, index }: { item: WebsiteSectionItem; varia
     ? (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[item.iconName]
     : null;
 
+  const hasImage = Boolean(item.imageUrl);
+
   const content = (
     <div
       className={cn(
-        'group relative h-full overflow-hidden rounded-2xl p-6 transition-all duration-300',
+        'group relative h-full overflow-hidden rounded-2xl transition-all duration-300',
+        hasImage ? 'p-0' : 'p-6',
         variant === 'default' && 'border border-border/60 bg-card hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5',
         variant === 'bordered' && 'border-2 border-border bg-transparent hover:border-primary/40 hover:bg-primary/[0.02]',
         variant === 'filled' && 'bg-muted/50 hover:bg-muted/80',
@@ -59,32 +63,48 @@ function FeatureCard({ item, variant, index }: { item: WebsiteSectionItem; varia
       )}
       style={{ transitionDelay: `${index * 50}ms` }}
     >
-      {IconComp && (
-        <div className={cn(
-          'mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl transition-colors duration-300',
-          variant === 'filled'
-            ? 'bg-primary/15 text-primary group-hover:bg-primary group-hover:text-primary-foreground'
-            : 'bg-primary/10 text-primary group-hover:bg-primary/20',
-        )}>
-          <IconComp className="h-6 w-6" />
+      {/* Image mode: image at top, text below */}
+      {hasImage && (
+        <div className="relative aspect-[4/3] w-full overflow-hidden">
+          <Image
+            src={item.imageUrl!}
+            alt={item.translation.title ?? ''}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
         </div>
       )}
-      {item.translation.title && (
-        <h3 className="text-lg font-semibold tracking-tight">{item.translation.title}</h3>
-      )}
-      {item.translation.description && (
-        <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
-          {item.translation.description}
-        </p>
-      )}
-      {item.linkUrl && (
-        <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
-          Learn more
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
-        </span>
-      )}
+
+      <div className={cn(hasImage && 'p-5')}>
+        {/* Icon mode (only when no image) */}
+        {!hasImage && IconComp && (
+          <div className={cn(
+            'mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl transition-colors duration-300',
+            variant === 'filled'
+              ? 'bg-primary/15 text-primary group-hover:bg-primary group-hover:text-primary-foreground'
+              : 'bg-primary/10 text-primary group-hover:bg-primary/20',
+          )}>
+            <IconComp className="h-6 w-6" />
+          </div>
+        )}
+
+        {item.translation.title && (
+          <h3 className="text-lg font-semibold tracking-tight">{item.translation.title}</h3>
+        )}
+        {item.translation.description && (
+          <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
+            {item.translation.description}
+          </p>
+        )}
+        {item.linkUrl && (
+          <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
+            Learn more
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </span>
+        )}
+      </div>
     </div>
   );
 

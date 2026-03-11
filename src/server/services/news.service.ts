@@ -3,7 +3,7 @@ import { and, count, desc, eq, max } from 'drizzle-orm';
 import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
 import { getTranslation } from '@/lib/i18n';
 import { db } from '@/server/db';
-import { media, news, newsTranslations } from '@/server/db/schema';
+import { media, news, newsTags, newsTranslations } from '@/server/db/schema';
 import { getStorageAdapter } from '@/server/storage';
 
 // ─── Types ───
@@ -26,6 +26,7 @@ export interface CreateNewsInput {
   coverImageId?: string | null;
   publishedAt?: string | null;
   translations: NewsTranslationInput[];
+  tagIds?: string[];
 }
 
 export interface UpdateNewsInput {
@@ -34,6 +35,7 @@ export interface UpdateNewsInput {
   coverImageId?: string | null;
   publishedAt?: string | null;
   translations?: NewsTranslationInput[];
+  tagIds?: string[];
 }
 
 export interface NewsListItem {
@@ -48,6 +50,23 @@ export interface NewsListItem {
   updatedAt: Date;
 }
 
+export interface AdminNewsListParams {
+  locale: string;
+  defaultLocale: string;
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: NewsStatus | 'all';
+}
+
+export interface AdminNewsListResult {
+  items: NewsListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 export interface NewsDetail {
   id: string;
   slug: string;
@@ -57,6 +76,7 @@ export interface NewsDetail {
   sortOrder: number;
   createdAt: Date;
   updatedAt: Date;
+  tagIds: string[];
   translations: Array<{
     id: string;
     locale: string;
@@ -70,33 +90,44 @@ export interface NewsDetail {
 
 // ─── Admin Service ───
 
-/** 后台：新闻列表 */
-export async function getNewsList(
-  locale: string,
-  defaultLocale: string,
-): Promise<NewsListItem[]> {
+/** 后台：新闻列表（分页 + 搜索 + 筛选） */
+export async function getNewsListPaginated(
+  params: AdminNewsListParams,
+): Promise<AdminNewsListResult> {
+  const page = Math.max(1, Math.floor(params.page ?? 1));
+  const pageSize = Math.max(1, Math.min(50, Math.floor(params.pageSize ?? 20)));
   const storage = getStorageAdapter();
 
+  const conditions = [];
+  if (params.status && params.status !== 'all') {
+    conditions.push(eq(news.status, params.status));
+  }
+
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const [{ total }] = await db.select({ total: count() }).from(news).where(where);
+  const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
+
+  if (total === 0) {
+    return { items: [], total: 0, page, pageSize, totalPages: 0 };
+  }
+
   const rows = await db.query.news.findMany({
-    with: {
-      coverImage: true,
-      translations: true,
-    },
-    orderBy: [desc(news.publishedAt), desc(news.createdAt)],
+    where,
+    with: { coverImage: true, translations: true },
+    orderBy: [desc(news.createdAt)],
+    limit: pageSize,
+    offset: (page - 1) * pageSize,
   });
 
-  return rows.map((row) => {
-    const t = getTranslation(row.translations, locale, defaultLocale);
+  let items: NewsListItem[] = rows.map((row) => {
+    const t = getTranslation(row.translations, params.locale, params.defaultLocale);
     return {
       id: row.id,
       slug: row.slug,
       status: row.status,
       coverImage: row.coverImage
-        ? {
-            id: row.coverImage.id,
-            url: storage.getPublicUrl(row.coverImage.filename),
-            alt: row.coverImage.alt,
-          }
+        ? { id: row.coverImage.id, url: storage.getPublicUrl(row.coverImage.filename), alt: row.coverImage.alt }
         : null,
       publishedAt: row.publishedAt,
       title: t?.title ?? row.slug,
@@ -105,13 +136,34 @@ export async function getNewsList(
       updatedAt: row.updatedAt,
     };
   });
+
+  if (params.search?.trim()) {
+    const q = params.search.trim().toLowerCase();
+    items = items.filter(
+      (item) =>
+        item.title.toLowerCase().includes(q) ||
+        item.slug.toLowerCase().includes(q) ||
+        (item.summary?.toLowerCase().includes(q) ?? false),
+    );
+  }
+
+  return { items, total, page, pageSize, totalPages };
 }
 
-/** 后台：新闻详情（含所有翻译） */
+/** 后台：新闻列表（兼容旧调用，无分页） */
+export async function getNewsList(
+  locale: string,
+  defaultLocale: string,
+): Promise<NewsListItem[]> {
+  const result = await getNewsListPaginated({ locale, defaultLocale, page: 1, pageSize: 9999 });
+  return result.items;
+}
+
+/** 后台：新闻详情（含所有翻译 + 标签） */
 export async function getNewsById(id: string): Promise<NewsDetail> {
   const row = await db.query.news.findFirst({
     where: eq(news.id, id),
-    with: { translations: true },
+    with: { translations: true, newsTags: true },
   });
 
   if (!row) throw new NotFoundError('News', id);
@@ -125,6 +177,7 @@ export async function getNewsById(id: string): Promise<NewsDetail> {
     sortOrder: row.sortOrder,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    tagIds: row.newsTags.map((nt) => nt.tagId),
     translations: row.translations.map((t) => ({
       id: t.id,
       locale: t.locale,
@@ -181,6 +234,12 @@ export async function createNews(input: CreateNewsInput): Promise<{ id: string }
       );
     }
 
+    if (input.tagIds && input.tagIds.length > 0) {
+      await tx.insert(newsTags).values(
+        input.tagIds.map((tagId) => ({ newsId: created.id, tagId })),
+      );
+    }
+
     return { id: created.id };
   });
 }
@@ -226,6 +285,15 @@ export async function updateNews(id: string, input: UpdateNewsInput): Promise<vo
             seoTitle: t.seoTitle ?? null,
             seoDescription: t.seoDescription ?? null,
           })),
+        );
+      }
+    }
+
+    if (input.tagIds !== undefined) {
+      await tx.delete(newsTags).where(eq(newsTags.newsId, id));
+      if (input.tagIds.length > 0) {
+        await tx.insert(newsTags).values(
+          input.tagIds.map((tagId) => ({ newsId: id, tagId })),
         );
       }
     }
