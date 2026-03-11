@@ -34,6 +34,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Migration script dependencies (postgres is zero-dep, safe to copy directly)
+COPY --from=deps /app/node_modules/postgres ./node_modules/postgres
+
 # Migration files and entrypoint script
 COPY --from=builder --chown=nextjs:nodejs /app/src/server/db/migrations ./migrations
 COPY --from=builder --chown=nextjs:nodejs /app/scripts/migrate.mjs ./scripts/migrate.mjs
