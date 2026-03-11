@@ -112,7 +112,7 @@ describe('buildSeoMetadata', () => {
 
   it('sets Twitter Card metadata', () => {
     const meta = buildSeoMetadata(baseOptions);
-    expect(meta.twitter?.card).toBe('summary_large_image');
+    expect((meta.twitter as Record<string, unknown>)?.card).toBe('summary_large_image');
     expect(meta.twitter?.title).toBe('Water Pump X100 | Vela');
   });
 
@@ -147,7 +147,7 @@ describe('buildSeoMetadata', () => {
 
   it('sets article OG type when specified', () => {
     const meta = buildSeoMetadata({ ...baseOptions, ogType: 'article' });
-    expect(meta.openGraph?.type).toBe('article');
+    expect((meta.openGraph as Record<string, unknown>)?.type).toBe('article');
   });
 
   it('includes publishedTime for articles', () => {

@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, inArray, max } from 'drizzle-orm';
+import type { PgTransaction } from 'drizzle-orm/pg-core';
 
 import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
 import { getTranslation } from '@/lib/i18n';
@@ -23,7 +24,7 @@ import {
   tags,
 } from '@/server/db/schema';
 
-type DbClient = typeof db;
+type DbClient = typeof db | PgTransaction<any, any, any>;
 
 export const PRODUCT_STATUSES = ['draft', 'published', 'archived'] as const;
 export type ProductStatus = (typeof PRODUCT_STATUSES)[number];
