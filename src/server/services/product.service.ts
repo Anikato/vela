@@ -86,7 +86,7 @@ function ensureProductStatus(status?: string): void {
 
 function ensureTranslationHasName(translations: ProductTranslationInput[]): void {
   ensureTranslationHasField(
-    translations as Array<Record<string, unknown>>,
+    translations as unknown as Array<Record<string, unknown>>,
     'name',
     'At least one translation name is required',
   );
