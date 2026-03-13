@@ -213,13 +213,20 @@ export interface UpdateScriptsInput {
 }
 
 export async function updateScriptsSettings(input: UpdateScriptsInput): Promise<void> {
+  const data: Record<string, unknown> = { ...input, updatedAt: new Date() };
+  if (input.captchaSiteKey) {
+    data.captchaProvider = 'turnstile';
+  } else if (input.captchaSiteKey === null) {
+    data.captchaProvider = null;
+  }
+
   const existing = await db.query.siteSettings.findFirst();
   if (!existing) {
-    await db.insert(siteSettings).values({ ...input, updatedAt: new Date() });
+    await db.insert(siteSettings).values(data);
   } else {
     await db
       .update(siteSettings)
-      .set({ ...input, updatedAt: new Date() })
+      .set(data)
       .where(eq(siteSettings.id, existing.id));
   }
 }

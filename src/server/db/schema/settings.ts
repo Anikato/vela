@@ -46,7 +46,7 @@ export const siteSettings = pgTable('site_settings', {
   gaId: varchar('ga_id', { length: 50 }),
   gtmId: varchar('gtm_id', { length: 50 }),
   fbPixelId: varchar('fb_pixel_id', { length: 50 }),
-  captchaProvider: varchar('captcha_provider', { length: 20 }), // hcaptcha | recaptcha
+  captchaProvider: varchar('captcha_provider', { length: 20 }), // turnstile
   captchaSiteKey: varchar('captcha_site_key', { length: 255 }),
   captchaSecretKey: varchar('captcha_secret_key', { length: 255 }),
   // 自定义脚本

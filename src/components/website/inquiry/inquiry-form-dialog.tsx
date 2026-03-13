@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useState, useTransition } from 'react';
-import HCaptcha from '@hcaptcha/react-hcaptcha';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { Check, Loader2, X } from 'lucide-react';
 
 import { useInquiryBasket } from '@/hooks/use-inquiry-basket';
@@ -44,7 +44,7 @@ export function InquiryFormDialog({ open, onClose, captchaSiteKey, customFields 
   const [inquiryNumber, setInquiryNumber] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const captchaRef = useRef<HCaptcha>(null);
+  const captchaRef = useRef<TurnstileInstance>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   const handleSubmit = useCallback(
@@ -52,7 +52,6 @@ export function InquiryFormDialog({ open, onClose, captchaSiteKey, customFields 
       e.preventDefault();
 
       if (captchaSiteKey && !captchaToken) {
-        captchaRef.current?.execute();
         return;
       }
 
@@ -103,18 +102,10 @@ export function InquiryFormDialog({ open, onClose, captchaSiteKey, customFields 
         }
 
         setCaptchaToken(null);
-        captchaRef.current?.resetCaptcha();
+        captchaRef.current?.reset();
       });
     },
     [items, clearBasket, labels.error, captchaSiteKey, captchaToken, customFields],
-  );
-
-  const handleCaptchaVerify = useCallback(
-    (token: string) => {
-      setCaptchaToken(token);
-      formRef.current?.requestSubmit();
-    },
-    [],
   );
 
   if (!open) return null;
@@ -202,12 +193,12 @@ export function InquiryFormDialog({ open, onClose, captchaSiteKey, customFields 
 
               {captchaSiteKey && (
                 <div className="flex justify-center">
-                  <HCaptcha
+                  <Turnstile
                     ref={captchaRef}
-                    sitekey={captchaSiteKey}
-                    size="invisible"
-                    onVerify={handleCaptchaVerify}
+                    siteKey={captchaSiteKey}
+                    onSuccess={(token) => setCaptchaToken(token)}
                     onExpire={() => setCaptchaToken(null)}
+                    options={{ size: 'compact' }}
                   />
                 </div>
               )}
@@ -222,7 +213,7 @@ export function InquiryFormDialog({ open, onClose, captchaSiteKey, customFields 
                 </button>
                 <button
                   type="submit"
-                  disabled={isPending}
+                  disabled={isPending || (!!captchaSiteKey && !captchaToken)}
                   className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
                 >
                   {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}

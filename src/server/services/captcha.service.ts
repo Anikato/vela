@@ -1,7 +1,7 @@
 import { db } from '@/server/db';
 
 interface CaptchaConfig {
-  provider: 'hcaptcha';
+  provider: 'turnstile';
   siteKey: string;
   secretKey: string;
 }
@@ -13,7 +13,7 @@ export async function getCaptchaConfig(): Promise<CaptchaConfig | null> {
     return null;
   }
   return {
-    provider: 'hcaptcha',
+    provider: 'turnstile',
     siteKey: row.captchaSiteKey,
     secretKey: row.captchaSecretKey,
   };
@@ -25,15 +25,15 @@ export async function getCaptchaSiteKey(): Promise<string | null> {
   return config?.siteKey ?? null;
 }
 
-/** 服务端验证 hCaptcha token */
+/** 服务端验证 Cloudflare Turnstile token */
 export async function verifyCaptchaToken(token: string): Promise<boolean> {
   const config = await getCaptchaConfig();
-  if (!config) return true; // 未配置验证码则跳过
+  if (!config) return true;
 
   if (!token) return false;
 
   try {
-    const res = await fetch('https://api.hcaptcha.com/siteverify', {
+    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({

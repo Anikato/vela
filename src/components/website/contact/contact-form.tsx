@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useState, useTransition } from 'react';
-import HCaptcha from '@hcaptcha/react-hcaptcha';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { Check, Loader2, Send } from 'lucide-react';
 
 import { submitInquiryAction } from '@/server/actions/inquiry.actions';
@@ -26,7 +26,7 @@ export function ContactForm({ captchaSiteKey, labels }: ContactFormProps) {
   const [state, setState] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const captchaRef = useRef<HCaptcha>(null);
+  const captchaRef = useRef<TurnstileInstance>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   const handleSubmit = useCallback(
@@ -34,7 +34,6 @@ export function ContactForm({ captchaSiteKey, labels }: ContactFormProps) {
       e.preventDefault();
 
       if (captchaSiteKey && !captchaToken) {
-        captchaRef.current?.execute();
         return;
       }
 
@@ -59,18 +58,10 @@ export function ContactForm({ captchaSiteKey, labels }: ContactFormProps) {
         }
 
         setCaptchaToken(null);
-        captchaRef.current?.resetCaptcha();
+        captchaRef.current?.reset();
       });
     },
     [captchaSiteKey, captchaToken, labels.errorMessage],
-  );
-
-  const handleCaptchaVerify = useCallback(
-    (token: string) => {
-      setCaptchaToken(token);
-      formRef.current?.requestSubmit();
-    },
-    [],
   );
 
   if (state === 'success') {
@@ -141,19 +132,19 @@ export function ContactForm({ captchaSiteKey, labels }: ContactFormProps) {
 
       {captchaSiteKey && (
         <div className="flex justify-center">
-          <HCaptcha
+          <Turnstile
             ref={captchaRef}
-            sitekey={captchaSiteKey}
-            size="invisible"
-            onVerify={handleCaptchaVerify}
+            siteKey={captchaSiteKey}
+            onSuccess={(token) => setCaptchaToken(token)}
             onExpire={() => setCaptchaToken(null)}
+            options={{ size: 'compact' }}
           />
         </div>
       )}
 
       <button
         type="submit"
-        disabled={isPending}
+        disabled={isPending || (!!captchaSiteKey && !captchaToken)}
         className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-60"
       >
         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}

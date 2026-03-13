@@ -12,7 +12,6 @@ import {
   Pencil,
   Plus,
   Trash2,
-  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -22,7 +21,7 @@ import {
   reorderSectionItemsAction,
   updateSectionItemAction,
 } from '@/server/actions/section-item.actions';
-import type { Language } from '@/types/admin';
+import type { Language, Media } from '@/types/admin';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,6 +34,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ConfirmDeleteDialog } from '@/components/admin/common/confirm-delete-dialog';
+import { ImagePickerUpload } from '@/components/admin/common/image-picker-upload';
 import {
   Table,
   TableBody,
@@ -47,13 +47,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // ─── Types ───
 
-export interface MediaItem {
-  id: string;
-  filename: string;
-  originalName: string;
-  url: string;
-  mimeType: string;
-}
+type MediaWithUrl = Media & { url: string };
 
 export interface SectionItemForUI {
   id: string;
@@ -80,7 +74,7 @@ interface SectionItemsManagementProps {
   sectionType: string;
   initialItems: SectionItemForUI[];
   locales: Language[];
-  mediaItems: MediaItem[];
+  mediaItems: MediaWithUrl[];
 }
 
 type TranslationForm = {
@@ -223,95 +217,6 @@ const DEFAULT_FIELDS = {
   hint: '管理此区块的子项内容。',
 };
 
-/* ---- ImagePicker 组件 ---- */
-function ImagePicker({
-  label,
-  currentUrl,
-  mediaItems,
-  onSelect,
-  onClear,
-}: {
-  label: string;
-  currentUrl: string | null;
-  mediaItems: MediaItem[];
-  onSelect: (id: string, url: string) => void;
-  onClear: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const images = mediaItems.filter((m) => m.mimeType.startsWith('image/'));
-
-  return (
-    <div>
-      <label className="mb-1.5 block text-sm font-medium">{label}</label>
-      <div className="flex items-center gap-3">
-        {currentUrl ? (
-          <div className="relative h-20 w-20 overflow-hidden rounded-md border bg-muted">
-            <img
-              src={currentUrl}
-              alt=""
-              className="h-full w-full object-cover"
-            />
-            <button
-              type="button"
-              onClick={onClear}
-              className="absolute right-0.5 top-0.5 rounded-full bg-black/60 p-0.5"
-            >
-              <X className="h-3 w-3 text-white" />
-            </button>
-          </div>
-        ) : (
-          <div
-            className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed transition-colors hover:bg-accent/50"
-            onClick={() => setOpen(true)}
-          >
-            <ImageIcon className="h-6 w-6 text-muted-foreground" />
-          </div>
-        )}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setOpen(true)}
-        >
-          {currentUrl ? '更换' : '选择图片'}
-        </Button>
-      </div>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[70vh] max-w-2xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>选择{label}</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-4 gap-2">
-            {images.map((img) => (
-              <button
-                key={img.id}
-                type="button"
-                className="aspect-square overflow-hidden rounded-md border transition-all hover:ring-2 hover:ring-primary"
-                onClick={() => {
-                  onSelect(img.id, img.url);
-                  setOpen(false);
-                }}
-              >
-                <img
-                  src={img.url}
-                  alt={img.originalName}
-                  className="h-full w-full object-cover"
-                />
-              </button>
-            ))}
-            {images.length === 0 && (
-              <p className="col-span-4 py-8 text-center text-muted-foreground">
-                媒体库中没有图片，请先在「媒体管理」中上传
-              </p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
 /* ==================================================================
  * 主组件
  * ================================================================*/
@@ -321,10 +226,11 @@ export function SectionItemsManagement({
   sectionType,
   initialItems,
   locales,
-  mediaItems,
+  mediaItems: initialMediaItems,
 }: SectionItemsManagementProps) {
   const router = useRouter();
   const [items, setItems] = useState<SectionItemForUI[]>(initialItems);
+  const [allMedia, setAllMedia] = useState<MediaWithUrl[]>(initialMediaItems);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<SectionItemForUI | null>(null);
@@ -641,10 +547,10 @@ export function SectionItemsManagement({
 
             <TabsContent value="basic" className="space-y-4 pt-4">
               {fields.showImage && (
-                <ImagePicker
+                <ImagePickerUpload
                   label="图片"
                   currentUrl={imageUrl}
-                  mediaItems={mediaItems}
+                  mediaItems={allMedia}
                   onSelect={(id, url) => {
                     setImageId(id);
                     setImageUrl(url);
@@ -653,6 +559,7 @@ export function SectionItemsManagement({
                     setImageId(null);
                     setImageUrl(null);
                   }}
+                  onMediaUploaded={(uploaded) => setAllMedia((prev) => [...uploaded, ...prev])}
                 />
               )}
 

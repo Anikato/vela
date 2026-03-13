@@ -95,9 +95,13 @@ export function ScriptsSettingsManagement({ initialSettings }: Props) {
           </div>
         </div>
 
-        <h2 className="text-lg font-semibold pt-2">防垃圾验证（hCaptcha）</h2>
+        <h2 className="text-lg font-semibold pt-2">防垃圾验证（Cloudflare Turnstile）</h2>
         <p className="text-sm text-muted-foreground -mt-4">
-          配置后，询盘表单提交前将自动进行人机验证
+          配置后，询盘表单提交前将自动进行人机验证。请在{' '}
+          <a href="https://dash.cloudflare.com/?to=/:account/turnstile" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+            Cloudflare 控制台
+          </a>
+          {' '}创建 Turnstile 站点并获取密钥。
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>

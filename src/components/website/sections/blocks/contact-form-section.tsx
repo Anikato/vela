@@ -1,12 +1,13 @@
 'use client';
 
 import { useCallback, useRef, useState, useTransition } from 'react';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { Check, Loader2, Send } from 'lucide-react';
 
 import { submitInquiryAction } from '@/server/actions/inquiry.actions';
 import type { SectionComponentProps } from '../types';
 
-export function ContactFormSection({ section }: SectionComponentProps) {
+export function ContactFormSection({ section, captchaSiteKey }: SectionComponentProps) {
   const tr = section.translation;
 
   return (
@@ -24,6 +25,7 @@ export function ContactFormSection({ section }: SectionComponentProps) {
         <InlineContactForm
           submitLabel={tr.buttonText}
           successMessage={tr.content}
+          captchaSiteKey={captchaSiteKey ?? null}
         />
       </div>
     </div>
@@ -33,18 +35,27 @@ export function ContactFormSection({ section }: SectionComponentProps) {
 function InlineContactForm({
   submitLabel,
   successMessage,
+  captchaSiteKey,
 }: {
   submitLabel: string | null;
   successMessage: string | null;
+  captchaSiteKey: string | null;
 }) {
   const [isPending, startTransition] = useTransition();
   const [state, setState] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<TurnstileInstance>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
+
+      if (captchaSiteKey && !captchaToken) {
+        return;
+      }
+
       const form = new FormData(e.currentTarget);
 
       startTransition(async () => {
@@ -53,6 +64,7 @@ function InlineContactForm({
           email: form.get('email') as string,
           message: form.get('message') as string,
           sourceUrl: typeof window !== 'undefined' ? window.location.href : undefined,
+          captchaToken: captchaToken ?? undefined,
           products: [],
         });
 
@@ -63,9 +75,12 @@ function InlineContactForm({
           setErrorMsg(typeof result.error === 'string' ? result.error : 'Submission failed');
           setState('error');
         }
+
+        setCaptchaToken(null);
+        captchaRef.current?.reset();
       });
     },
-    [],
+    [captchaSiteKey, captchaToken],
   );
 
   if (state === 'success') {
@@ -122,9 +137,22 @@ function InlineContactForm({
           className="w-full resize-none rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
       </div>
+
+      {captchaSiteKey && (
+        <div className="flex justify-center">
+          <Turnstile
+            ref={captchaRef}
+            siteKey={captchaSiteKey}
+            onSuccess={(token) => setCaptchaToken(token)}
+            onExpire={() => setCaptchaToken(null)}
+            options={{ size: 'compact' }}
+          />
+        </div>
+      )}
+
       <button
         type="submit"
-        disabled={isPending}
+        disabled={isPending || (!!captchaSiteKey && !captchaToken)}
         className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-60"
       >
         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}

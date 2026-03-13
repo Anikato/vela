@@ -68,4 +68,5 @@ export interface WebsiteSection {
 
 export interface SectionComponentProps {
   section: WebsiteSection;
+  captchaSiteKey?: string | null;
 }

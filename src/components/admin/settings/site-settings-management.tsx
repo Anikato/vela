@@ -1,127 +1,45 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Save, ImageIcon, X } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
   updateSiteSettingsAction,
   upsertSettingTranslationAction,
 } from '@/server/actions/settings.actions';
-import type { SiteSettingsData, SiteSettingTranslationRow } from '@/types/admin';
+import type { Media, SiteSettingsData, SiteSettingTranslationRow } from '@/types/admin';
+import { ImagePickerUpload } from '@/components/admin/common/image-picker-upload';
+
+type MediaWithUrl = Media & { url: string };
 
 interface Language {
   code: string;
   name: string;
 }
 
-interface MediaItem {
-  id: string;
-  filename: string;
-  originalName: string;
-  url: string;
-  mimeType: string;
-}
-
 interface Props {
   initialSettings: SiteSettingsData;
   languages: Language[];
-  mediaItems: MediaItem[];
+  mediaItems: MediaWithUrl[];
 }
 
-function ImagePicker({
-  label,
-  currentUrl,
-  mediaItems,
-  onSelect,
-  onClear,
-}: {
-  label: string;
-  currentUrl: string | null;
-  mediaItems: MediaItem[];
-  onSelect: (id: string, url: string) => void;
-  onClear: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const images = mediaItems.filter((m) => m.mimeType.startsWith('image/'));
-
-  return (
-    <div>
-      <label className="text-sm font-medium mb-1.5 block">{label}</label>
-      <div className="flex items-center gap-3">
-        {currentUrl ? (
-          <div className="relative w-20 h-20 rounded-md border overflow-hidden bg-muted">
-            <img src={currentUrl} alt="" className="w-full h-full object-contain" />
-            <button
-              type="button"
-              onClick={onClear}
-              className="absolute top-0.5 right-0.5 bg-black/60 rounded-full p-0.5"
-            >
-              <X className="h-3 w-3 text-white" />
-            </button>
-          </div>
-        ) : (
-          <div
-            className="w-20 h-20 rounded-md border-2 border-dashed flex items-center justify-center cursor-pointer hover:bg-accent/50 transition-colors"
-            onClick={() => setOpen(true)}
-          >
-            <ImageIcon className="h-6 w-6 text-muted-foreground" />
-          </div>
-        )}
-        <Button type="button" variant="outline" size="sm" onClick={() => setOpen(true)}>
-          {currentUrl ? '更换' : '选择'}
-        </Button>
-      </div>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl max-h-[70vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>选择{label}</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-4 gap-2">
-            {images.map((img) => (
-              <button
-                key={img.id}
-                type="button"
-                className="rounded-md border overflow-hidden hover:ring-2 hover:ring-primary transition-all aspect-square"
-                onClick={() => {
-                  onSelect(img.id, img.url);
-                  setOpen(false);
-                }}
-              >
-                <img src={img.url} alt={img.originalName} className="w-full h-full object-cover" />
-              </button>
-            ))}
-            {images.length === 0 && (
-              <p className="col-span-4 text-center text-muted-foreground py-8">
-                媒体库中没有图片，请先上传
-              </p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
-export function SiteSettingsManagement({ initialSettings, languages, mediaItems }: Props) {
+export function SiteSettingsManagement({ initialSettings, languages, mediaItems: initialMediaItems }: Props) {
   const [settings, setSettings] = useState(initialSettings);
   const [isPending, startTransition] = useTransition();
-  
+  const [allMedia, setAllMedia] = useState<MediaWithUrl[]>(initialMediaItems);
 
   const [logoUrl, setLogoUrl] = useState(settings.logoUrl);
   const [logoDarkUrl, setLogoDarkUrl] = useState(settings.logoDarkUrl);
   const [faviconUrl, setFaviconUrl] = useState(settings.faviconUrl);
   const [ogImageUrl, setOgImageUrl] = useState(settings.ogImageUrl);
+
+  function handleMediaUploaded(items: MediaWithUrl[]) {
+    setAllMedia((prev) => [...items, ...prev]);
+  }
 
   const [translations, setTranslations] = useState<Record<string, SiteSettingTranslationRow>>(() => {
     const map: Record<string, SiteSettingTranslationRow> = {};
@@ -238,33 +156,37 @@ export function SiteSettingsManagement({ initialSettings, languages, mediaItems 
         {/* 品牌 & Logo */}
         <TabsContent value="brand" className="space-y-6 pt-4">
           <div className="grid grid-cols-2 gap-6">
-            <ImagePicker
+            <ImagePickerUpload
               label="Logo（浅色背景）"
               currentUrl={logoUrl}
-              mediaItems={mediaItems}
+              mediaItems={allMedia}
               onSelect={(id, url) => { updateField('logoId', id); setLogoUrl(url); }}
               onClear={() => { updateField('logoId', null); setLogoUrl(null); }}
+              onMediaUploaded={handleMediaUploaded}
             />
-            <ImagePicker
+            <ImagePickerUpload
               label="Logo（深色背景）"
               currentUrl={logoDarkUrl}
-              mediaItems={mediaItems}
+              mediaItems={allMedia}
               onSelect={(id, url) => { updateField('logoDarkId', id); setLogoDarkUrl(url); }}
               onClear={() => { updateField('logoDarkId', null); setLogoDarkUrl(null); }}
+              onMediaUploaded={handleMediaUploaded}
             />
-            <ImagePicker
+            <ImagePickerUpload
               label="Favicon"
               currentUrl={faviconUrl}
-              mediaItems={mediaItems}
+              mediaItems={allMedia}
               onSelect={(id, url) => { updateField('faviconId', id); setFaviconUrl(url); }}
               onClear={() => { updateField('faviconId', null); setFaviconUrl(null); }}
+              onMediaUploaded={handleMediaUploaded}
             />
-            <ImagePicker
+            <ImagePickerUpload
               label="OG 分享图片"
               currentUrl={ogImageUrl}
-              mediaItems={mediaItems}
+              mediaItems={allMedia}
               onSelect={(id, url) => { updateField('ogImageId', id); setOgImageUrl(url); }}
               onClear={() => { updateField('ogImageId', null); setOgImageUrl(null); }}
+              onMediaUploaded={handleMediaUploaded}
             />
           </div>
           <Button onClick={handleSaveGeneral} disabled={isPending}>
