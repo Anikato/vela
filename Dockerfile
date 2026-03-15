@@ -6,7 +6,7 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN corepack enable pnpm && pnpm install --frozen-lockfile --shamefully-hoist
+RUN corepack enable pnpm && pnpm install --frozen-lockfile
 
 # --- Builder ---
 FROM base AS builder
@@ -36,25 +36,16 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Script dependencies
+# Script dependencies (direct deps — pnpm hoists these to root node_modules)
 COPY --from=deps /app/node_modules/postgres ./node_modules/postgres
 COPY --from=deps /app/node_modules/bcryptjs ./node_modules/bcryptjs
 
-# sharp (native image processing) — copy the package + platform-specific binary
+# sharp (native image processing) — package + platform-specific binary
 COPY --from=deps /app/node_modules/sharp ./node_modules/sharp
 COPY --from=deps /app/node_modules/@img ./node_modules/@img
 
-# pino structured logging
-COPY --from=deps /app/node_modules/pino ./node_modules/pino
-COPY --from=deps /app/node_modules/pino-std-serializers ./node_modules/pino-std-serializers
-COPY --from=deps /app/node_modules/sonic-boom ./node_modules/sonic-boom
-COPY --from=deps /app/node_modules/atomic-sleep ./node_modules/atomic-sleep
-COPY --from=deps /app/node_modules/fast-redact ./node_modules/fast-redact
-COPY --from=deps /app/node_modules/on-exit-leak-free ./node_modules/on-exit-leak-free
-COPY --from=deps /app/node_modules/quick-format-unescaped ./node_modules/quick-format-unescaped
-COPY --from=deps /app/node_modules/thread-stream ./node_modules/thread-stream
-COPY --from=deps /app/node_modules/real-require ./node_modules/real-require
-COPY --from=deps /app/node_modules/safe-stable-stringify ./node_modules/safe-stable-stringify
+# pino structured logging — use npm for flat install (avoids pnpm symlink issues)
+RUN npm install --no-save pino 2>/dev/null
 
 # Migration/seed files and entrypoint script
 COPY --from=builder --chown=nextjs:nodejs /app/src/server/db/migrations ./migrations
