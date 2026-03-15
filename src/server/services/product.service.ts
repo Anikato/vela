@@ -24,6 +24,7 @@ import {
   tags,
 } from '@/server/db/schema';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DbClient = typeof db | PgTransaction<any, any, any>;
 
 export const PRODUCT_STATUSES = ['draft', 'published', 'archived'] as const;

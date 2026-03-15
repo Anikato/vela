@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 
 import { Button } from '@/components/ui/button';
 
@@ -36,19 +36,19 @@ export function CookieConsentBanner({
   acceptText,
   rejectText,
 }: CookieConsentBannerProps) {
-  const [visible, setVisible] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   const canRender = useMemo(() => {
     return Boolean(title?.trim() && description?.trim() && acceptText?.trim() && rejectText?.trim());
   }, [title, description, acceptText, rejectText]);
 
-  useEffect(() => {
-    if (!canRender) return;
-    const consent = getConsentCookie();
-    setVisible(!consent);
-  }, [canRender]);
+  const hasConsent = useSyncExternalStore(
+    () => () => {},
+    () => Boolean(getConsentCookie()),
+    () => true,
+  );
 
-  if (!canRender || !visible) return null;
+  if (!canRender || hasConsent || dismissed) return null;
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 p-4 backdrop-blur">
@@ -63,7 +63,7 @@ export function CookieConsentBanner({
             size="sm"
             onClick={() => {
               setConsentCookie('rejected');
-              setVisible(false);
+              setDismissed(true);
             }}
           >
             {rejectText}
@@ -72,7 +72,7 @@ export function CookieConsentBanner({
             size="sm"
             onClick={() => {
               setConsentCookie('accepted');
-              setVisible(false);
+              setDismissed(true);
             }}
           >
             {acceptText}

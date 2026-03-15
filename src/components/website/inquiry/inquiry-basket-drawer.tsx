@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { Minus, Plus, ShoppingCart, Trash2, X } from 'lucide-react';
@@ -38,9 +38,7 @@ export function InquiryBasketTrigger({ captchaSiteKey, customFormFields, uiLabel
   const { items, totalCount, removeItem, updateQuantity, clearBasket } = useInquiryBasket();
   const [open, setOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
   return (
     <>
