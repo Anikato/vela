@@ -179,14 +179,6 @@ function ContactList({ siteInfo }: { siteInfo: SiteInfo }) {
   );
 }
 
-interface NavigationNode {
-  id: string;
-  label: string;
-  href: string | null;
-  openNewTab: boolean;
-  children: NavigationNode[];
-}
-
 export async function Footer({ locale, defaultLocale }: FooterProps) {
   const [navigationItems, siteInfo, ui, theme] = await Promise.all([
     getCachedNavigationTree(locale, defaultLocale),

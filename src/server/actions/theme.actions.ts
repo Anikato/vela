@@ -7,7 +7,6 @@ import type { ActionResult } from '@/types';
 import { DEFAULT_THEME_CONFIG, type ThemeConfig } from '@/types/theme';
 import {
   getThemeList,
-  getThemeById,
   createTheme,
   updateTheme,
   activateTheme,

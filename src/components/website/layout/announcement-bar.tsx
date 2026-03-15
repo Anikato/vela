@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useSyncExternalStore, useCallback } from 'react';
 import { X } from 'lucide-react';
 
 interface AnnouncementBarProps {
@@ -13,19 +13,26 @@ interface AnnouncementBarProps {
 
 const COOKIE_NAME = 'vt-announcement-dismissed';
 
-export function AnnouncementBar({ text, bgColor, textColor, dismissible, linkUrl }: AnnouncementBarProps) {
-  const [dismissed, setDismissed] = useState(true);
+function getSnapshot() {
+  return document.cookie.includes(`${COOKIE_NAME}=1`);
+}
 
-  useEffect(() => {
-    const isDismissed = document.cookie.includes(`${COOKIE_NAME}=1`);
-    setDismissed(isDismissed);
-  }, []);
+function getServerSnapshot() {
+  return true;
+}
+
+const subscribe = () => () => {};
+
+export function AnnouncementBar({ text, bgColor, textColor, dismissible, linkUrl }: AnnouncementBarProps) {
+  const cookieDismissed = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const [manualDismissed, setManualDismissed] = useState(false);
+  const dismissed = cookieDismissed || manualDismissed;
 
   if (dismissed) return null;
 
   function handleDismiss() {
     document.cookie = `${COOKIE_NAME}=1;path=/;max-age=86400`;
-    setDismissed(true);
+    setManualDismissed(true);
   }
 
   const bg = /^(hsl|oklch|rgb|#)/.test(bgColor.trim()) ? bgColor : `hsl(${bgColor})`;

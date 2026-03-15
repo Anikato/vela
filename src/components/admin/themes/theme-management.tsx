@@ -15,7 +15,6 @@ import {
   ShoppingBag,
   Megaphone,
   Code,
-  Eye,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
