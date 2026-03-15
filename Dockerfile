@@ -42,8 +42,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Overlay runtime deps (flat node_modules from npm)
-COPY --from=runtime-deps /deps/node_modules ./node_modules
+# Merge runtime deps into standalone's node_modules (overwrite conflicts)
+COPY --from=runtime-deps /deps/node_modules /tmp/runtime_modules
+RUN cp -rf /tmp/runtime_modules/* ./node_modules/ && rm -rf /tmp/runtime_modules
 
 # Migration/seed files and entrypoint script
 COPY --from=builder --chown=nextjs:nodejs /app/src/server/db/migrations ./migrations
