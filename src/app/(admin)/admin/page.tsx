@@ -25,7 +25,8 @@ async function getDbSize(): Promise<string> {
     const result = await db.execute(
       sql`SELECT pg_size_pretty(pg_database_size(current_database())) as size`,
     );
-    return (result.rows[0] as { size: string })?.size ?? '—';
+    const rows = result as unknown as { size: string }[];
+    return rows[0]?.size ?? '—';
   } catch {
     return '—';
   }
