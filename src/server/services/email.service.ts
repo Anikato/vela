@@ -199,10 +199,5 @@ export async function sendInquiryConfirmation(payload: InquiryEmailPayload): Pro
   });
 }
 
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
+export { escapeHtml } from './email.utils';
+import { escapeHtml } from './email.utils';

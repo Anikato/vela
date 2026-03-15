@@ -1,14 +1,16 @@
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
 
 import { and, count, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import sharp from 'sharp';
 
 import { UPLOAD_LIMITS } from '@/lib/constants';
-import { NotFoundError, ValidationError } from '@/lib/errors';
+import { NotFoundError } from '@/lib/errors';
 import { db } from '@/server/db';
 import { media } from '@/server/db/schema';
 import { getStorageAdapter } from '@/server/storage';
+
+export { ensureMimeTypeAllowed, ensureFileSizeAllowed, buildBaseDir } from './media.utils';
+import { ensureMimeTypeAllowed, ensureFileSizeAllowed, buildBaseDir } from './media.utils';
 
 export type Media = typeof media.$inferSelect;
 
@@ -38,24 +40,6 @@ export interface ListMediaParams {
   typeFilter?: 'image' | 'document' | 'all';
 }
 
-function ensureMimeTypeAllowed(mimeType: string): void {
-  if (!UPLOAD_LIMITS.ALLOWED_UPLOAD_TYPES.includes(mimeType as (typeof UPLOAD_LIMITS.ALLOWED_UPLOAD_TYPES)[number])) {
-    throw new ValidationError('Unsupported file type');
-  }
-}
-
-function ensureFileSizeAllowed(size: number): void {
-  if (size > UPLOAD_LIMITS.MAX_FILE_SIZE) {
-    throw new ValidationError(`File size exceeds ${UPLOAD_LIMITS.MAX_FILE_SIZE / 1024 / 1024}MB limit`);
-  }
-}
-
-function buildBaseDir(): string {
-  const date = new Date();
-  const year = String(date.getFullYear());
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  return path.posix.join('uploads', year, month, randomUUID());
-}
 
 async function processRasterImage(
   fileBuffer: Buffer,

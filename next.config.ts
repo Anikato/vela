@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: 'standalone',
   reactCompiler: true,
-  serverExternalPackages: ['postgres', '@aws-sdk/client-s3'],
+  serverExternalPackages: ['postgres', '@aws-sdk/client-s3', 'pino', 'pino-pretty'],
   experimental: {
     viewTransition: true,
   },

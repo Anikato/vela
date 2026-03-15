@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { ValidationError } from '@/lib/errors';
+import { createLogger } from '@/lib/logger';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { auth } from '@/server/auth';
 import { uploadMedia } from '@/server/services/media.service';
@@ -64,9 +65,10 @@ export async function POST(request: Request) {
       );
     }
 
-    console.error('Upload failed:', error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    createLogger('api.upload').error({ err: error }, 'Upload failed: %s', errMsg);
     return NextResponse.json(
-      { success: false, error: 'Upload failed' },
+      { success: false, error: `Upload failed: ${errMsg}` },
       { status: 500 },
     );
   }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { createLogger } from '@/lib/logger';
 import { getActiveLanguages, getDefaultLanguage } from '@/server/services/language.service';
 
 export async function GET() {
@@ -25,7 +26,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Load i18n locales API failed:', error);
+    createLogger('api.i18n').error({ err: error }, 'Load i18n locales API failed');
     return NextResponse.json(
       { success: false, error: 'Failed to load locale config' },
       { status: 500 },

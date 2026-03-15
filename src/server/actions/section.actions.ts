@@ -3,6 +3,7 @@
 import { z } from 'zod';
 
 import { NotFoundError, ValidationError } from '@/lib/errors';
+import { createLogger } from '@/lib/logger';
 import { auth } from '@/server/auth';
 import {
   cloneSection,
@@ -70,7 +71,7 @@ function formatZodErrors(error: z.ZodError): Record<string, string[]> {
 function handleError(error: unknown): ActionResult<never> {
   if (error instanceof NotFoundError) return { success: false, error: error.message };
   if (error instanceof ValidationError) return { success: false, error: error.message };
-  console.error('Section action error:', error);
+  createLogger('section.actions').error({ err: error }, 'Section action error');
   return { success: false, error: 'An unexpected error occurred' };
 }
 

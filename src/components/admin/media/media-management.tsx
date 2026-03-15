@@ -109,6 +109,7 @@ export function MediaManagement({ initialItems, initialTotal, initialPage, initi
     setIsUploading(true);
     const uploaded: MediaItem[] = [];
     let failedCount = 0;
+    let lastError = '';
 
     try {
       for (const file of files) {
@@ -131,6 +132,8 @@ export function MediaManagement({ initialItems, initialTotal, initialPage, initi
 
         if (!result.success || !result.data) {
           failedCount += 1;
+          console.error(`Upload failed for "${file.name}":`, result.error ?? `HTTP ${response.status}`);
+          lastError = result.error ?? `HTTP ${response.status}`;
           continue;
         }
 
@@ -149,7 +152,7 @@ export function MediaManagement({ initialItems, initialTotal, initialPage, initi
       } else if (uploaded.length > 0) {
         toast.warning(`成功 ${uploaded.length} 个，失败 ${failedCount} 个`);
       } else {
-        toast.error('上传失败，请检查文件格式和大小');
+        toast.error(lastError ? `上传失败：${lastError}` : '上传失败，请检查文件格式和大小');
       }
 
       if (fileInputRef.current) {

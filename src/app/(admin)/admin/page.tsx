@@ -8,12 +8,43 @@ import {
   Eye,
   TrendingUp,
   Clock,
+  Shield,
+  HardDrive,
+  Server,
+  Activity,
 } from 'lucide-react';
-import { eq, sql, desc, and } from 'drizzle-orm';
+import { eq, sql, desc } from 'drizzle-orm';
 
 import { db } from '@/server/db';
-import { products, categories, news, media } from '@/server/db/schema';
+import { products, categories, news, media, auditLogs } from '@/server/db/schema';
 import { getInquiryStats, getInquiryList } from '@/server/services/inquiry.service';
+import { ACTION_LABELS, ENTITY_LABELS } from '@/server/services/audit-log.service';
+
+async function getDbSize(): Promise<string> {
+  try {
+    const result = await db.execute(
+      sql`SELECT pg_size_pretty(pg_database_size(current_database())) as size`,
+    );
+    return (result.rows[0] as { size: string })?.size ?? '—';
+  } catch {
+    return '—';
+  }
+}
+
+async function getRecentAuditLogs() {
+  return db
+    .select({
+      id: auditLogs.id,
+      userName: auditLogs.userName,
+      action: auditLogs.action,
+      entityType: auditLogs.entityType,
+      entityLabel: auditLogs.entityLabel,
+      createdAt: auditLogs.createdAt,
+    })
+    .from(auditLogs)
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(8);
+}
 
 export default async function AdminDashboardPage() {
   const [
@@ -23,6 +54,8 @@ export default async function AdminDashboardPage() {
     mediaCount,
     inquiryStats,
     recentInquiries,
+    dbSize,
+    recentLogs,
   ] = await Promise.all([
     db.select({ count: sql<number>`count(*)` }).from(products).then((r) => Number(r[0].count)),
     db
@@ -38,6 +71,8 @@ export default async function AdminDashboardPage() {
     db.select({ count: sql<number>`count(*)` }).from(media).then((r) => Number(r[0].count)),
     getInquiryStats(),
     getInquiryList({ page: 1, pageSize: 5 }),
+    getDbSize(),
+    getRecentAuditLogs(),
   ]);
 
   const stats = [
@@ -66,6 +101,14 @@ export default async function AdminDashboardPage() {
     spam: 'bg-red-500/20 text-red-400',
   };
 
+  const ACTION_COLORS: Record<string, string> = {
+    create: 'bg-green-500/20 text-green-400',
+    update: 'bg-blue-500/20 text-blue-400',
+    delete: 'bg-red-500/20 text-red-400',
+    clone: 'bg-purple-500/20 text-purple-400',
+    login: 'bg-yellow-500/20 text-yellow-400',
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -73,7 +116,6 @@ export default async function AdminDashboardPage() {
         <p className="mt-1 text-sm text-muted-foreground">欢迎使用 Vela 管理后台</p>
       </div>
 
-      {/* 统计卡片 */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {stats.map((stat) => {
           const Icon = stat.icon;
@@ -97,46 +139,120 @@ export default async function AdminDashboardPage() {
         })}
       </div>
 
-      {/* 最近询盘 */}
-      <div className="rounded-lg border bg-card">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-semibold">最近询盘</h2>
-          <Link
-            href="/admin/inquiries"
-            className="text-sm text-primary hover:underline"
-          >
-            查看全部
-          </Link>
-        </div>
-        {recentInquiries.items.length === 0 ? (
-          <div className="px-6 py-8 text-center text-muted-foreground">
-            暂无询盘
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* 最近询盘 */}
+        <div className="rounded-lg border bg-card">
+          <div className="flex items-center justify-between px-6 py-4 border-b">
+            <h2 className="text-lg font-semibold">最近询盘</h2>
+            <Link href="/admin/inquiries" className="text-sm text-primary hover:underline">
+              查看全部
+            </Link>
           </div>
-        ) : (
-          <div className="divide-y">
-            {recentInquiries.items.map((inq) => (
-              <div key={inq.id} className="flex items-center justify-between px-6 py-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm truncate">{inq.name}</span>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.5 rounded ${STATUS_COLORS[inq.status] ?? ''}`}
-                    >
-                      {STATUS_LABELS[inq.status] ?? inq.status}
-                    </span>
+          {recentInquiries.items.length === 0 ? (
+            <div className="px-6 py-8 text-center text-muted-foreground">暂无询盘</div>
+          ) : (
+            <div className="divide-y divide-border/50">
+              {recentInquiries.items.map((inq) => (
+                <div key={inq.id} className="flex items-center justify-between px-6 py-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm truncate">{inq.name}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${STATUS_COLORS[inq.status] ?? ''}`}>
+                        {STATUS_LABELS[inq.status] ?? inq.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {inq.email} · {inq.productCount} 个产品
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {inq.email} · {inq.productCount} 个产品
-                  </p>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+                    <Clock className="h-3 w-3" />
+                    {inq.createdAt.toLocaleDateString('zh-CN')}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                  <Clock className="h-3 w-3" />
-                  {inq.createdAt.toLocaleDateString('zh-CN')}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 最近操作 */}
+        <div className="rounded-lg border bg-card">
+          <div className="flex items-center justify-between px-6 py-4 border-b">
+            <h2 className="text-lg font-semibold">最近操作</h2>
+            <Link href="/admin/audit-logs" className="text-sm text-primary hover:underline">
+              查看全部
+            </Link>
           </div>
-        )}
+          {recentLogs.length === 0 ? (
+            <div className="px-6 py-8 text-center text-muted-foreground">暂无操作记录</div>
+          ) : (
+            <div className="divide-y divide-border/50">
+              {recentLogs.map((log) => (
+                <div key={log.id} className="flex items-center justify-between px-6 py-2.5">
+                  <div className="min-w-0 flex items-center gap-2">
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap ${ACTION_COLORS[log.action] ?? 'bg-muted text-muted-foreground'}`}>
+                      {ACTION_LABELS[log.action] ?? log.action}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{ENTITY_LABELS[log.entityType] ?? log.entityType}</span>
+                    <span className="text-sm truncate max-w-[120px]">{log.entityLabel ?? '—'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
+                    <span>{log.userName ?? '系统'}</span>
+                    <Clock className="h-3 w-3" />
+                    <span>{log.createdAt.toLocaleDateString('zh-CN')}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 系统信息 */}
+      <div className="rounded-lg border bg-card">
+        <div className="px-6 py-4 border-b">
+          <h2 className="text-lg font-semibold">系统信息</h2>
+        </div>
+        <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-muted/50 text-blue-400">
+              <Server className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">运行环境</p>
+              <p className="text-sm font-medium">Node {process.versions.node}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-muted/50 text-green-400">
+              <HardDrive className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">数据库大小</p>
+              <p className="text-sm font-medium">{dbSize}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-muted/50 text-purple-400">
+              <Shield className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">审计日志</p>
+              <Link href="/admin/audit-logs" className="text-sm font-medium text-primary hover:underline">
+                查看日志
+              </Link>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-muted/50 text-orange-400">
+              <Activity className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">健康检查</p>
+              <p className="text-sm font-medium text-green-400">正常运行</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

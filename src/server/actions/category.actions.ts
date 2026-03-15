@@ -3,6 +3,7 @@
 import { z } from 'zod';
 
 import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
+import { createLogger } from '@/lib/logger';
 import { auth } from '@/server/auth';
 import type {
   CategoryListItem,
@@ -74,7 +75,7 @@ function handleError(error: unknown): ActionResult<never> {
   if (error instanceof NotFoundError) return { success: false, error: error.message };
   if (error instanceof DuplicateError) return { success: false, error: error.message };
   if (error instanceof ValidationError) return { success: false, error: error.message };
-  console.error('Category action error:', error);
+  createLogger('category.actions').error({ err: error }, 'Category action error');
   return { success: false, error: 'An unexpected error occurred' };
 }
 

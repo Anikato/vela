@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import type { ActionResult } from '@/types';
 import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
+import { createLogger } from '@/lib/logger';
 import { auth } from '@/server/auth';
 import {
   createUser,
@@ -60,7 +61,7 @@ function handleError(error: unknown): ActionResult<never> {
     return { success: false, error: error.message };
   }
 
-  console.error('Unexpected user action error:', error);
+  createLogger('user.actions').error({ err: error }, 'Unexpected user action error');
   return { success: false, error: 'An unexpected error occurred' };
 }
 

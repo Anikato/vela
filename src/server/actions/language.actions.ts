@@ -8,6 +8,8 @@ import { revalidateTag } from 'next/cache';
  */
 
 import { z } from 'zod';
+
+import { createLogger } from '@/lib/logger';
 import type { ActionResult } from '@/types';
 import type { Language } from '@/server/services/language.service';
 import {
@@ -73,7 +75,7 @@ function handleError(error: unknown): ActionResult<never> {
     return { success: false, error: error.message };
   }
 
-  console.error('Unexpected error:', error);
+  createLogger('language.actions').error({ err: error }, 'Unexpected error');
 
   const msg = error instanceof Error ? error.message : '';
   if (msg.includes('foreign key') || msg.includes('violates')) {

@@ -3,6 +3,7 @@
 import { z } from 'zod';
 
 import { NotFoundError, ValidationError } from '@/lib/errors';
+import { createLogger } from '@/lib/logger';
 import { auth } from '@/server/auth';
 import {
   createSectionItem,
@@ -69,7 +70,7 @@ function handleError(error: unknown): ActionResult<never> {
   if (error instanceof ValidationError) {
     return { success: false, error: error.message };
   }
-  console.error('[section-item.actions]', error);
+  createLogger('section-item.actions').error({ err: error }, 'Section item action error');
   return { success: false, error: 'An unexpected error occurred' };
 }
 

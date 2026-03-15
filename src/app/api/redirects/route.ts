@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+
+import { createLogger } from '@/lib/logger';
 import { getActiveRedirects } from '@/server/services/redirect.service';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +14,7 @@ export async function GET() {
     }
     return NextResponse.json({ success: true, data: map });
   } catch (error) {
-    console.error('Failed to load redirects:', error);
+    createLogger('api.redirects').error({ err: error }, 'Failed to load redirects');
     return NextResponse.json({ success: false }, { status: 500 });
   }
 }

@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import type { ActionResult } from '@/types';
 import { NotFoundError, ValidationError } from '@/lib/errors';
+import { createLogger } from '@/lib/logger';
 import { auth } from '@/server/auth';
 import { deleteMediaById, updateMediaAlt } from '@/server/services/media.service';
 
@@ -17,7 +18,7 @@ function handleError(error: unknown): ActionResult<never> {
     return { success: false, error: error.message };
   }
 
-  console.error('Unexpected media action error:', error);
+  createLogger('media.actions').error({ err: error }, 'Unexpected media action error');
   return { success: false, error: 'An unexpected error occurred' };
 }
 

@@ -3,6 +3,7 @@
 import { z } from 'zod';
 
 import { NotFoundError, ValidationError } from '@/lib/errors';
+import { createLogger } from '@/lib/logger';
 import { auth } from '@/server/auth';
 import type { ActionResult } from '@/types';
 import type { ProductAttributeEditorData, ProductOption } from '@/server/services/product-attribute.service';
@@ -67,7 +68,7 @@ function formatZodErrors(error: z.ZodError): Record<string, string[]> {
 function handleError(error: unknown): ActionResult<never> {
   if (error instanceof NotFoundError) return { success: false, error: error.message };
   if (error instanceof ValidationError) return { success: false, error: error.message };
-  console.error('Product attribute action error:', error);
+  createLogger('product-attribute.actions').error({ err: error }, 'Product attribute action error');
   return { success: false, error: 'An unexpected error occurred' };
 }
 

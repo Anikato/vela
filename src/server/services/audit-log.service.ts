@@ -1,5 +1,6 @@
 import { count, desc, eq, and, gte, ilike, or } from 'drizzle-orm';
 
+import { createLogger } from '@/lib/logger';
 import { db } from '@/server/db';
 import { auditLogs } from '@/server/db/schema';
 
@@ -75,7 +76,7 @@ export async function createAuditLog(input: CreateAuditLogInput): Promise<void> 
       ipAddress: input.ipAddress ?? null,
     });
   } catch (error) {
-    console.error('Failed to create audit log:', error);
+    createLogger('audit-log.service').error({ err: error }, 'Failed to create audit log');
   }
 }
 

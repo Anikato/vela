@@ -3,6 +3,7 @@
 import { z } from 'zod';
 
 import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
+import { createLogger } from '@/lib/logger';
 import { auth } from '@/server/auth';
 import type { ActionResult } from '@/types';
 import {
@@ -102,7 +103,7 @@ function handleError(error: unknown): ActionResult<never> {
   if (error instanceof DuplicateError) return { success: false, error: error.message };
   if (error instanceof ValidationError) return { success: false, error: error.message };
 
-  console.error('Product action error:', error);
+  createLogger('product.actions').error({ err: error }, 'Product action error');
 
   const msg = error instanceof Error ? error.message : '';
   if (msg.includes('foreign key') || msg.includes('violates')) {
