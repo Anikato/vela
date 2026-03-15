@@ -1,6 +1,6 @@
 FROM node:22-alpine AS base
 
-# --- Dependencies ---
+# --- Dependencies (pnpm, for building) ---
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
@@ -20,6 +20,12 @@ ENV NODE_ENV=production
 
 RUN corepack enable pnpm && pnpm build
 
+# --- Runtime deps (npm flat layout, avoids pnpm symlink issues) ---
+FROM base AS runtime-deps
+WORKDIR /deps
+RUN npm init -y > /dev/null 2>&1 && \
+    npm install --omit=dev postgres bcryptjs sharp pino
+
 # --- Runner ---
 FROM base AS runner
 WORKDIR /app
@@ -36,9 +42,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Runtime packages not bundled by Next.js standalone.
-# npm creates a flat node_modules — no pnpm symlink issues.
-RUN npm install --no-save postgres bcryptjs sharp pino 2>/dev/null
+# Overlay runtime deps (flat node_modules from npm)
+COPY --from=runtime-deps /deps/node_modules ./node_modules
 
 # Migration/seed files and entrypoint script
 COPY --from=builder --chown=nextjs:nodejs /app/src/server/db/migrations ./migrations
