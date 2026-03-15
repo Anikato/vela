@@ -1,3 +1,5 @@
+export const metadata = { title: '表单配置' };
+
 import { getActiveLanguages } from '@/server/services/language.service';
 import { getFormFields } from '@/server/services/inquiry-form-field.service';
 import { InquiryFormFieldManagement } from '@/components/admin/inquiries/inquiry-form-field-management';

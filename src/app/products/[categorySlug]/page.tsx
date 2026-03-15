@@ -7,10 +7,12 @@ import { SectionRenderer } from '@/components/website/sections/section-renderer'
 import { ProductListPage } from '@/components/website/product/product-list-page';
 import {
   getCachedActiveLanguages,
+  getCachedActiveTheme,
   getCachedDefaultLanguage,
   getCachedPublicSiteInfo,
   getCachedUiTranslationMap,
 } from '@/lib/data-cache';
+import { DEFAULT_THEME_CONFIG } from '@/types/theme';
 import {
   getPublicCategoryTree,
   getPublicTagList,
@@ -84,7 +86,7 @@ export default async function CategoryProductsPage({
   const defaultLanguage = await getCachedDefaultLanguage();
   const locale = defaultLanguage.code;
 
-  const [data, categoryTree, tagList, uiMap] = await Promise.all([
+  const [data, categoryTree, tagList, uiMap, theme] = await Promise.all([
     getPublishedProductList(locale, locale, {
       categorySlug,
       page: Number.isFinite(pageNum) ? pageNum : 1,
@@ -94,7 +96,10 @@ export default async function CategoryProductsPage({
     getPublicCategoryTree(locale, locale),
     getPublicTagList(locale, locale),
     getCachedUiTranslationMap(locale, locale, UI_KEYS),
+    getCachedActiveTheme(),
   ]);
+
+  const productCardConfig = theme?.config?.productCard ?? DEFAULT_THEME_CONFIG.productCard;
 
   if (!data.category) {
     notFound();
@@ -117,6 +122,7 @@ export default async function CategoryProductsPage({
         productsBasePath="/products"
         activeTagSlug={tag}
         currentSort={currentSort}
+        productCardConfig={productCardConfig}
         uiLabels={{
           home: uiMap['nav.home'] ?? 'Home',
           products: uiMap['nav.products'] ?? 'Products',

@@ -1,3 +1,5 @@
+export const metadata = { title: '内容翻译' };
+
 import { getActiveLanguages } from '@/server/services/language.service';
 import { getTranslationOverview } from '@/server/services/translation-stats.service';
 import { TranslationOverviewDashboard } from '@/components/admin/translations/translation-overview';

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { HtmlLangSync } from '@/components/html-lang-sync';
+import { getSiteName, getFaviconUrl } from '@/server/services/settings-public.service';
 import './globals.css';
 
 const geistSans = Geist({
@@ -18,10 +19,22 @@ const geistMono = Geist_Mono({
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: 'Vela',
-  description: 'Vela — Multilingual B2B Website System',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const [siteName, faviconUrl] = await Promise.all([
+    getSiteName(),
+    getFaviconUrl(),
+  ]);
+  return {
+    title: siteName,
+    description: siteName,
+    ...(faviconUrl && {
+      icons: {
+        icon: faviconUrl,
+        apple: faviconUrl,
+      },
+    }),
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [

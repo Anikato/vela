@@ -9,7 +9,7 @@ export function HomeSkeleton() {
       </div>
 
       {/* Content sections */}
-      <div className="mx-auto max-w-7xl space-y-16 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="vt-container space-y-16 py-12">
         {/* Feature grid */}
         <div className="space-y-6 text-center">
           <Skeleton className="mx-auto h-7 w-48" />

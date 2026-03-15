@@ -1,3 +1,14 @@
+# Vela — Nginx / OpenResty 反向代理配置模板
+#
+# 使用方法：
+#   1. 将此文件复制到 Nginx 配置目录（如 /etc/nginx/sites-enabled/vela.conf）
+#   2. 将 your-domain.com 替换为你的实际域名
+#   3. 将 SSL 证书路径替换为你的实际路径
+#   4. 将 /data/vela/data/uploads/ 替换为你的实际 uploads 目录路径
+#   5. 将 127.0.0.1:3000 替换为 docker-compose.prod.yml 中 APP_PORT 对应的值
+#   6. nginx -t && nginx -s reload
+
+# HTTP → HTTPS 跳转
 server {
     listen 80;
     server_name your-domain.com;
@@ -5,20 +16,24 @@ server {
 }
 
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
     server_name your-domain.com;
+    http2 on;
 
     # SSL — 替换为你的证书路径
-    ssl_certificate     /etc/nginx/ssl/your-domain.com.pem;
-    ssl_certificate_key /etc/nginx/ssl/your-domain.com.key;
+    ssl_certificate     /etc/ssl/certs/your-domain.com/fullchain.pem;
+    ssl_certificate_key /etc/ssl/certs/your-domain.com/privkey.pem;
     ssl_protocols       TLSv1.2 TLSv1.3;
     ssl_ciphers         HIGH:!aNULL:!MD5;
 
+    # 允许上传最大 50MB 文件（与应用端限制一致）
     client_max_body_size 50m;
 
-    # 上传文件静态服务（绕过 Node.js，提升性能）
+    # 上传文件由 Nginx 直接服务（绕过 Node.js，提升性能）
+    # 路径需与 docker-compose.prod.yml 中 volumes 挂载的宿主机路径一致
+    # 示例：如果项目目录是 /data/vela，则 uploads 在 /data/vela/data/uploads/
     location /uploads/ {
-        alias /opt/vela/data/uploads/;
+        alias /data/vela/data/uploads/;
         expires 30d;
         add_header Cache-Control "public, immutable";
         try_files $uri =404;

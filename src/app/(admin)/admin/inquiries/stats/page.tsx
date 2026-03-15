@@ -1,3 +1,5 @@
+export const metadata = { title: '数据统计' };
+
 import { getInquiryStatsDetail } from '@/server/services/inquiry-stats.service';
 import { InquiryStatsPage } from '@/components/admin/inquiries/inquiry-stats-page';
 

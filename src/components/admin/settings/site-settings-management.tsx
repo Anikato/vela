@@ -62,6 +62,9 @@ export function SiteSettingsManagement({ initialSettings, languages, mediaItems:
         copyright: null,
         contactCta: null,
         seoKeywords: null,
+        inquiryAutoReplySubject: null,
+        inquiryAutoReplyBody: null,
+        announcementBarText: null,
       }
     );
   }

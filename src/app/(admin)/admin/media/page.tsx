@@ -1,3 +1,5 @@
+export const metadata = { title: '媒体库' };
+
 import { MediaManagement, type MediaItem } from '@/components/admin/media/media-management';
 import { listMedia } from '@/server/services/media.service';
 

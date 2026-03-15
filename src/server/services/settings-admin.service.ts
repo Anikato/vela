@@ -61,6 +61,9 @@ export interface SiteSettingTranslationRow {
   copyright: string | null;
   contactCta: string | null;
   seoKeywords: string | null;
+  inquiryAutoReplySubject: string | null;
+  inquiryAutoReplyBody: string | null;
+  announcementBarText: string | null;
 }
 
 function mediaUrl(filename: string | undefined | null): string | null {
@@ -134,6 +137,9 @@ export async function getSiteSettings(): Promise<SiteSettingsData> {
       copyright: t.copyright,
       contactCta: t.contactCta,
       seoKeywords: t.seoKeywords,
+      inquiryAutoReplySubject: t.inquiryAutoReplySubject,
+      inquiryAutoReplyBody: t.inquiryAutoReplyBody,
+      announcementBarText: t.announcementBarText,
     })),
   };
 }

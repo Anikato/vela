@@ -1,3 +1,5 @@
+export const metadata = { title: '站点设置' };
+
 import { getSiteSettings } from '@/server/services/settings-admin.service';
 import { getActiveLanguages } from '@/server/services/language.service';
 import { listMedia } from '@/server/services/media.service';

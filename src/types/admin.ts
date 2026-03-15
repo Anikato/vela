@@ -307,6 +307,9 @@ export interface SiteSettingTranslationRow {
   copyright: string | null;
   contactCta: string | null;
   seoKeywords: string | null;
+  inquiryAutoReplySubject: string | null;
+  inquiryAutoReplyBody: string | null;
+  announcementBarText: string | null;
 }
 
 // ─── Theme ───

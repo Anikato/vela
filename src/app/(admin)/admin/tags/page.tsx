@@ -1,3 +1,5 @@
+export const metadata = { title: '标签管理' };
+
 import { TagManagement } from '@/components/admin/tags/tag-management';
 import { getAllLanguages, getDefaultLanguage } from '@/server/services/language.service';
 import { getTagList } from '@/server/services/tag.service';

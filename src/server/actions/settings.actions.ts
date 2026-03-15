@@ -129,6 +129,9 @@ const translationSchema = z.object({
   copyright: z.string().max(500).nullable().optional(),
   contactCta: z.string().max(200).nullable().optional(),
   seoKeywords: z.string().nullable().optional(),
+  inquiryAutoReplySubject: z.string().max(500).nullable().optional(),
+  inquiryAutoReplyBody: z.string().nullable().optional(),
+  announcementBarText: z.string().nullable().optional(),
 });
 
 export async function upsertSettingTranslationAction(
@@ -147,6 +150,9 @@ export async function upsertSettingTranslationAction(
       copyright: rest.copyright ?? null,
       contactCta: rest.contactCta ?? null,
       seoKeywords: rest.seoKeywords ?? null,
+      inquiryAutoReplySubject: rest.inquiryAutoReplySubject ?? null,
+      inquiryAutoReplyBody: rest.inquiryAutoReplyBody ?? null,
+      announcementBarText: rest.announcementBarText ?? null,
     };
     await upsertSettingTranslation(locale, data);
     revalidateTag('site-info', 'max');

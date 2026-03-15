@@ -38,7 +38,7 @@ const SPACING_BOTTOM_CLASS_MAP: Record<string, string> = {
 const CONTAINER_CLASS_MAP: Record<string, string> = {
   narrow: 'max-w-3xl',
   default: 'max-w-5xl',
-  wide: 'max-w-7xl',
+  wide: 'max-w-[var(--max-width,80rem)]',
   full: 'max-w-none px-0',
 };
 

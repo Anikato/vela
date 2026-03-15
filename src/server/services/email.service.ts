@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 
 import { decryptSecret } from '@/lib/crypto';
 import { db } from '@/server/db';
+import { getSiteName } from './settings-public.service';
 import type { InquiryProductSnapshot } from './inquiry.service';
 
 // ─── Types ───
@@ -24,6 +25,7 @@ export interface InquiryEmailPayload {
   country: string | null;
   message: string;
   sourceUrl: string | null;
+  locale: string | null;
   products: Array<{
     snapshot: InquiryProductSnapshot;
     quantity: number;
@@ -43,7 +45,7 @@ async function getSmtpConfig(): Promise<SmtpConfig | null> {
     port: row.smtpPort,
     user: row.smtpUser,
     password: decryptSecret(row.smtpPassword),
-    fromName: row.smtpFromName || 'Vela',
+    fromName: row.smtpFromName || await getSiteName(),
     fromEmail: row.smtpFromEmail || row.smtpUser,
   };
 }
@@ -73,19 +75,20 @@ export async function sendTestEmail(recipientEmail: string): Promise<void> {
   if (!config) throw new Error('SMTP 未配置，请先填写服务器、端口、用户名和密码');
 
   const transporter = createTransporter(config);
+  const siteName = config.fromName;
 
   await transporter.sendMail({
     from: `"${config.fromName}" <${config.fromEmail}>`,
     to: recipientEmail,
-    subject: 'Vela — SMTP Test Email',
-    text: 'This is a test email from Vela. If you received this, your SMTP settings are working correctly.',
+    subject: `${siteName} — SMTP Test Email`,
+    text: `This is a test email from ${siteName}. If you received this, your SMTP settings are working correctly.`,
     html: `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
         <h2 style="color:#333;">SMTP Configuration Test</h2>
-        <p style="color:#555;">This is a test email sent from Vela.</p>
+        <p style="color:#555;">This is a test email sent from ${escapeHtml(siteName)}.</p>
         <p style="color:#555;">If you received this, your SMTP settings are working correctly.</p>
         <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
-        <p style="color:#999;font-size:12px;">Sent by Vela Email Service</p>
+        <p style="color:#999;font-size:12px;">Sent by ${escapeHtml(siteName)} Email Service</p>
       </div>
     `,
   });
@@ -159,42 +162,83 @@ export async function sendInquiryNotification(payload: InquiryEmailPayload): Pro
   });
 }
 
-/** 询盘确认邮件（发给客户） */
+/**
+ * 替换模板中的变量占位符
+ * 支持: {{customerName}}, {{inquiryNumber}}, {{siteName}}, {{productList}}
+ */
+function renderTemplate(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? '');
+}
+
+function buildTemplateVars(payload: InquiryEmailPayload): Record<string, string> {
+  const productLines = payload.products
+    .map((p) => `${p.snapshot.name} (${p.snapshot.sku}) × ${p.quantity}`)
+    .join('\n');
+  return {
+    customerName: payload.customerName,
+    inquiryNumber: payload.inquiryNumber,
+    siteName: payload.siteName,
+    productList: productLines,
+    company: payload.company ?? '',
+    country: payload.country ?? '',
+    phone: payload.phone ?? '',
+    message: payload.message,
+  };
+}
+
+function textToHtml(text: string): string {
+  return escapeHtml(text).replace(/\n/g, '<br/>');
+}
+
+/** 询盘确认邮件（发给客户），优先使用自定义模板 */
 export async function sendInquiryConfirmation(payload: InquiryEmailPayload): Promise<void> {
   const config = await getSmtpConfig();
   if (!config) return;
 
   const transporter = createTransporter(config);
+  const vars = buildTemplateVars(payload);
 
-  const productList = payload.products
-    .map((p) => `<li>${escapeHtml(p.snapshot.name)} (${escapeHtml(p.snapshot.sku)}) × ${p.quantity}</li>`)
-    .join('');
+  const locale = payload.locale || 'en-US';
+  const { getInquiryAutoReplyTemplate } = await import('./settings-public.service');
+  const template = await getInquiryAutoReplyTemplate(locale, 'en-US');
 
-  const html = `
-    <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;padding:24px;">
-      <h2 style="color:#333;">Thank you for your inquiry!</h2>
-      <p style="color:#555;">Dear ${escapeHtml(payload.customerName)},</p>
-      <p style="color:#555;">We have received your inquiry <strong>#${escapeHtml(payload.inquiryNumber)}</strong> and will get back to you as soon as possible.</p>
+  let subject: string;
+  let html: string;
 
-      ${
-        payload.products.length > 0
-          ? `
-        <h3 style="color:#333;">Products you inquired about:</h3>
-        <ul style="color:#555;">${productList}</ul>`
-          : ''
-      }
-
-      <p style="color:#555;">Our team typically responds within 24 business hours.</p>
-
-      <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
-      <p style="color:#999;font-size:12px;">This is an automated confirmation from ${escapeHtml(payload.siteName)}. Please do not reply to this email.</p>
-    </div>
-  `;
+  if (template.subject && template.body) {
+    subject = renderTemplate(template.subject, vars);
+    const bodyHtml = textToHtml(renderTemplate(template.body, vars));
+    html = `
+      <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;padding:24px;">
+        <div style="color:#555;line-height:1.8;">${bodyHtml}</div>
+        <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
+        <p style="color:#999;font-size:12px;">${escapeHtml(payload.siteName)}</p>
+      </div>
+    `;
+  } else {
+    subject = `Thank you for your inquiry - ${payload.siteName}`;
+    const productListHtml = payload.products
+      .map((p) => `<li>${escapeHtml(p.snapshot.name)} (${escapeHtml(p.snapshot.sku)}) × ${p.quantity}</li>`)
+      .join('');
+    html = `
+      <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;padding:24px;">
+        <h2 style="color:#333;">Thank you for your inquiry!</h2>
+        <p style="color:#555;">Dear ${escapeHtml(payload.customerName)},</p>
+        <p style="color:#555;">We have received your inquiry <strong>#${escapeHtml(payload.inquiryNumber)}</strong> and will get back to you as soon as possible.</p>
+        ${payload.products.length > 0 ? `
+          <h3 style="color:#333;">Products you inquired about:</h3>
+          <ul style="color:#555;">${productListHtml}</ul>` : ''}
+        <p style="color:#555;">Our team typically responds within 24 business hours.</p>
+        <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
+        <p style="color:#999;font-size:12px;">This is an automated confirmation from ${escapeHtml(payload.siteName)}. Please do not reply to this email.</p>
+      </div>
+    `;
+  }
 
   await transporter.sendMail({
     from: `"${config.fromName}" <${config.fromEmail}>`,
     to: payload.customerEmail,
-    subject: `Thank you for your inquiry - ${payload.siteName}`,
+    subject,
     html,
   });
 }

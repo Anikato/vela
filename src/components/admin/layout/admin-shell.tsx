@@ -10,6 +10,7 @@ import { useAdminTheme } from '@/hooks/use-admin-theme';
 
 interface AdminShellProps {
   children: React.ReactNode;
+  siteName: string;
 }
 
 /**
@@ -19,7 +20,7 @@ interface AdminShellProps {
  * 桌面端：侧边栏固定在左侧，可折叠
  * 移动端：侧边栏隐藏，通过汉堡菜单触发 Sheet 抽屉
  */
-export function AdminShell({ children }: AdminShellProps) {
+export function AdminShell({ children, siteName }: AdminShellProps) {
   useAdminTheme();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -32,6 +33,7 @@ export function AdminShell({ children }: AdminShellProps) {
           <Sidebar
             collapsed={collapsed}
             onToggle={() => setCollapsed((prev) => !prev)}
+            siteName={siteName}
           />
         </div>
 
@@ -42,7 +44,7 @@ export function AdminShell({ children }: AdminShellProps) {
             collapsed ? 'md:ml-16' : 'md:ml-60'
           )}
         >
-          <Topbar collapsed={collapsed} />
+          <Topbar collapsed={collapsed} siteName={siteName} />
 
           <main className="flex-1 p-4 md:p-6">{children}</main>
         </div>

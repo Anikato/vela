@@ -2,19 +2,50 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import type { PublicProductCardItem } from '@/server/services/product-public.service';
+import type { CardHoverEffect, CardImageRatio } from '@/types/theme';
 import { AddToBasketButton } from '@/components/website/inquiry/add-to-basket-button';
+
+const ASPECT_MAP: Record<CardImageRatio, string> = {
+  '1:1': 'aspect-square',
+  '4:3': 'aspect-[4/3]',
+  '3:2': 'aspect-[3/2]',
+  '16:9': 'aspect-video',
+};
+
+const HOVER_CLASS_MAP: Record<CardHoverEffect, string> = {
+  none: '',
+  lift: 'vt-card-hover-lift',
+  scale: 'vt-card-hover-scale',
+  'border-glow': 'vt-card-hover-border-glow',
+  shadow: 'vt-card-hover-shadow',
+};
 
 interface ProductCardProps {
   item: PublicProductCardItem;
   href: string;
   addToBasketLabel?: string;
+  imageRatio?: CardImageRatio;
+  hoverEffect?: CardHoverEffect;
+  showSku?: boolean;
+  showDescription?: boolean;
 }
 
-export function ProductCard({ item, href, addToBasketLabel }: ProductCardProps) {
+export function ProductCard({
+  item,
+  href,
+  addToBasketLabel,
+  imageRatio = '4:3',
+  hoverEffect = 'lift',
+  showSku = true,
+  showDescription = true,
+}: ProductCardProps) {
+  const aspectClass = ASPECT_MAP[imageRatio] ?? ASPECT_MAP['4:3'];
+  const hoverClass = HOVER_CLASS_MAP[hoverEffect] ?? '';
+
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-border/40 bg-card transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5">
+    <div className={`group relative overflow-hidden rounded-2xl border border-border/40 bg-card ${hoverClass}`}>
       <Link href={href} className="block">
-        <div className="relative aspect-[4/3] overflow-hidden bg-muted/20">
+        <div className={`relative ${aspectClass} overflow-hidden bg-muted/20`}>
           {item.featuredImage ? (
             <Image
               src={item.featuredImage.url}
@@ -33,11 +64,13 @@ export function ProductCard({ item, href, addToBasketLabel }: ProductCardProps) 
           <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         </div>
         <div className="space-y-2 p-4 pb-2">
-          <p className="font-mono text-[11px] tracking-wider text-muted-foreground/70 uppercase">{item.sku}</p>
+          {showSku && (
+            <p className="font-mono text-[11px] tracking-wider text-muted-foreground/70 uppercase">{item.sku}</p>
+          )}
           <h3 className="line-clamp-2 text-base font-semibold leading-snug tracking-tight transition-colors group-hover:text-primary">
             {item.name}
           </h3>
-          {item.shortDescription ? (
+          {showDescription && item.shortDescription ? (
             <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">{item.shortDescription}</p>
           ) : null}
         </div>

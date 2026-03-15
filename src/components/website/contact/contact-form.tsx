@@ -4,6 +4,7 @@ import { useCallback, useRef, useState, useTransition } from 'react';
 import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { Check, Loader2, Send } from 'lucide-react';
 
+import { getLocaleFromPathname } from '@/lib/utils';
 import { submitInquiryAction } from '@/server/actions/inquiry.actions';
 
 interface ContactFormProps {
@@ -45,6 +46,7 @@ export function ContactForm({ captchaSiteKey, labels }: ContactFormProps) {
           email: form.get('email') as string,
           message: form.get('message') as string,
           sourceUrl: typeof window !== 'undefined' ? window.location.href : undefined,
+          locale: getLocaleFromPathname(),
           captchaToken: captchaToken ?? undefined,
           products: [],
         });

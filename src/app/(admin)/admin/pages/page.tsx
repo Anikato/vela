@@ -1,3 +1,5 @@
+export const metadata = { title: '页面管理' };
+
 import { PageManagement } from '@/components/admin/pages/page-management';
 import { getAllLanguages, getDefaultLanguage } from '@/server/services/language.service';
 import { ensureSystemRoutePage, getPageList, SYSTEM_ROUTES } from '@/server/services/page.service';

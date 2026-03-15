@@ -5,12 +5,14 @@ import { Home } from 'lucide-react';
 import { buildLocalizedPath } from '@/lib/i18n';
 import {
   getCachedActiveLanguages,
+  getCachedActiveTheme,
   getCachedNavigationTree,
   getCachedCaptchaSiteKey,
   getCachedPublicFormFields,
   getCachedPublicSiteInfo,
   getCachedUiTranslationMap,
 } from '@/lib/data-cache';
+import { DEFAULT_THEME_CONFIG } from '@/types/theme';
 import type { Language } from '@/server/services/language.service';
 import type { WebsiteNavigationNode } from '@/server/services/navigation.service';
 import { HeaderActions } from './header-actions';
@@ -30,12 +32,12 @@ function DesktopNavItem({ item }: { item: WebsiteNavigationNode }) {
           href={item.href}
           target={item.openNewTab ? '_blank' : undefined}
           rel={item.openNewTab ? 'noopener noreferrer' : undefined}
-          className="inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
+          className="vt-nav-link inline-flex items-center px-3 py-2 text-sm text-foreground/80"
         >
           {item.label}
         </Link>
       ) : (
-        <span className="inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground">
+        <span className="inline-flex items-center px-3 py-2 text-sm text-muted-foreground">
           {item.label}
         </span>
       )}
@@ -95,78 +97,173 @@ const HEADER_UI_KEYS = [
   'inquiry.error',
 ];
 
+function LogoBlock({ homePath, siteName, logoUrl }: { homePath: string; siteName: string; logoUrl: string | null }) {
+  return (
+    <Link href={homePath} aria-label={siteName} className="shrink-0">
+      {logoUrl ? (
+        <Image src={logoUrl} alt={siteName} width={140} height={40} className="vt-logo" priority />
+      ) : (
+        <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <Home className="h-4 w-4" />
+        </span>
+      )}
+    </Link>
+  );
+}
+
+function NavBar({ items }: { items: WebsiteNavigationNode[] }) {
+  return (
+    <nav className="hidden items-center gap-0.5 md:flex">
+      {items.map((item) => (
+        <DesktopNavItem key={item.id} item={item} />
+      ))}
+    </nav>
+  );
+}
+
 export async function Header({ locale, defaultLocale }: HeaderProps) {
-  const [languages, navigationItems, uiMap, siteInfo, captchaSiteKey, customFormFields] = await Promise.all([
+  const [languages, navigationItems, uiMap, siteInfo, captchaSiteKey, customFormFields, theme] = await Promise.all([
     getCachedActiveLanguages(),
     getCachedNavigationTree(locale, defaultLocale),
     getCachedUiTranslationMap(locale, defaultLocale, HEADER_UI_KEYS),
     getCachedPublicSiteInfo(locale, defaultLocale),
     getCachedCaptchaSiteKey(),
     getCachedPublicFormFields(locale, defaultLocale),
+    getCachedActiveTheme(),
   ]);
 
   const localeOptions = mapLocaleOptions(languages);
   const searchPath = buildLocalizedPath('/search', locale, defaultLocale);
   const homePath = locale === defaultLocale ? '/' : `/${locale}`;
 
-  return (
-    <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-lg backdrop-saturate-150">
-      <div className="relative mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-6">
-          <Link href={homePath} aria-label={siteInfo.siteName} className="shrink-0">
-            {siteInfo.logoUrl ? (
-              <Image
-                src={siteInfo.logoUrl}
-                alt={siteInfo.siteName}
-                width={140}
-                height={40}
-                className="h-9 w-auto"
-                priority
-              />
-            ) : (
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Home className="h-4 w-4" />
-              </span>
-            )}
-          </Link>
-          <nav className="hidden items-center gap-0.5 md:flex">
-            {navigationItems.map((item) => (
-              <DesktopNavItem key={item.id} item={item} />
-            ))}
-          </nav>
-        </div>
+  const cfg = theme?.config ?? DEFAULT_THEME_CONFIG;
+  const headerStyle = cfg.layout.headerStyle;
 
-        <div className="flex items-center gap-2">
-          <HeaderActions
-            searchPath={searchPath}
-            captchaSiteKey={captchaSiteKey}
-            customFormFields={customFormFields}
-            uiLabels={{
-              searchPlaceholder: uiMap['search.placeholder'] ?? 'Search...',
-              basketTitle: uiMap['inquiry.basketTitle'] ?? 'Inquiry Basket',
-              basketEmpty: uiMap['inquiry.basketEmpty'] ?? 'Your inquiry basket is empty',
-              basketSubmit: uiMap['inquiry.submitInquiry'] ?? 'Submit Inquiry',
-              basketClear: uiMap['inquiry.clearAll'] ?? 'Clear All',
-              basketClose: uiMap['common.close'] ?? 'Close',
-              formTitle: uiMap['inquiry.formTitle'] ?? 'Send Inquiry',
-              formName: uiMap['inquiry.name'] ?? 'Name',
-              formEmail: uiMap['inquiry.email'] ?? 'Email',
-              formPhone: uiMap['inquiry.phone'] ?? 'Phone',
-              formCompany: uiMap['inquiry.company'] ?? 'Company',
-              formCountry: uiMap['inquiry.country'] ?? 'Country',
-              formMessage: uiMap['inquiry.message'] ?? 'Message',
-              formSubmit: uiMap['inquiry.submit'] ?? 'Submit',
-              formCancel: uiMap['common.cancel'] ?? 'Cancel',
-              formSuccess: uiMap['inquiry.success'] ?? 'Inquiry submitted successfully!',
-              formError: uiMap['inquiry.error'] ?? 'Failed to submit inquiry',
-            }}
-          />
-          <div className="hidden md:block">
-            <LanguageSwitcher locales={localeOptions} defaultLocale={defaultLocale} />
+  const actionsBlock = (
+    <HeaderActions
+      searchPath={searchPath}
+      captchaSiteKey={captchaSiteKey}
+      customFormFields={customFormFields}
+      uiLabels={{
+        searchPlaceholder: uiMap['search.placeholder'] ?? 'Search...',
+        basketTitle: uiMap['inquiry.basketTitle'] ?? 'Inquiry Basket',
+        basketEmpty: uiMap['inquiry.basketEmpty'] ?? 'Your inquiry basket is empty',
+        basketSubmit: uiMap['inquiry.submitInquiry'] ?? 'Submit Inquiry',
+        basketClear: uiMap['inquiry.clearAll'] ?? 'Clear All',
+        basketClose: uiMap['common.close'] ?? 'Close',
+        formTitle: uiMap['inquiry.formTitle'] ?? 'Send Inquiry',
+        formName: uiMap['inquiry.name'] ?? 'Name',
+        formEmail: uiMap['inquiry.email'] ?? 'Email',
+        formPhone: uiMap['inquiry.phone'] ?? 'Phone',
+        formCompany: uiMap['inquiry.company'] ?? 'Company',
+        formCountry: uiMap['inquiry.country'] ?? 'Country',
+        formMessage: uiMap['inquiry.message'] ?? 'Message',
+        formSubmit: uiMap['inquiry.submit'] ?? 'Submit',
+        formCancel: uiMap['common.cancel'] ?? 'Cancel',
+        formSuccess: uiMap['inquiry.success'] ?? 'Inquiry submitted successfully!',
+        formError: uiMap['inquiry.error'] ?? 'Failed to submit inquiry',
+      }}
+    />
+  );
+
+  const langBlock = (
+    <div className="hidden md:block">
+      <LanguageSwitcher locales={localeOptions} defaultLocale={defaultLocale} />
+    </div>
+  );
+
+  const mobileNav = <MobileNav items={navigationItems} />;
+
+  const logo = <LogoBlock homePath={homePath} siteName={siteInfo.siteName} logoUrl={siteInfo.logoUrl} />;
+  const nav = <NavBar items={navigationItems} />;
+
+  if (headerStyle === 'centered') {
+    return (
+      <header className="vt-header sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-lg backdrop-saturate-150">
+        <div className="vt-container flex flex-col items-center py-3">
+          <div className="flex w-full items-center justify-between md:justify-end">
+            <div className="md:hidden">{logo}</div>
+            <div className="flex items-center gap-2">
+              {actionsBlock}
+              {langBlock}
+            </div>
+            {mobileNav}
+          </div>
+          <div className="hidden md:block">{logo}</div>
+          <div className="mt-2 hidden md:block">{nav}</div>
+        </div>
+      </header>
+    );
+  }
+
+  if (headerStyle === 'minimal') {
+    return (
+      <header className="vt-header sticky top-0 z-50 bg-background/80 backdrop-blur-lg backdrop-saturate-150">
+        <div className="vt-container relative flex h-12 items-center justify-between">
+          <div className="flex items-center gap-4">
+            {logo}
+            {nav}
+          </div>
+          <div className="flex items-center gap-2">
+            {actionsBlock}
+            {langBlock}
+          </div>
+          {mobileNav}
+        </div>
+      </header>
+    );
+  }
+
+  if (headerStyle === 'two-row') {
+    return (
+      <header className="vt-header sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-lg backdrop-saturate-150">
+        <div className="vt-container flex h-14 items-center justify-between">
+          {logo}
+          <div className="flex items-center gap-2">
+            {actionsBlock}
+            {langBlock}
+          </div>
+          {mobileNav}
+        </div>
+        <div className="hidden border-t border-border/20 md:block">
+          <div className="vt-container flex items-center py-1">
+            {nav}
           </div>
         </div>
+      </header>
+    );
+  }
 
-        <MobileNav items={navigationItems} />
+  if (headerStyle === 'tall-logo') {
+    return (
+      <header className="vt-header sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-lg backdrop-saturate-150">
+        <div className="vt-container relative flex h-20 items-center justify-between">
+          <div className="flex items-center gap-6">
+            {logo}
+            {nav}
+          </div>
+          <div className="flex items-center gap-2">
+            {actionsBlock}
+            {langBlock}
+          </div>
+          {mobileNav}
+        </div>
+      </header>
+    );
+  }
+
+  return (
+    <header className="vt-header sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-lg backdrop-saturate-150">
+      <div className="vt-container relative flex h-16 items-center justify-between">
+        <div className="flex items-center gap-6">
+          {logo}
+          {nav}
+        </div>
+        <div className="flex items-center gap-2">
+          {actionsBlock}
+          {langBlock}
+        </div>
+        {mobileNav}
       </div>
     </header>
   );

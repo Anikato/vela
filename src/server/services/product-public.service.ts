@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, ilike, inArray, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 
 import { getTranslation } from '@/lib/i18n';
 import { db } from '@/server/db';
@@ -965,4 +965,12 @@ export async function searchPublishedProducts(
   const items = await mapProductRowsToCards(rows, locale, defaultLocale);
 
   return { items, total, page, pageSize, totalPages, query: q };
+}
+
+/** 原子递增产品浏览量（fire-and-forget，不阻塞页面渲染） */
+export async function incrementProductViewCount(productId: string): Promise<void> {
+  await db
+    .update(products)
+    .set({ viewCount: sql`${products.viewCount} + 1` })
+    .where(eq(products.id, productId));
 }

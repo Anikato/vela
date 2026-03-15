@@ -53,6 +53,33 @@ export type FooterStyle = 'standard' | 'minimal' | 'expanded';
 export type RadiusPreset = 'none' | 'sm' | 'md' | 'lg' | 'full';
 export type ShadowPreset = 'none' | 'sm' | 'md' | 'lg';
 
+export interface ThemeBackground {
+  type: 'solid' | 'gradient' | 'image';
+  gradient?: string;
+  imageUrl?: string;
+  imageOverlay?: number;
+}
+
+export type CardHoverEffect = 'none' | 'lift' | 'scale' | 'border-glow' | 'shadow';
+export type CardImageRatio = '1:1' | '4:3' | '3:2' | '16:9';
+export type ProductGridColumns = 2 | 3 | 4;
+
+export interface ThemeProductCard {
+  imageRatio: CardImageRatio;
+  hoverEffect: CardHoverEffect;
+  showSku: boolean;
+  showDescription: boolean;
+  gridColumns: ProductGridColumns;
+}
+
+export interface ThemeAnnouncementBar {
+  enabled: boolean;
+  bgColor: string;
+  textColor: string;
+  dismissible: boolean;
+  linkUrl?: string;
+}
+
 export interface ThemeLayout {
   headerStyle: HeaderStyle;
   headerTransparent: boolean;
@@ -60,6 +87,11 @@ export interface ThemeLayout {
   radius: RadiusPreset;
   shadow: ShadowPreset;
   maxWidth: string;
+  pageBackground?: ThemeBackground;
+  headerBackground?: ThemeBackground;
+  headerBlur: boolean;
+  footerBackground?: ThemeBackground;
+  logoHeight: number;
 }
 
 export interface ThemeConfig {
@@ -68,6 +100,9 @@ export interface ThemeConfig {
   button: ThemeButton;
   nav: ThemeNav;
   layout: ThemeLayout;
+  productCard: ThemeProductCard;
+  announcementBar: ThemeAnnouncementBar;
+  customCss?: string;
 }
 
 export const DEFAULT_THEME_CONFIG: ThemeConfig = {
@@ -117,5 +152,20 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
     radius: 'md',
     shadow: 'sm',
     maxWidth: '1280px',
+    headerBlur: true,
+    logoHeight: 36,
+  },
+  productCard: {
+    imageRatio: '4:3',
+    hoverEffect: 'lift',
+    showSku: true,
+    showDescription: true,
+    gridColumns: 3,
+  },
+  announcementBar: {
+    enabled: false,
+    bgColor: '222.2 47.4% 11.2%',
+    textColor: '210 40% 98%',
+    dismissible: true,
   },
 };

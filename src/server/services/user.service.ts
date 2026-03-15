@@ -218,6 +218,31 @@ export async function resetUserPassword(id: string, password: string): Promise<v
     .where(eq(users.id, id));
 }
 
+/** 修改当前用户密码（需验证旧密码） */
+export async function changeMyPassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  if (newPassword.length < 8) {
+    throw new ValidationError('新密码至少 8 个字符');
+  }
+
+  const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user[0]) throw new NotFoundError('User', userId);
+
+  const isValid = await verifyPassword(currentPassword, user[0].passwordHash);
+  if (!isValid) {
+    throw new ValidationError('当前密码不正确');
+  }
+
+  const newHash = await hashPassword(newPassword);
+  await db
+    .update(users)
+    .set({ passwordHash: newHash, updatedAt: new Date() })
+    .where(eq(users.id, userId));
+}
+
 /**
  * 验证登录凭证
  * 返回用户对象（不含密码哈希）或 null

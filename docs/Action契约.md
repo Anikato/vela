@@ -1385,7 +1385,7 @@ targetGroupId: string; // uuid
 ### 5) `upsertSettingTranslationAction(input)`
 
 - **权限**：需管理员登录
-- **入参**：`{ locale, siteName?, siteDescription?, companyName?, slogan?, address?, footerText?, copyright?, contactCta?, seoKeywords? }`
+- **入参**：`{ locale, siteName?, siteDescription?, companyName?, slogan?, address?, footerText?, copyright?, contactCta?, seoKeywords?, inquiryAutoReplySubject?, inquiryAutoReplyBody?, announcementBarText? }`
 - **返回**：`ActionResult<void>`
 
 ### 6) `sendTestEmailAction()`

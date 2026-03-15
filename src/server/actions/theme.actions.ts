@@ -63,6 +63,13 @@ const navSchema = z.object({
   fontWeight: z.string(),
 });
 
+const backgroundSchema = z.object({
+  type: z.enum(['solid', 'gradient', 'image']),
+  gradient: z.string().optional(),
+  imageUrl: z.string().optional(),
+  imageOverlay: z.number().min(0).max(100).optional(),
+}).optional();
+
 const layoutSchema = z.object({
   headerStyle: z.enum(['default', 'centered', 'minimal', 'two-row', 'tall-logo']),
   headerTransparent: z.boolean(),
@@ -70,7 +77,28 @@ const layoutSchema = z.object({
   radius: z.enum(['none', 'sm', 'md', 'lg', 'full']),
   shadow: z.enum(['none', 'sm', 'md', 'lg']),
   maxWidth: z.string(),
+  pageBackground: backgroundSchema,
+  headerBackground: backgroundSchema,
+  headerBlur: z.boolean().optional(),
+  footerBackground: backgroundSchema,
+  logoHeight: z.number().min(20).max(120).optional(),
 });
+
+const productCardSchema = z.object({
+  imageRatio: z.enum(['1:1', '4:3', '3:2', '16:9']),
+  hoverEffect: z.enum(['none', 'lift', 'scale', 'border-glow', 'shadow']),
+  showSku: z.boolean(),
+  showDescription: z.boolean(),
+  gridColumns: z.union([z.literal(2), z.literal(3), z.literal(4)]),
+}).optional();
+
+const announcementBarSchema = z.object({
+  enabled: z.boolean(),
+  bgColor: z.string(),
+  textColor: z.string(),
+  dismissible: z.boolean(),
+  linkUrl: z.string().optional(),
+}).optional();
 
 const themeConfigSchema = z.object({
   colors: colorsSchema,
@@ -78,6 +106,9 @@ const themeConfigSchema = z.object({
   button: buttonSchema,
   nav: navSchema,
   layout: layoutSchema,
+  productCard: productCardSchema,
+  announcementBar: announcementBarSchema,
+  customCss: z.string().max(10000).optional(),
 });
 
 export async function getThemeListAction(): Promise<ActionResult<ThemeListItem[]>> {
@@ -101,7 +132,9 @@ export async function createThemeAction(
   try {
     await requireAuth();
     const { name, config } = createSchema.parse(input);
-    const themeConfig = config ?? DEFAULT_THEME_CONFIG;
+    const themeConfig: ThemeConfig = config
+      ? { ...DEFAULT_THEME_CONFIG, ...config, productCard: { ...DEFAULT_THEME_CONFIG.productCard, ...config.productCard }, announcementBar: { ...DEFAULT_THEME_CONFIG.announcementBar, ...config.announcementBar }, layout: { ...DEFAULT_THEME_CONFIG.layout, ...config.layout } }
+      : DEFAULT_THEME_CONFIG;
     const data = await createTheme(name, themeConfig);
     return { success: true, data };
   } catch (e) {
@@ -121,7 +154,10 @@ export async function updateThemeAction(
   try {
     await requireAuth();
     const { id, name, config } = updateSchema.parse(input);
-    const data = await updateTheme(id, { name, config });
+    const mergedConfig: ThemeConfig | undefined = config
+      ? { ...DEFAULT_THEME_CONFIG, ...config, productCard: { ...DEFAULT_THEME_CONFIG.productCard, ...config.productCard }, announcementBar: { ...DEFAULT_THEME_CONFIG.announcementBar, ...config.announcementBar }, layout: { ...DEFAULT_THEME_CONFIG.layout, ...config.layout } }
+      : undefined;
+    const data = await updateTheme(id, { name, config: mergedConfig });
     return { success: true, data };
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '更新主题失败' };

@@ -1,3 +1,5 @@
+export const metadata = { title: '新闻管理' };
+
 import { NewsList } from '@/components/admin/news/news-list';
 import { getAllLanguages, getDefaultLanguage } from '@/server/services/language.service';
 import { getNewsListPaginated } from '@/server/services/news.service';

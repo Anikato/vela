@@ -76,6 +76,9 @@ export const siteSettingTranslations = pgTable(
     copyright: varchar('copyright', { length: 500 }),
     contactCta: varchar('contact_cta', { length: 200 }),
     seoKeywords: text('seo_keywords'),
+    inquiryAutoReplySubject: varchar('inquiry_auto_reply_subject', { length: 500 }),
+    inquiryAutoReplyBody: text('inquiry_auto_reply_body'),
+    announcementBarText: text('announcement_bar_text'),
   },
   (table) => [unique().on(table.locale)],
 );

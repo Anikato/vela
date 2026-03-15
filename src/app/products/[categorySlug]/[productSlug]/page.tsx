@@ -16,6 +16,7 @@ import {
 import {
   getPublishedProductDetailBySlug,
   getRelatedPublishedProducts,
+  incrementProductViewCount,
 } from '@/server/services/product-public.service';
 
 const PRODUCT_DETAIL_UI_KEYS = [
@@ -93,6 +94,8 @@ export default async function ProductDetailRoutePage({ params }: ProductDetailRo
 
   const product = await getPublishedProductDetailBySlug(productSlug, locale, locale);
   if (!product) notFound();
+
+  incrementProductViewCount(product.id).catch(() => {});
 
   const normalizedCategorySlug = categorySlug.trim().toLowerCase();
   const isPrimary = normalizedCategorySlug === product.primaryCategory.slug;

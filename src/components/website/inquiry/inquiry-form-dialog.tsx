@@ -5,6 +5,7 @@ import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { Check, Loader2, X } from 'lucide-react';
 
 import { useInquiryBasket } from '@/hooks/use-inquiry-basket';
+import { getLocaleFromPathname } from '@/lib/utils';
 import { submitInquiryAction } from '@/server/actions/inquiry.actions';
 
 export interface CustomFormField {
@@ -79,6 +80,7 @@ export function InquiryFormDialog({ open, onClose, captchaSiteKey, customFields 
           country: (form.get('country') as string) || undefined,
           message: form.get('message') as string,
           sourceUrl: typeof window !== 'undefined' ? window.location.href : undefined,
+          locale: getLocaleFromPathname(),
           captchaToken: captchaToken ?? undefined,
           customFields: Object.keys(customFieldValues).length > 0 ? customFieldValues : undefined,
           products: items.map((item) => ({

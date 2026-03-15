@@ -1,3 +1,5 @@
+export const metadata = { title: '用户管理' };
+
 import { auth } from '@/server/auth';
 import { getAllUsers } from '@/server/services/user.service';
 import { UserManagement } from '@/components/admin/users/user-management';

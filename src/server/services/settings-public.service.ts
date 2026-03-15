@@ -34,6 +34,45 @@ export interface PublicSiteInfo {
   socialAlibaba: string | null;
 }
 
+const DEFAULT_SITE_NAME = 'Vela';
+
+/** 获取站点名称（取第一条翻译的 siteName，供后台等不需要多语言的场景使用） */
+export async function getSiteName(): Promise<string> {
+  const row = await db
+    .select({ siteName: siteSettingTranslations.siteName })
+    .from(siteSettingTranslations)
+    .limit(1);
+  return row[0]?.siteName || DEFAULT_SITE_NAME;
+}
+
+/** 获取 favicon URL（供根布局 metadata.icons 使用） */
+export async function getFaviconUrl(): Promise<string | null> {
+  const row = await db.query.siteSettings.findFirst({
+    with: { favicon: true },
+  });
+  if (!row?.favicon) return null;
+  const { getStorageAdapter } = await import('@/server/storage');
+  return getStorageAdapter().getPublicUrl(row.favicon.filename);
+}
+
+export interface InquiryAutoReplyTemplate {
+  subject: string | null;
+  body: string | null;
+}
+
+/** 获取指定 locale 的询盘自动回复模板（含回退链） */
+export async function getInquiryAutoReplyTemplate(
+  locale: string,
+  defaultLocale: string,
+): Promise<InquiryAutoReplyTemplate> {
+  const translations = await db.select().from(siteSettingTranslations);
+  const t = getTranslation(translations, locale, defaultLocale);
+  return {
+    subject: t?.inquiryAutoReplySubject ?? null,
+    body: t?.inquiryAutoReplyBody ?? null,
+  };
+}
+
 /** 获取面向前台的联系信息（从 site_settings 单行表读取） */
 export async function getPublicContactInfo(
   locale: string,
@@ -75,7 +114,7 @@ export async function getPublicSiteInfo(
   const t = getTranslation(translations, locale, defaultLocale);
 
   return {
-    siteName: t?.siteName ?? 'Vela',
+    siteName: t?.siteName ?? DEFAULT_SITE_NAME,
     siteDescription: t?.siteDescription ?? null,
     companyName: t?.companyName ?? null,
     slogan: t?.slogan ?? null,
@@ -98,4 +137,13 @@ export async function getPublicSiteInfo(
     socialPinterest: row?.socialPinterest ?? null,
     socialAlibaba: row?.socialAlibaba ?? null,
   };
+}
+
+export async function getAnnouncementBarText(
+  locale: string,
+  defaultLocale: string,
+): Promise<string | null> {
+  const translations = await db.select().from(siteSettingTranslations);
+  const t = getTranslation(translations, locale, defaultLocale);
+  return t?.announcementBarText ?? null;
 }

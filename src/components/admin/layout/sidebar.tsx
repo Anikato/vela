@@ -14,13 +14,14 @@ import { ChevronLeft } from 'lucide-react';
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  siteName: string;
 }
 
 /**
  * 后台侧边栏 — 暗色科技感
  * 支持展开/折叠两种模式
  */
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, siteName }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -40,10 +41,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           )}
         >
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold shadow-[0_0_12px_rgba(0,200,255,0.2)]">
-            V
+            {siteName.charAt(0).toUpperCase()}
           </span>
           {!collapsed && (
-            <span className="text-lg tracking-wide">Vela</span>
+            <span className="text-lg tracking-wide">{siteName}</span>
           )}
         </Link>
       </div>

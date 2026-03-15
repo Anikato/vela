@@ -95,6 +95,7 @@ export async function submitInquiryAction(
         country: parsed.data.country ?? null,
         message: parsed.data.message,
         sourceUrl: parsed.data.sourceUrl ?? null,
+        locale: parsed.data.locale ?? null,
         products,
         siteName: siteInfo.siteName,
       };

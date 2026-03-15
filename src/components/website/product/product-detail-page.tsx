@@ -94,7 +94,7 @@ export function ProductDetailPage({
         ]}
       />
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+      <main className="vt-container py-8 lg:py-10">
         <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
           <ProductGallery
             featuredImage={product.featuredImage}

@@ -1,3 +1,5 @@
+export const metadata = { title: '仪表盘' };
+
 import Link from 'next/link';
 import {
   Package,
@@ -19,6 +21,7 @@ import { db } from '@/server/db';
 import { products, categories, news, media, auditLogs } from '@/server/db/schema';
 import { getInquiryStats, getInquiryList } from '@/server/services/inquiry.service';
 import { ACTION_LABELS, ENTITY_LABELS } from '@/server/services/audit-log.service';
+import { getSiteName } from '@/server/services/settings-public.service';
 
 async function getDbSize(): Promise<string> {
   try {
@@ -49,6 +52,7 @@ async function getRecentAuditLogs() {
 
 export default async function AdminDashboardPage() {
   const [
+    siteName,
     productCount,
     categoryCount,
     newsCount,
@@ -58,6 +62,7 @@ export default async function AdminDashboardPage() {
     dbSize,
     recentLogs,
   ] = await Promise.all([
+    getSiteName(),
     db.select({ count: sql<number>`count(*)` }).from(products).then((r) => Number(r[0].count)),
     db
       .select({ count: sql<number>`count(*)` })
@@ -114,7 +119,7 @@ export default async function AdminDashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">仪表盘</h1>
-        <p className="mt-1 text-sm text-muted-foreground">欢迎使用 Vela 管理后台</p>
+        <p className="mt-1 text-sm text-muted-foreground">欢迎使用 {siteName} 管理后台</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

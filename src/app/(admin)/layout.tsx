@@ -1,15 +1,24 @@
+import type { Metadata } from 'next';
 import { AdminShell } from '@/components/admin/layout';
+import { getSiteName } from '@/server/services/settings-public.service';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * 后台布局
- * 使用 AdminShell 提供侧边栏 + 顶栏 + 内容区结构
- */
-export default function AdminLayout({
+export async function generateMetadata(): Promise<Metadata> {
+  const siteName = await getSiteName();
+  return {
+    title: {
+      template: `%s — ${siteName} 管理后台`,
+      default: `${siteName} 管理后台`,
+    },
+  };
+}
+
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <AdminShell>{children}</AdminShell>;
+  const siteName = await getSiteName();
+  return <AdminShell siteName={siteName}>{children}</AdminShell>;
 }

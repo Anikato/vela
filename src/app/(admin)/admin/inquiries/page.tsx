@@ -1,3 +1,5 @@
+export const metadata = { title: '询盘管理' };
+
 import { InquiryManagement } from '@/components/admin/inquiries/inquiry-management';
 import { getInquiryList, getInquiryStats } from '@/server/services/inquiry.service';
 

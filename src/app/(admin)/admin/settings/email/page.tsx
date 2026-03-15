@@ -1,3 +1,5 @@
+export const metadata = { title: '邮件配置' };
+
 import { getSiteSettings } from '@/server/services/settings-admin.service';
 import { EmailSettingsManagement } from '@/components/admin/settings/email-settings-management';
 

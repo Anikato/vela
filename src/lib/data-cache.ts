@@ -2,11 +2,12 @@ import { cache } from 'react';
 
 import { getActiveLanguages, getDefaultLanguage } from '@/server/services/language.service';
 import { getWebsiteNavigationTree } from '@/server/services/navigation.service';
-import { getPublicSiteInfo, getPublicContactInfo } from '@/server/services/settings-public.service';
+import { getPublicSiteInfo, getPublicContactInfo, getAnnouncementBarText } from '@/server/services/settings-public.service';
 import { getUiTranslationMap } from '@/server/services/ui-translation.service';
 import { getCaptchaSiteKey } from '@/server/services/captcha.service';
 import { getPublicFormFields } from '@/server/services/inquiry-form-field.service';
 import { getScriptsForFrontend } from '@/server/services/settings-admin.service';
+import { getActiveTheme } from '@/server/services/theme.service';
 
 export const getCachedActiveLanguages = cache(() => getActiveLanguages());
 
@@ -35,3 +36,9 @@ export const getCachedPublicFormFields = cache(
 );
 
 export const getCachedScriptsForFrontend = cache(() => getScriptsForFrontend());
+
+export const getCachedActiveTheme = cache(() => getActiveTheme());
+
+export const getCachedAnnouncementBarText = cache(
+  (locale: string, defaultLocale: string) => getAnnouncementBarText(locale, defaultLocale),
+);

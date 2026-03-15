@@ -1,3 +1,5 @@
+export const metadata = { title: '脚本注入' };
+
 import { getSiteSettings } from '@/server/services/settings-admin.service';
 import { ScriptsSettingsManagement } from '@/components/admin/settings/scripts-settings-management';
 

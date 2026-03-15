@@ -1,3 +1,5 @@
+export const metadata = { title: '分类管理' };
+
 import { CategoryManagement } from '@/components/admin/categories/category-management';
 import { getCategoryList } from '@/server/services/category.service';
 import { getAllLanguages, getDefaultLanguage } from '@/server/services/language.service';

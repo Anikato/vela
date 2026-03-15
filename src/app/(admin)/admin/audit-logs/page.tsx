@@ -1,3 +1,5 @@
+export const metadata = { title: '操作日志' };
+
 import { getAuditLogList } from '@/server/services/audit-log.service';
 import { AuditLogManagement } from '@/components/admin/audit-logs/audit-log-management';
 

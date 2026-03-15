@@ -1,3 +1,5 @@
+export const metadata = { title: '主题管理' };
+
 import { getThemeList, ensureDefaultTheme } from '@/server/services/theme.service';
 import { ThemeManagement } from '@/components/admin/themes/theme-management';
 

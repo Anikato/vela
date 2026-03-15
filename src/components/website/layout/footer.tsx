@@ -4,10 +4,12 @@ import { Mail, Phone, MapPin, MessageCircle } from 'lucide-react';
 
 import { buildLocalizedPath } from '@/lib/i18n';
 import {
+  getCachedActiveTheme,
   getCachedNavigationTree,
   getCachedPublicSiteInfo,
   getCachedUiTranslationMap,
 } from '@/lib/data-cache';
+import { DEFAULT_THEME_CONFIG } from '@/types/theme';
 
 interface FooterProps {
   locale: string;
@@ -45,14 +47,27 @@ function SocialIconSvg({ d }: { d: string }) {
   );
 }
 
-function buildSocialLinks(siteInfo: {
+interface SiteInfo {
+  siteName: string;
+  logoUrl: string | null;
+  companyName: string | null;
+  slogan: string | null;
+  footerText: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  whatsapp: string | null;
+  address: string | null;
   socialFacebook: string | null;
   socialLinkedin: string | null;
   socialYoutube: string | null;
   socialInstagram: string | null;
   socialPinterest: string | null;
   socialAlibaba: string | null;
-}): SocialEntry[] {
+  copyright: string | null;
+  contactCta: string | null;
+}
+
+function buildSocialLinks(siteInfo: SiteInfo): SocialEntry[] {
   const map: [string | null, string, string][] = [
     [siteInfo.socialFacebook, 'Facebook', 'facebook'],
     [siteInfo.socialLinkedin, 'LinkedIn', 'linkedin'],
@@ -86,41 +101,227 @@ function WhatsAppFloat({ number }: { number: string }) {
   );
 }
 
+function CopyrightBar({ siteInfo }: { siteInfo: SiteInfo }) {
+  return (
+    <p className="text-xs text-muted-foreground">
+      {siteInfo.copyright
+        ? siteInfo.copyright
+        : `© ${new Date().getFullYear()} ${siteInfo.companyName || siteInfo.siteName}`}
+    </p>
+  );
+}
+
+function SocialIcons({ links }: { links: SocialEntry[] }) {
+  if (!links.length) return null;
+  return (
+    <div className="flex items-center gap-2">
+      {links.map((social) => (
+        <a
+          key={social.label}
+          href={social.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={social.label}
+          className="flex h-9 w-9 items-center justify-center rounded-lg bg-foreground/5 text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary"
+        >
+          <SocialIconSvg d={social.d} />
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function ContactList({ siteInfo }: { siteInfo: SiteInfo }) {
+  return (
+    <ul className="mt-4 space-y-3.5">
+      {siteInfo.contactEmail && (
+        <li>
+          <a
+            href={`mailto:${siteInfo.contactEmail}`}
+            className="flex items-start gap-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <Mail className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{siteInfo.contactEmail}</span>
+          </a>
+        </li>
+      )}
+      {siteInfo.contactPhone && (
+        <li>
+          <a
+            href={`tel:${siteInfo.contactPhone}`}
+            className="flex items-start gap-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <Phone className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{siteInfo.contactPhone}</span>
+          </a>
+        </li>
+      )}
+      {siteInfo.whatsapp && (
+        <li>
+          <a
+            href={`https://wa.me/${siteInfo.whatsapp.replace(/[^0-9]/g, '')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-start gap-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <MessageCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>WhatsApp</span>
+          </a>
+        </li>
+      )}
+      {siteInfo.address && (
+        <li className="flex items-start gap-2.5 text-sm text-muted-foreground">
+          <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{siteInfo.address}</span>
+        </li>
+      )}
+    </ul>
+  );
+}
+
+interface NavigationNode {
+  id: string;
+  label: string;
+  href: string | null;
+  openNewTab: boolean;
+  children: NavigationNode[];
+}
+
 export async function Footer({ locale, defaultLocale }: FooterProps) {
-  const [navigationItems, siteInfo, ui] = await Promise.all([
+  const [navigationItems, siteInfo, ui, theme] = await Promise.all([
     getCachedNavigationTree(locale, defaultLocale),
     getCachedPublicSiteInfo(locale, defaultLocale),
     getCachedUiTranslationMap(locale, defaultLocale, FOOTER_UI_KEYS),
+    getCachedActiveTheme(),
   ]);
+
+  const cfg = theme?.config ?? DEFAULT_THEME_CONFIG;
+  const footerStyle = cfg.layout.footerStyle;
 
   const quickLinks = navigationItems.filter((item) => Boolean(item.href)).slice(0, 8);
   const socialLinks = buildSocialLinks(siteInfo);
   const homePath = locale === defaultLocale ? '/' : `/${locale}`;
+  const hasContact = siteInfo.contactEmail || siteInfo.contactPhone || siteInfo.address;
+
+  const logoBlock = (
+    <Link href={homePath} className="inline-block">
+      {siteInfo.logoUrl ? (
+        <Image src={siteInfo.logoUrl} alt={siteInfo.siteName} width={140} height={40} className="vt-logo" />
+      ) : (
+        <span className="text-lg font-bold tracking-tight text-foreground">{siteInfo.siteName}</span>
+      )}
+    </Link>
+  );
+
+  if (footerStyle === 'minimal') {
+    return (
+      <>
+        <footer className="vt-footer border-t border-border/40 bg-muted/30">
+          <div className="vt-container flex flex-col items-center gap-4 py-8 md:flex-row md:justify-between">
+            {logoBlock}
+            <CopyrightBar siteInfo={siteInfo} />
+            <SocialIcons links={socialLinks} />
+          </div>
+        </footer>
+        {siteInfo.whatsapp && <WhatsAppFloat number={siteInfo.whatsapp} />}
+      </>
+    );
+  }
+
+  if (footerStyle === 'expanded') {
+    return (
+      <>
+        <footer className="vt-footer border-t border-border/40 bg-muted/30">
+          <div className="border-b border-border/30 bg-primary/5">
+            <div className="vt-container flex flex-col items-center gap-4 py-12 text-center md:flex-row md:text-left">
+              <div className="flex-1">
+                {logoBlock}
+                {siteInfo.slogan && (
+                  <p className="mt-3 text-lg font-medium text-foreground">{siteInfo.slogan}</p>
+                )}
+                {siteInfo.footerText && (
+                  <p className="mt-1 text-sm text-muted-foreground">{siteInfo.footerText}</p>
+                )}
+              </div>
+              {siteInfo.contactCta && (
+                <Link
+                  href={buildLocalizedPath('/contact', locale, defaultLocale)}
+                  className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  {siteInfo.contactCta}
+                </Link>
+              )}
+            </div>
+          </div>
+
+          <div className="vt-container py-14">
+            <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-12">
+              {quickLinks.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold tracking-tight text-foreground">
+                    {ui['footer.quickLinks'] || 'Quick Links'}
+                  </h3>
+                  <ul className="mt-4 space-y-2.5">
+                    {quickLinks.map((item) => (
+                      <li key={item.id}>
+                        <Link
+                          href={item.href!}
+                          target={item.openNewTab ? '_blank' : undefined}
+                          rel={item.openNewTab ? 'noopener noreferrer' : undefined}
+                          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          {item.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {hasContact && (
+                <div>
+                  <h3 className="text-sm font-semibold tracking-tight text-foreground">
+                    {ui['footer.contactUs'] || 'Contact Us'}
+                  </h3>
+                  <ContactList siteInfo={siteInfo} />
+                </div>
+              )}
+
+              {socialLinks.length > 0 && (
+                <div>
+                  {ui['footer.followUs'] && (
+                    <h3 className="text-sm font-semibold tracking-tight text-foreground">
+                      {ui['footer.followUs']}
+                    </h3>
+                  )}
+                  <div className="mt-4">
+                    <SocialIcons links={socialLinks} />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="border-t border-border/40">
+            <div className="vt-container flex items-center justify-between py-5">
+              <CopyrightBar siteInfo={siteInfo} />
+            </div>
+          </div>
+        </footer>
+        {siteInfo.whatsapp && <WhatsAppFloat number={siteInfo.whatsapp} />}
+      </>
+    );
+  }
 
   const hasCompanyInfo = siteInfo.companyName || siteInfo.slogan || siteInfo.footerText;
-  const hasContact = siteInfo.contactEmail || siteInfo.contactPhone || siteInfo.address;
 
   return (
     <>
-      <footer className="border-t border-border/40 bg-muted/30">
-        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+      <footer className="vt-footer border-t border-border/40 bg-muted/30">
+        <div className="vt-container py-14">
           <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-12">
             <div className="sm:col-span-2 lg:col-span-1">
-              <Link href={homePath} className="inline-block">
-                {siteInfo.logoUrl ? (
-                  <Image
-                    src={siteInfo.logoUrl}
-                    alt={siteInfo.siteName}
-                    width={140}
-                    height={40}
-                    className="h-9 w-auto"
-                  />
-                ) : (
-                  <span className="text-lg font-bold tracking-tight text-foreground">
-                    {siteInfo.siteName}
-                  </span>
-                )}
-              </Link>
+              {logoBlock}
 
               {hasCompanyInfo && (
                 <div className="mt-4 space-y-1.5">
@@ -140,20 +341,7 @@ export async function Footer({ locale, defaultLocale }: FooterProps) {
                       {ui['footer.followUs']}
                     </p>
                   )}
-                  <div className="flex items-center gap-2">
-                    {socialLinks.map((social) => (
-                      <a
-                        key={social.label}
-                        href={social.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={social.label}
-                        className="flex h-9 w-9 items-center justify-center rounded-lg bg-foreground/5 text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary"
-                      >
-                        <SocialIconSvg d={social.d} />
-                      </a>
-                    ))}
-                  </div>
+                  <SocialIcons links={socialLinks} />
                 </div>
               )}
             </div>
@@ -185,65 +373,18 @@ export async function Footer({ locale, defaultLocale }: FooterProps) {
                 <h3 className="text-sm font-semibold tracking-tight text-foreground">
                   {ui['footer.contactUs'] || 'Contact Us'}
                 </h3>
-                <ul className="mt-4 space-y-3.5">
-                  {siteInfo.contactEmail && (
-                    <li>
-                      <a
-                        href={`mailto:${siteInfo.contactEmail}`}
-                        className="flex items-start gap-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-                      >
-                        <Mail className="mt-0.5 h-4 w-4 shrink-0" />
-                        <span>{siteInfo.contactEmail}</span>
-                      </a>
-                    </li>
-                  )}
-                  {siteInfo.contactPhone && (
-                    <li>
-                      <a
-                        href={`tel:${siteInfo.contactPhone}`}
-                        className="flex items-start gap-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-                      >
-                        <Phone className="mt-0.5 h-4 w-4 shrink-0" />
-                        <span>{siteInfo.contactPhone}</span>
-                      </a>
-                    </li>
-                  )}
-                  {siteInfo.whatsapp && (
-                    <li>
-                      <a
-                        href={`https://wa.me/${siteInfo.whatsapp.replace(/[^0-9]/g, '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-start gap-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-                      >
-                        <MessageCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                        <span>WhatsApp</span>
-                      </a>
-                    </li>
-                  )}
-                  {siteInfo.address && (
-                    <li className="flex items-start gap-2.5 text-sm text-muted-foreground">
-                      <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-                      <span>{siteInfo.address}</span>
-                    </li>
-                  )}
-                </ul>
+                <ContactList siteInfo={siteInfo} />
               </div>
             )}
           </div>
         </div>
 
         <div className="border-t border-border/40">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
-            <p className="text-xs text-muted-foreground">
-              {siteInfo.copyright
-                ? siteInfo.copyright
-                : `© ${new Date().getFullYear()} ${siteInfo.companyName || siteInfo.siteName}`}
-            </p>
+          <div className="vt-container flex items-center justify-between py-5">
+            <CopyrightBar siteInfo={siteInfo} />
           </div>
         </div>
       </footer>
-
       {siteInfo.whatsapp && <WhatsAppFloat number={siteInfo.whatsapp} />}
     </>
   );

@@ -15,6 +15,7 @@ import {
   MessageSquare,
   ClipboardList,
   BarChart3,
+  Reply,
   Navigation,
   Palette,
   Languages,
@@ -71,6 +72,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: '询盘管理', href: '/admin/inquiries', icon: MessageSquare },
       { title: '表单配置', href: '/admin/inquiries/form', icon: ClipboardList },
+      { title: '自动回复', href: '/admin/inquiries/auto-reply', icon: Reply },
       { title: '数据统计', href: '/admin/inquiries/stats', icon: BarChart3 },
     ],
   },

@@ -1,3 +1,5 @@
+export const metadata = { title: '产品参数' };
+
 import { ProductAttributeManagement } from '@/components/admin/products/product-attribute-management';
 import { getAllLanguages, getDefaultLanguage } from '@/server/services/language.service';
 import {

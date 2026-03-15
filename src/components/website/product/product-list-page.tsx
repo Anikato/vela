@@ -8,6 +8,7 @@ import type {
   PublicTagItem,
   ProductSortOption,
 } from '@/server/services/product-public.service';
+import type { ThemeProductCard } from '@/types/theme';
 import { Breadcrumb } from '@/components/website/layout/breadcrumb';
 import { ProductCard } from './product-card';
 import { CategoryTree } from './category-tree';
@@ -38,7 +39,14 @@ interface ProductListPageProps {
   activeTagSlug?: string;
   currentSort: ProductSortOption;
   uiLabels: ProductListPageUiLabels;
+  productCardConfig?: ThemeProductCard;
 }
+
+const GRID_COLS_MAP: Record<number, string> = {
+  2: 'sm:grid-cols-2',
+  3: 'sm:grid-cols-2 xl:grid-cols-3',
+  4: 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
+};
 
 function buildPageHref(basePath: string, page: number, searchParams: Record<string, string | undefined>): string {
   const params = new URLSearchParams();
@@ -61,6 +69,7 @@ export function ProductListPage({
   activeTagSlug,
   currentSort,
   uiLabels,
+  productCardConfig,
 }: ProductListPageProps) {
   const homeHref = buildLocalizedPath('/', locale, defaultLocale);
   const productsHref = buildLocalizedPath('/products', locale, defaultLocale);
@@ -84,7 +93,7 @@ export function ProductListPage({
   return (
     <div>
       <Breadcrumb items={crumbs} />
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="vt-container py-8">
         <div className="flex flex-col gap-8 lg:flex-row">
           <aside className="w-full shrink-0 lg:w-64">
             <div className="sticky top-20 space-y-4">
@@ -130,14 +139,25 @@ export function ProductListPage({
             </div>
 
             {data.items.length ? (
-              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              <div className={`grid gap-6 ${GRID_COLS_MAP[productCardConfig?.gridColumns ?? 3] ?? GRID_COLS_MAP[3]}`}>
                 {data.items.map((item) => {
                   const href = buildLocalizedPath(
                     `/products/${item.primaryCategorySlug}/${item.slug}`,
                     locale,
                     defaultLocale,
                   );
-                  return <ProductCard key={item.id} item={item} href={href} addToBasketLabel={uiLabels.addToInquiry} />;
+                  return (
+                    <ProductCard
+                      key={item.id}
+                      item={item}
+                      href={href}
+                      addToBasketLabel={uiLabels.addToInquiry}
+                      imageRatio={productCardConfig?.imageRatio}
+                      hoverEffect={productCardConfig?.hoverEffect}
+                      showSku={productCardConfig?.showSku}
+                      showDescription={productCardConfig?.showDescription}
+                    />
+                  );
                 })}
               </div>
             ) : (

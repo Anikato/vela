@@ -7,7 +7,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-latin, var(--font-geist-sans)), var(--font-cjk, sans-serif), sans-serif;
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -155,6 +155,10 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-size: var(--body-size, 16px);
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: var(--heading-weight, 700);
   }
 }
 
@@ -265,3 +269,140 @@
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ===== Theme-driven container ===== */
+.vt-container {
+  width: 100%;
+  max-width: var(--max-width, 80rem);
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+@media (min-width: 640px) {
+  .vt-container { padding-inline: 1.5rem; }
+}
+@media (min-width: 1024px) {
+  .vt-container { padding-inline: 2rem; }
+}
+
+/* ===== Button animation effects ===== */
+@media not (prefers-reduced-motion: reduce) {
+  [data-btn-animation="lift"] .vt-page-content [data-slot="button"] {
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  [data-btn-animation="lift"] .vt-page-content [data-slot="button"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgb(0 0 0 / 0.12);
+  }
+  [data-btn-animation="scale"] .vt-page-content [data-slot="button"] {
+    transition: transform 0.2s;
+  }
+  [data-btn-animation="scale"] .vt-page-content [data-slot="button"]:hover {
+    transform: scale(1.05);
+  }
+  [data-btn-animation="shine"] .vt-page-content [data-slot="button"] {
+    position: relative;
+    overflow: hidden;
+  }
+  [data-btn-animation="shine"] .vt-page-content [data-slot="button"]::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 30%, rgb(255 255 255 / 0.25) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: none;
+  }
+  [data-btn-animation="shine"] .vt-page-content [data-slot="button"]:hover::after {
+    animation: vt-btn-shine 0.6s ease forwards;
+  }
+  [data-btn-animation="glow"] .vt-page-content [data-slot="button"] {
+    transition: box-shadow 0.3s;
+  }
+  [data-btn-animation="glow"] .vt-page-content [data-slot="button"]:hover {
+    box-shadow: 0 0 20px var(--primary, hsl(222 47% 11%));
+  }
+}
+@keyframes vt-btn-shine {
+  to { transform: translateX(100%); }
+}
+
+/* Button uppercase */
+[data-btn-uppercase="1"] .vt-page-content [data-slot="button"] {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+/* Button font weight */
+.vt-page-content [data-slot="button"] {
+  font-weight: var(--btn-font-weight, 500);
+}
+
+/* ===== Nav link hover effects ===== */
+.vt-nav-link {
+  position: relative;
+  transition: color 0.2s, background-color 0.2s;
+  font-weight: var(--nav-font-weight, 500);
+}
+[data-nav-uppercase="1"] .vt-nav-link {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.85em;
+}
+[data-nav-spacing="compact"] .vt-nav-link { padding-inline: 0.5rem; }
+[data-nav-spacing="default"] .vt-nav-link { padding-inline: 0.75rem; }
+[data-nav-spacing="loose"] .vt-nav-link { padding-inline: 1.25rem; }
+
+/* default: bg-accent on hover */
+[data-nav-style="default"] .vt-nav-link:hover {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+  border-radius: var(--radius, 0.5rem);
+}
+/* minimal: only color change */
+[data-nav-style="minimal"] .vt-nav-link:hover {
+  color: var(--primary);
+}
+/* pill: rounded pill bg */
+[data-nav-style="pill"] .vt-nav-link:hover {
+  background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--primary);
+  border-radius: 9999px;
+}
+/* underline: animated bottom border */
+[data-nav-style="underline"] .vt-nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background-color: var(--primary);
+  transition: width 0.25s ease, left 0.25s ease;
+}
+[data-nav-style="underline"] .vt-nav-link:hover::after {
+  width: 100%;
+  left: 0;
+}
+[data-nav-style="underline"] .vt-nav-link:hover {
+  color: var(--primary);
+}
+/* border: full border on hover */
+[data-nav-style="border"] .vt-nav-link:hover {
+  outline: 1.5px solid var(--primary);
+  outline-offset: -1.5px;
+  border-radius: var(--radius, 0.5rem);
+  color: var(--primary);
+}
+
+/* ===== Product card hover effects ===== */
+@media not (prefers-reduced-motion: reduce) {
+  .vt-card-hover-lift { transition: transform 0.25s, box-shadow 0.25s; }
+  .vt-card-hover-lift:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgb(0 0 0 / 0.1); }
+  .vt-card-hover-scale { transition: transform 0.25s; }
+  .vt-card-hover-scale:hover { transform: scale(1.03); }
+  .vt-card-hover-border-glow { transition: box-shadow 0.3s; }
+  .vt-card-hover-border-glow:hover { box-shadow: 0 0 0 2px var(--primary), 0 0 16px color-mix(in srgb, var(--primary) 30%, transparent); }
+  .vt-card-hover-shadow { transition: box-shadow 0.25s; }
+  .vt-card-hover-shadow:hover { box-shadow: 0 8px 30px rgb(0 0 0 / 0.12); }
+}
+
+/* ===== Logo height ===== */
+.vt-logo { height: var(--logo-height, 36px); width: auto; }

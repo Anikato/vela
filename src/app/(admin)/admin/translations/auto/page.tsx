@@ -1,3 +1,5 @@
+export const metadata = { title: '自动翻译' };
+
 import { getActiveLanguages, getDefaultLanguage } from '@/server/services/language.service';
 import { AutoTranslateManagement } from '@/components/admin/translations/auto-translate-management';
 

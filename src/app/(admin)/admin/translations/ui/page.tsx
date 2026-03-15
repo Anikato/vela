@@ -1,3 +1,5 @@
+export const metadata = { title: 'UI 翻译' };
+
 import { getCategories, getUiTranslationList } from '@/server/services/ui-translation-admin.service';
 import { getActiveLanguages } from '@/server/services/language.service';
 import { UiTranslationManagement } from '@/components/admin/translations/ui-translation-management';

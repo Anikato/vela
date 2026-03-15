@@ -1,3 +1,5 @@
+export const metadata = { title: '产品管理' };
+
 import { ProductManagement } from '@/components/admin/products/product-management';
 import { getCategoryList } from '@/server/services/category.service';
 import { getAllLanguages, getDefaultLanguage } from '@/server/services/language.service';

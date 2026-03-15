@@ -1,3 +1,5 @@
+export const metadata = { title: 'SEO 总览' };
+
 import { eq } from 'drizzle-orm';
 
 import { db } from '@/server/db';

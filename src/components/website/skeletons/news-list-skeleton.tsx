@@ -19,15 +19,15 @@ export function NewsListSkeleton() {
   return (
     <div>
       {/* Breadcrumb */}
-      <div className="border-b border-border/40 bg-muted/30 px-4 py-3 sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-7xl items-center gap-2">
+      <div className="border-b border-border/40 bg-muted/30">
+        <div className="vt-container flex items-center gap-2 py-3">
           <Skeleton className="h-4 w-12" />
           <Skeleton className="h-4 w-3" />
           <Skeleton className="h-4 w-12" />
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="vt-container py-8">
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <NewsCardSkeleton key={i} />

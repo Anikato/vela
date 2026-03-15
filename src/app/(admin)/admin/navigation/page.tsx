@@ -1,3 +1,5 @@
+export const metadata = { title: '导航菜单' };
+
 import { NavigationManagement } from '@/components/admin/navigation/navigation-management';
 import { getCategoryList } from '@/server/services/category.service';
 import { getAllLanguages, getDefaultLanguage } from '@/server/services/language.service';

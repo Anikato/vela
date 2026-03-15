@@ -1,3 +1,5 @@
+export const metadata = { title: '语言管理' };
+
 import { getAllLanguages } from '@/server/services/language.service';
 import { LanguageManagement } from '@/components/admin/languages/language-management';
 

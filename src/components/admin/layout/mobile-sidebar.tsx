@@ -21,7 +21,11 @@ import { useState } from 'react';
  * 通过 next/dynamic ssr:false 导入（见 topbar.tsx），
  * 确保 Radix Sheet 仅在客户端渲染，避免 hydration mismatch。
  */
-export function MobileSidebar() {
+interface MobileSidebarProps {
+  siteName: string;
+}
+
+export function MobileSidebar({ siteName }: MobileSidebarProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -39,9 +43,9 @@ export function MobileSidebar() {
         <SheetHeader className="border-b border-sidebar-border px-4 py-3">
           <SheetTitle className="flex items-center gap-2.5 text-sidebar-foreground">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold shadow-[0_0_12px_rgba(0,200,255,0.2)]">
-              V
+              {siteName.charAt(0).toUpperCase()}
             </span>
-            Vela 管理后台
+            {siteName} 管理后台
           </SheetTitle>
         </SheetHeader>
 

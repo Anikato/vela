@@ -7,6 +7,7 @@ import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
 import { auth } from '@/server/auth';
 import {
+  changeMyPassword,
   createUser,
   getAllUsers,
   resetUserPassword,
@@ -38,6 +39,11 @@ const setActiveSchema = z.object({
 const resetPasswordSchema = z.object({
   id: userIdSchema,
   password: z.string().min(8).max(100),
+});
+
+const changeMyPasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8).max(100),
 });
 
 function formatZodErrors(error: z.ZodError): Record<string, string[]> {
@@ -177,6 +183,26 @@ export async function updateUserProfileAction(
       password: parsed.data.password,
     });
     return { success: true, data: updated };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+/** 修改当前登录用户的密码 */
+export async function changeMyPasswordAction(
+  input: z.input<typeof changeMyPasswordSchema>,
+): Promise<ActionResult<void>> {
+  const session = await requireAuth();
+  if ('success' in session) return session;
+
+  const parsed = changeMyPasswordSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: formatZodErrors(parsed.error) };
+  }
+
+  try {
+    await changeMyPassword(session.userId, parsed.data.currentPassword, parsed.data.newPassword);
+    return { success: true, data: undefined };
   } catch (error) {
     return handleError(error);
   }
