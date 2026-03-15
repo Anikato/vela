@@ -42,9 +42,12 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Merge runtime deps into standalone's node_modules (overwrite conflicts)
+# Merge runtime deps into standalone's node_modules
 COPY --from=runtime-deps /deps/node_modules /tmp/runtime_modules
-RUN cp -rf /tmp/runtime_modules/* ./node_modules/ && rm -rf /tmp/runtime_modules
+RUN cd node_modules && \
+    for pkg in /tmp/runtime_modules/*; do rm -rf "./$(basename "$pkg")"; done && \
+    cp -r /tmp/runtime_modules/* ./ && \
+    rm -rf /tmp/runtime_modules
 
 # Migration/seed files and entrypoint script
 COPY --from=builder --chown=nextjs:nodejs /app/src/server/db/migrations ./migrations
