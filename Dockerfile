@@ -36,16 +36,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Script dependencies (direct deps — pnpm hoists these to root node_modules)
-COPY --from=deps /app/node_modules/postgres ./node_modules/postgres
-COPY --from=deps /app/node_modules/bcryptjs ./node_modules/bcryptjs
-
-# sharp (native image processing) — package + platform-specific binary
-COPY --from=deps /app/node_modules/sharp ./node_modules/sharp
-COPY --from=deps /app/node_modules/@img ./node_modules/@img
-
-# pino structured logging — use npm for flat install (avoids pnpm symlink issues)
-RUN npm install --no-save pino 2>/dev/null
+# Runtime packages not bundled by Next.js standalone.
+# npm creates a flat node_modules — no pnpm symlink issues.
+RUN npm install --no-save postgres bcryptjs sharp pino 2>/dev/null
 
 # Migration/seed files and entrypoint script
 COPY --from=builder --chown=nextjs:nodejs /app/src/server/db/migrations ./migrations
