@@ -203,13 +203,13 @@
 
   .admin-rich-editor blockquote {
     margin: 0.75rem 0;
-    border-left: 3px solid hsl(var(--primary));
+    border-left: 3px solid var(--primary);
     padding-left: 0.75rem;
-    color: hsl(var(--muted-foreground));
+    color: var(--muted-foreground);
   }
 
   .admin-rich-editor a {
-    color: hsl(var(--primary));
+    color: var(--primary);
     text-decoration: underline;
   }
 
@@ -222,7 +222,7 @@
   }
 
   .admin-rich-editor img.ProseMirror-selectednode {
-    outline: 2px solid hsl(var(--primary));
+    outline: 2px solid var(--primary);
     outline-offset: 2px;
   }
 
@@ -230,12 +230,12 @@
     margin: 0.5rem 0;
     width: 100%;
     border-collapse: collapse;
-    border: 1px solid hsl(var(--border) / 0.8);
+    border: 1px solid var(--border);
   }
 
   .admin-rich-editor th,
   .admin-rich-editor td {
-    border: 1px solid hsl(var(--border) / 0.8);
+    border: 1px solid var(--border);
     padding: 0.5rem;
     text-align: left;
     vertical-align: top;
@@ -243,29 +243,12 @@
   }
 
   .admin-rich-editor th {
-    background-color: hsl(var(--muted));
+    background-color: var(--muted);
     font-weight: 600;
   }
 
-  :is(.dark) .admin-rich-editor table {
-    border-color: hsl(var(--border));
-  }
-
-  :is(.dark) .admin-rich-editor th,
-  :is(.dark) .admin-rich-editor td {
-    border-color: hsl(var(--border));
-  }
-
-  :is(.dark) .admin-rich-editor th {
-    background-color: hsl(var(--muted) / 0.6);
-  }
-
-  :is(.dark) .admin-rich-editor td {
-    background-color: hsl(var(--card));
-  }
-
   .admin-rich-editor .selectedCell {
-    background-color: hsl(var(--primary) / 0.12) !important;
+    background-color: color-mix(in oklab, var(--primary) 12%, transparent) !important;
   }
 
   .admin-rich-editor div[data-youtube-video],
@@ -283,24 +266,24 @@
 
   .prose table {
     border-collapse: collapse;
-    border: 1px solid var(--color-border, #e5e7eb);
+    border: 1px solid var(--border, #e5e7eb);
     border-radius: 0.5rem;
     overflow: hidden;
   }
 
   .prose th,
   .prose td {
-    border: 1px solid var(--color-border, #e5e7eb);
+    border: 1px solid var(--border, #e5e7eb);
     padding: 0.5rem 0.75rem;
   }
 
   .prose thead th {
-    background-color: var(--color-muted, #f1f5f9);
+    background-color: var(--muted, #f1f5f9);
     font-weight: 600;
   }
 
   .prose tbody tr:nth-child(even) {
-    background-color: var(--color-muted, #f8fafc);
+    background-color: var(--muted, #f8fafc);
     opacity: 0.7;
   }
 
