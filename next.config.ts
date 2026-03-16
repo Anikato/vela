@@ -8,10 +8,8 @@ const nextConfig: NextConfig = {
     viewTransition: true,
   },
   images: {
-    remotePatterns: [
-      { protocol: 'http', hostname: '**' },
-      { protocol: 'https', hostname: '**' },
-    ],
+    loader: 'custom',
+    loaderFile: './src/lib/image-loader.ts',
   },
   headers: async () => [
     {
