@@ -90,13 +90,19 @@ export function ProductDetailPage({
         {product.attributeGroups.map((group) => (
           <section key={group.id} className="space-y-3">
             <h3 className="text-lg font-medium">{group.name}</h3>
-            <div className="overflow-hidden rounded-xl border border-border/40">
-              <table className="w-full text-sm">
+            <div className="overflow-hidden rounded-xl border border-border/50">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="bg-foreground text-background">
+                    <th className="border-b border-foreground/20 px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider">Parameter</th>
+                    <th className="border-b border-foreground/20 px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider">Value</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  {group.attributes.map((attr) => (
-                    <tr key={attr.id} className="border-t border-border/30 first:border-t-0">
-                      <td className="w-1/3 bg-muted/20 px-4 py-3 font-medium">{attr.name}</td>
-                      <td className="px-4 py-3">{attr.value}</td>
+                  {group.attributes.map((attr, idx) => (
+                    <tr key={attr.id} className={idx % 2 === 0 ? 'bg-muted/15' : ''}>
+                      <td className="w-[35%] border-b border-r border-border/40 px-4 py-2.5 font-medium">{attr.name}</td>
+                      <td className="border-b border-border/40 px-4 py-2.5">{attr.value}</td>
                     </tr>
                   ))}
                 </tbody>

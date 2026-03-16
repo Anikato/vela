@@ -281,6 +281,29 @@
     height: 100%;
   }
 
+  .prose table {
+    border-collapse: collapse;
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
+  .prose th,
+  .prose td {
+    border: 1px solid var(--color-border, #e5e7eb);
+    padding: 0.5rem 0.75rem;
+  }
+
+  .prose thead th {
+    background-color: var(--color-muted, #f1f5f9);
+    font-weight: 600;
+  }
+
+  .prose tbody tr:nth-child(even) {
+    background-color: var(--color-muted, #f8fafc);
+    opacity: 0.7;
+  }
+
   .prose img {
     margin: 0.5rem 0;
     height: auto;
