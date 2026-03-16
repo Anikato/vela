@@ -38,6 +38,7 @@ export const products = pgTable('products', {
   paymentTerms: varchar('payment_terms', { length: 255 }),
   packagingDetails: text('packaging_details'),
   customizationSupport: boolean('customization_support').default(false).notNull(),
+  attributeDisplayPosition: varchar('attribute_display_position', { length: 30 }).default('after_description').notNull(),
   templateConfig: jsonb('template_config'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

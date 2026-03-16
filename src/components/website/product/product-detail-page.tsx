@@ -83,6 +83,30 @@ export function ProductDetailPage({
     product.paymentTerms ||
     product.packagingDetails;
 
+  const attributeSection =
+    product.attributeGroups.length > 0 ? (
+      <div className="mt-12 space-y-6 border-t border-border/30 pt-10 lg:mt-16">
+        <h2 className="text-xl font-bold tracking-tight sm:text-2xl">{uiLabels.specifications}</h2>
+        {product.attributeGroups.map((group) => (
+          <section key={group.id} className="space-y-3">
+            <h3 className="text-lg font-medium">{group.name}</h3>
+            <div className="overflow-hidden rounded-xl border border-border/40">
+              <table className="w-full text-sm">
+                <tbody>
+                  {group.attributes.map((attr) => (
+                    <tr key={attr.id} className="border-t border-border/30 first:border-t-0">
+                      <td className="w-1/3 bg-muted/20 px-4 py-3 font-medium">{attr.name}</td>
+                      <td className="px-4 py-3">{attr.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ))}
+      </div>
+    ) : null;
+
   return (
     <div>
       <Breadcrumb
@@ -198,6 +222,8 @@ export function ProductDetailPage({
           </div>
         </div>
 
+        {product.attributeDisplayPosition === 'before_description' && attributeSection}
+
         {product.description && (
           <div
             className="prose prose-sm mt-12 max-w-none border-t border-border/30 pt-10 text-foreground sm:prose lg:mt-16"
@@ -205,28 +231,9 @@ export function ProductDetailPage({
           />
         )}
 
-        {product.attributeGroups.length > 0 && (
-          <div className="mt-12 space-y-6 border-t border-border/30 pt-10 lg:mt-16">
-            <h2 className="text-xl font-bold tracking-tight sm:text-2xl">{uiLabels.specifications}</h2>
-            {product.attributeGroups.map((group) => (
-              <section key={group.id} className="space-y-3">
-                <h3 className="text-lg font-medium">{group.name}</h3>
-                <div className="overflow-hidden rounded-xl border border-border/40">
-                  <table className="w-full text-sm">
-                    <tbody>
-                      {group.attributes.map((attr) => (
-                        <tr key={attr.id} className="border-t border-border/30 first:border-t-0">
-                          <td className="w-1/3 bg-muted/20 px-4 py-3 font-medium">{attr.name}</td>
-                          <td className="px-4 py-3">{attr.value}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-            ))}
-          </div>
-        )}
+        {product.attributeDisplayPosition !== 'before_description' &&
+          product.attributeDisplayPosition !== 'hidden' &&
+          attributeSection}
 
         {product.videoLinks.length > 0 && (
           <div className="mt-12 space-y-4 border-t border-border/30 pt-10 lg:mt-16">

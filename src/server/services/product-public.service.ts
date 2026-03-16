@@ -57,6 +57,7 @@ export interface PublicProductDetail {
   paymentTerms: string | null;
   packagingDetails: string | null;
   customizationSupport: boolean;
+  attributeDisplayPosition: string;
   primaryCategory: {
     id: string;
     slug: string;
@@ -356,6 +357,7 @@ export async function getPublishedProductDetailBySlug(
     paymentTerms: product.paymentTerms,
     packagingDetails: product.packagingDetails,
     customizationSupport: product.customizationSupport,
+    attributeDisplayPosition: product.attributeDisplayPosition,
     primaryCategory: {
       id: product.primaryCategory.id,
       slug: product.primaryCategory.slug,

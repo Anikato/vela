@@ -12,6 +12,7 @@ import {
   Loader2,
   Plus,
   Save,
+  TableProperties,
   Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -110,6 +111,28 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
+function buildAttributeTableHtml(
+  attributeData: ProductAttributeEditorData,
+  locale: string,
+): string {
+  return attributeData.groups
+    .map((group) => {
+      const groupName =
+        group.translations.find((t) => t.locale === locale)?.name ??
+        group.displayName;
+      const rows = group.attributes
+        .map((attr) => {
+          const attrTr = attr.translations.find((t) => t.locale === locale);
+          const name = attrTr?.name ?? attr.displayName;
+          const value = attrTr?.value ?? attr.displayValue;
+          return `<tr><td><strong>${name}</strong></td><td>${value}</td></tr>`;
+        })
+        .join('');
+      return `<h3>${groupName}</h3><table><tbody>${rows}</tbody></table>`;
+    })
+    .join('');
+}
+
 export function ProductForm({
   product,
   locales,
@@ -156,6 +179,9 @@ export function ProductForm({
   );
   const [customizationSupport, setCustomizationSupport] = useState(
     product?.customizationSupport ?? false,
+  );
+  const [attributeDisplayPosition, setAttributeDisplayPosition] = useState(
+    product?.attributeDisplayPosition ?? 'after_description',
   );
   const [additionalCategoryIds, setAdditionalCategoryIds] = useState<string[]>(
     product?.additionalCategoryIds ?? [],
@@ -268,6 +294,7 @@ export function ProductForm({
       paymentTerms: paymentTerms.trim() || null,
       packagingDetails: packagingDetails.trim() || null,
       customizationSupport,
+      attributeDisplayPosition: attributeDisplayPosition as 'before_description' | 'after_description' | 'hidden',
       additionalCategoryIds: additionalCategoryIds.filter(
         (id) => id !== primaryCategoryId,
       ),
@@ -450,6 +477,27 @@ export function ProductForm({
                 disabled={isSubmitting}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">参数展示位置</label>
+            <Select
+              value={attributeDisplayPosition}
+              onValueChange={setAttributeDisplayPosition}
+              disabled={isSubmitting}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="after_description">描述之后（默认）</SelectItem>
+                <SelectItem value="before_description">描述之前</SelectItem>
+                <SelectItem value="hidden">不单独显示</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">
+              控制产品参数表格在产品详情页面的展示位置，选择"不单独显示"后可通过描述内插入参数表格
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -886,6 +934,40 @@ export function ProductForm({
                           }
                           placeholder="详细描述（可选）"
                           disabled={isSubmitting}
+                          mediaItems={mediaLibrary}
+                          onMediaUploaded={handleMediaUploaded}
+                          attachments={attachmentMedia.map((m) => ({
+                            id: m.id,
+                            url: m.url,
+                            name: m.originalName,
+                            mimeType: m.mimeType,
+                          }))}
+                          toolbarExtras={
+                            isEditing && initialAttributeData
+                              ? (editorRef) => (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    disabled={!editorRef || isSubmitting}
+                                    onClick={() => {
+                                      if (!editorRef) return;
+                                      if (initialAttributeData.groups.length === 0) {
+                                        toast.error('该产品尚无参数数据');
+                                        return;
+                                      }
+                                      const html = buildAttributeTableHtml(initialAttributeData, t.locale);
+                                      editorRef.chain().focus().insertContent(html).run();
+                                    }}
+                                    title="插入参数表格"
+                                    aria-label="插入参数表格"
+                                  >
+                                    <TableProperties className="h-4 w-4" />
+                                  </Button>
+                                )
+                              : undefined
+                          }
                         />
                       </div>
                       <div className="space-y-2 sm:col-span-2">

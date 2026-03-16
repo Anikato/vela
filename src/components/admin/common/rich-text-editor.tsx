@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   EditorContent,
   useEditor,
@@ -14,6 +14,7 @@ import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import Image from '@tiptap/extension-image';
+import Youtube from '@tiptap/extension-youtube';
 import {
   Bold,
   Italic,
@@ -27,10 +28,29 @@ import {
   Link as LinkIcon,
   Image as ImageIcon,
   Table as TableIcon,
+  Video,
+  Paperclip,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import type { Media } from '@/types/admin';
+import { MediaPickerDialog } from '@/components/admin/common/media-picker-dialog';
+
+type MediaWithUrl = Media & { url: string };
+
+type AttachmentItem = {
+  id: string;
+  url: string;
+  name: string;
+  mimeType: string;
+};
 
 interface RichTextEditorProps {
   value: string;
@@ -38,6 +58,10 @@ interface RichTextEditorProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  mediaItems?: MediaWithUrl[];
+  onMediaUploaded?: (items: MediaWithUrl[]) => void;
+  attachments?: AttachmentItem[];
+  toolbarExtras?: ReactNode | ((editor: Editor | null) => ReactNode);
 }
 
 function sanitizeHtml(input: string): string {
@@ -67,13 +91,24 @@ function sanitizeHtml(input: string): string {
     'TH',
     'TD',
     'IMG',
+    'IFRAME',
+    'DIV',
   ]);
+
+  const ALLOWED_IFRAME_HOSTS = [
+    'www.youtube-nocookie.com',
+    'www.youtube.com',
+    'youtube.com',
+    'player.vimeo.com',
+  ];
 
   const allowedAttrs: Record<string, Set<string>> = {
     A: new Set(['href', 'target', 'rel']),
     IMG: new Set(['src', 'alt']),
     TH: new Set(['colspan', 'rowspan']),
     TD: new Set(['colspan', 'rowspan']),
+    IFRAME: new Set(['src', 'width', 'height', 'allowfullscreen', 'allow', 'frameborder', 'title', 'style']),
+    DIV: new Set(['data-youtube-video', 'style', 'class']),
   };
 
   function walk(node: Node): void {
@@ -120,6 +155,20 @@ function sanitizeHtml(input: string): string {
             src.startsWith('https://') ||
             src.startsWith('/');
           if (!isSafeImage) {
+            node.removeChild(element);
+            continue;
+          }
+        }
+
+        if (tagName === 'IFRAME') {
+          const src = element.getAttribute('src') ?? '';
+          try {
+            const url = new URL(src);
+            if (!ALLOWED_IFRAME_HOSTS.includes(url.hostname)) {
+              node.removeChild(element);
+              continue;
+            }
+          } catch {
             node.removeChild(element);
             continue;
           }
@@ -181,19 +230,12 @@ function insertLink(editor: Editor | null): void {
   editor.chain().focus().setLink({ href: normalized }).run();
 }
 
-function insertImage(editor: Editor | null): void {
+function insertYouTube(editor: Editor | null): void {
   if (!editor) return;
-  const srcValue = window.prompt('请输入图片 URL');
-  if (srcValue === null) return;
-  const src = srcValue.trim();
-  if (!src) return;
+  const url = window.prompt('请输入 YouTube 或 Vimeo 视频链接');
+  if (!url?.trim()) return;
 
-  const altValue = window.prompt('请输入图片 ALT 文本（可选）') ?? '';
-  editor
-    .chain()
-    .focus()
-    .setImage({ src, alt: altValue.trim() || undefined })
-    .run();
+  editor.chain().focus().setYoutubeVideo({ src: url.trim() }).run();
 }
 
 export function RichTextEditor({
@@ -202,8 +244,15 @@ export function RichTextEditor({
   placeholder = '请输入内容...',
   disabled = false,
   className,
+  mediaItems,
+  onMediaUploaded,
+  attachments,
+  toolbarExtras,
 }: RichTextEditorProps) {
   const sanitizedInitial = useMemo(() => sanitizeHtml(value), [value]);
+
+  const [imagePickerOpen, setImagePickerOpen] = useState(false);
+  const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -225,6 +274,10 @@ export function RichTextEditor({
       TableHeader,
       TableCell,
       Image,
+      Youtube.configure({
+        inline: false,
+        nocookie: true,
+      }),
     ],
     content: sanitizedInitial,
     editable: !disabled,
@@ -248,6 +301,42 @@ export function RichTextEditor({
       editor.commands.setContent(next, { emitUpdate: false });
     }
   }, [editor, value]);
+
+  function handleImageClick() {
+    if (mediaItems) {
+      setImagePickerOpen(true);
+    } else {
+      if (!editor) return;
+      const srcValue = window.prompt('请输入图片 URL');
+      if (srcValue === null) return;
+      const src = srcValue.trim();
+      if (!src) return;
+      const altValue = window.prompt('请输入图片 ALT 文本（可选）') ?? '';
+      editor
+        .chain()
+        .focus()
+        .setImage({ src, alt: altValue.trim() || undefined })
+        .run();
+    }
+  }
+
+  function handleImageSelected(ids: string[]) {
+    if (!editor || !mediaItems) return;
+    for (const id of ids) {
+      const item = mediaItems.find((m) => m.id === id);
+      if (item) {
+        editor.chain().focus().setImage({ src: item.url, alt: item.alt ?? item.originalName }).run();
+      }
+    }
+  }
+
+  function handleInsertAttachment(item: AttachmentItem) {
+    if (!editor) return;
+    const icon = item.mimeType.startsWith('image/') ? '🖼️' : '📄';
+    const html = `<a href="${item.url}" target="_blank" rel="noopener noreferrer">${icon} ${item.name}</a>`;
+    editor.chain().focus().insertContent(html).run();
+    setAttachmentDialogOpen(false);
+  }
 
   return (
     <div className={cn('rounded-md border border-border/60 bg-card', className)}>
@@ -326,7 +415,13 @@ export function RichTextEditor({
           label="图片"
           icon={<ImageIcon className="h-4 w-4" />}
           disabled={!editor || disabled}
-          onClick={() => insertImage(editor)}
+          onClick={handleImageClick}
+        />
+        <ToolbarButton
+          label="嵌入视频"
+          icon={<Video className="h-4 w-4" />}
+          disabled={!editor || disabled}
+          onClick={() => insertYouTube(editor)}
         />
         <ToolbarButton
           label="插入表格"
@@ -340,6 +435,15 @@ export function RichTextEditor({
               .run()
           }
         />
+        {attachments && attachments.length > 0 && (
+          <ToolbarButton
+            label="插入附件"
+            icon={<Paperclip className="h-4 w-4" />}
+            disabled={!editor || disabled}
+            onClick={() => setAttachmentDialogOpen(true)}
+          />
+        )}
+        {typeof toolbarExtras === 'function' ? toolbarExtras(editor) : toolbarExtras}
       </div>
       {editor ? (
         <EditorContent editor={editor} />
@@ -348,6 +452,40 @@ export function RichTextEditor({
           {placeholder}
         </div>
       )}
+
+      {mediaItems && (
+        <MediaPickerDialog
+          open={imagePickerOpen}
+          onOpenChange={setImagePickerOpen}
+          mediaItems={mediaItems}
+          onMediaUploaded={onMediaUploaded ?? (() => {})}
+          onConfirm={handleImageSelected}
+          multiple
+          accept="image"
+          title="选择图片插入描述"
+        />
+      )}
+
+      <Dialog open={attachmentDialogOpen} onOpenChange={setAttachmentDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>插入附件链接</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-72 space-y-2 overflow-auto">
+            {attachments?.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="flex w-full items-center gap-3 rounded-lg border border-border/50 p-3 text-left text-sm transition-colors hover:bg-accent"
+                onClick={() => handleInsertAttachment(item)}
+              >
+                <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="truncate">{item.name}</span>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

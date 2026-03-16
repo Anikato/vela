@@ -73,6 +73,7 @@ export interface CreateProductInput {
   paymentTerms?: string | null;
   packagingDetails?: string | null;
   customizationSupport?: boolean;
+  attributeDisplayPosition?: string;
   translations: ProductTranslationInput[];
   additionalCategoryIds?: string[];
   tagIds?: string[];
@@ -431,6 +432,7 @@ export async function createProduct(input: CreateProductInput): Promise<ProductW
         paymentTerms: normalizeNullableText(input.paymentTerms) ?? null,
         packagingDetails: normalizeNullableText(input.packagingDetails) ?? null,
         customizationSupport: input.customizationSupport ?? false,
+        attributeDisplayPosition: input.attributeDisplayPosition ?? 'after_description',
       })
       .returning();
 
@@ -516,6 +518,10 @@ export async function updateProduct(
           input.customizationSupport === undefined
             ? existing.customizationSupport
             : input.customizationSupport,
+        attributeDisplayPosition:
+          input.attributeDisplayPosition === undefined
+            ? existing.attributeDisplayPosition
+            : input.attributeDisplayPosition,
         updatedAt: new Date(),
       })
       .where(eq(products.id, id));

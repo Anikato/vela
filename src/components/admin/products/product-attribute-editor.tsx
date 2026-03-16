@@ -11,6 +11,7 @@ import {
   createAttributeGroupAction,
   deleteAttributeAction,
   deleteAttributeGroupAction,
+  getProductAttributeEditorDataAction,
   getProductOptionsAction,
   moveAttributeToGroupAction,
   reorderAttributeGroupsAction,
@@ -127,8 +128,12 @@ export function ProductAttributeEditor({
     return map;
   }, [data.groups]);
 
-  function reload() {
+  async function reload() {
     router.refresh();
+    const result = await getProductAttributeEditorDataAction(productId, defaultLocale, defaultLocale);
+    if (result.success) {
+      setData(result.data);
+    }
   }
 
   async function openCopyDialog() {

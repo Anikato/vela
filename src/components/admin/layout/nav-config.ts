@@ -7,7 +7,6 @@
 import {
   LayoutDashboard,
   Package,
-  SlidersHorizontal,
   FolderTree,
   Tags,
   FileText,
@@ -60,7 +59,6 @@ export const navGroups: NavGroup[] = [
     label: '内容',
     items: [
       { title: '产品管理', href: '/admin/products', icon: Package },
-      { title: '产品参数', href: '/admin/products/attributes', icon: SlidersHorizontal },
       { title: '分类管理', href: '/admin/categories', icon: FolderTree },
       { title: '标签管理', href: '/admin/tags', icon: Tags },
       { title: '页面管理', href: '/admin/pages', icon: FileText },
