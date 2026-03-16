@@ -923,6 +923,42 @@ targetGroupId: string; // uuid
 - **鉴权**：必须已登录后台
 - **返回**：`ActionResult<void>`
 
+#### 12) `bulkImportAttributesAction(input)`
+
+- **入参**：
+
+```typescript
+{
+  productId: string; // uuid
+  locale: string; // 导入写入的语言
+  rows: Array<{
+    group: string; // 分组名（已有同名则复用，否则新建）
+    name: string; // 参数名
+    value: string; // 参数值
+  }>; // min 1
+}
+```
+
+- **鉴权**：必须已登录后台
+- **返回**：`ActionResult<{ groupsCreated: number; attributesCreated: number }>`
+- **说明**：批量导入参数（配合 CSV 前端解析），按分组名匹配复用已有分组
+
+#### 13) `copyAttributesFromProductAction(input)`
+
+- **入参**：
+
+```typescript
+{
+  sourceProductId: string; // uuid，来源产品
+  targetProductId: string; // uuid，目标产品
+  copyValues: boolean; // true=连值一起复制, false=只复制结构（名称）
+}
+```
+
+- **鉴权**：必须已登录后台
+- **返回**：`ActionResult<{ groupsCopied: number; attributesCopied: number }>`
+- **说明**：从来源产品复制参数分组+参数项+多语言翻译到目标产品（追加模式）
+
 ---
 
 ## 变更记录（续）
@@ -939,6 +975,7 @@ targetGroupId: string; // uuid
 | 2026-03 | 新增区块管理 Action 契约 | 收录页面区块列表、创建、更新、删除、排序 |
 | 2026-03 | 新增导航管理 Action 契约 | 收录导航列表、创建、更新、删除、树形重排 |
 | 2026-03 | 新增产品参数管理 Action 契约 | 收录参数分组/参数项 CRUD、拖拽排序与跨组移动 |
+| 2026-03-16 | 产品参数管理新增 CSV 导入与跨产品复制 | 新增 `bulkImportAttributesAction`、`copyAttributesFromProductAction` |
 
 ---
 

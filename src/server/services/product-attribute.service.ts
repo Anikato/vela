@@ -450,6 +450,181 @@ export async function reorderAttributes(
   });
 }
 
+export async function bulkImportAttributes(input: {
+  productId: string;
+  locale: string;
+  rows: Array<{ group: string; name: string; value: string }>;
+}): Promise<{ groupsCreated: number; attributesCreated: number }> {
+  const { productId, locale, rows } = input;
+  if (rows.length === 0) {
+    throw new ValidationError('导入数据不能为空');
+  }
+
+  await getProductOrThrow(productId);
+
+  const groupedRows = new Map<string, Array<{ name: string; value: string }>>();
+  for (const row of rows) {
+    const groupName = row.group.trim();
+    const name = row.name.trim();
+    const value = row.value.trim();
+    if (!groupName || !name) continue;
+    const list = groupedRows.get(groupName) ?? [];
+    list.push({ name, value });
+    groupedRows.set(groupName, list);
+  }
+
+  if (groupedRows.size === 0) {
+    throw new ValidationError('没有有效的导入数据（分组名和参数名不能为空）');
+  }
+
+  const existingGroups = await db.query.productAttributeGroups.findMany({
+    where: eq(productAttributeGroups.productId, productId),
+    with: { translations: true },
+    orderBy: [asc(productAttributeGroups.sortOrder)],
+  });
+
+  const groupNameToId = new Map<string, string>();
+  for (const g of existingGroups) {
+    for (const t of g.translations) {
+      if (t.locale === locale && t.name) {
+        groupNameToId.set(t.name, g.id);
+      }
+    }
+  }
+
+  let nextGroupSort = existingGroups.length;
+  let groupsCreated = 0;
+  let attributesCreated = 0;
+
+  await db.transaction(async (tx) => {
+    for (const [groupName, attrs] of groupedRows) {
+      let groupId = groupNameToId.get(groupName);
+
+      if (!groupId) {
+        const [newGroup] = await tx
+          .insert(productAttributeGroups)
+          .values({ productId, sortOrder: nextGroupSort++ })
+          .returning();
+        await tx.insert(productAttributeGroupTranslations).values({
+          groupId: newGroup.id,
+          locale,
+          name: groupName,
+        });
+        groupId = newGroup.id;
+        groupNameToId.set(groupName, groupId);
+        groupsCreated++;
+      }
+
+      const existingAttrs = await tx
+        .select()
+        .from(productAttributes)
+        .where(eq(productAttributes.groupId, groupId));
+      let nextAttrSort = existingAttrs.length;
+
+      for (const attr of attrs) {
+        const [newAttr] = await tx
+          .insert(productAttributes)
+          .values({ groupId: groupId!, sortOrder: nextAttrSort++ })
+          .returning();
+        await tx.insert(productAttributeTranslations).values({
+          attributeId: newAttr.id,
+          locale,
+          name: attr.name,
+          value: attr.value || null,
+        });
+        attributesCreated++;
+      }
+    }
+  });
+
+  return { groupsCreated, attributesCreated };
+}
+
+export async function copyAttributesFromProduct(input: {
+  sourceProductId: string;
+  targetProductId: string;
+  copyValues: boolean;
+}): Promise<{ groupsCopied: number; attributesCopied: number }> {
+  const { sourceProductId, targetProductId, copyValues } = input;
+  if (sourceProductId === targetProductId) {
+    throw new ValidationError('不能从自身复制参数');
+  }
+
+  await getProductOrThrow(sourceProductId);
+  await getProductOrThrow(targetProductId);
+
+  const sourceGroups = await db.query.productAttributeGroups.findMany({
+    where: eq(productAttributeGroups.productId, sourceProductId),
+    with: {
+      translations: true,
+      attributes: { with: { translations: true } },
+    },
+    orderBy: [asc(productAttributeGroups.sortOrder)],
+  });
+
+  if (sourceGroups.length === 0) {
+    throw new ValidationError('来源产品没有可复制的参数');
+  }
+
+  const existingGroups = await db
+    .select()
+    .from(productAttributeGroups)
+    .where(eq(productAttributeGroups.productId, targetProductId));
+  let nextGroupSort = existingGroups.length;
+
+  let groupsCopied = 0;
+  let attributesCopied = 0;
+
+  await db.transaction(async (tx) => {
+    for (const group of sourceGroups) {
+      const [newGroup] = await tx
+        .insert(productAttributeGroups)
+        .values({
+          productId: targetProductId,
+          sortOrder: nextGroupSort++,
+        })
+        .returning();
+
+      if (group.translations.length > 0) {
+        await tx.insert(productAttributeGroupTranslations).values(
+          group.translations.map((t) => ({
+            groupId: newGroup.id,
+            locale: t.locale,
+            name: t.name,
+          })),
+        );
+      }
+      groupsCopied++;
+
+      const sortedAttrs = [...group.attributes].sort((a, b) => a.sortOrder - b.sortOrder);
+      for (let i = 0; i < sortedAttrs.length; i++) {
+        const attr = sortedAttrs[i];
+        const [newAttr] = await tx
+          .insert(productAttributes)
+          .values({
+            groupId: newGroup.id,
+            sortOrder: i,
+          })
+          .returning();
+
+        if (attr.translations.length > 0) {
+          await tx.insert(productAttributeTranslations).values(
+            attr.translations.map((t) => ({
+              attributeId: newAttr.id,
+              locale: t.locale,
+              name: t.name,
+              value: copyValues ? t.value : null,
+            })),
+          );
+        }
+        attributesCopied++;
+      }
+    }
+  });
+
+  return { groupsCopied, attributesCopied };
+}
+
 export async function moveAttributeToGroup(
   attributeId: string,
   targetGroupId: string,

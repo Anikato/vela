@@ -16,6 +16,10 @@ import {
   categories,
   media,
   productAttachments,
+  productAttributeGroupTranslations,
+  productAttributeGroups,
+  productAttributeTranslations,
+  productAttributes,
   productCategories,
   productImages,
   productTags,
@@ -637,6 +641,47 @@ export async function cloneProduct(
           sortOrder: i,
         })),
       );
+    }
+
+    const sourceGroups = await tx.query.productAttributeGroups.findMany({
+      where: eq(productAttributeGroups.productId, sourceId),
+      with: { translations: true, attributes: { with: { translations: true } } },
+      orderBy: [asc(productAttributeGroups.sortOrder)],
+    });
+
+    for (const group of sourceGroups) {
+      const [newGroup] = await tx
+        .insert(productAttributeGroups)
+        .values({ productId: created.id, sortOrder: group.sortOrder })
+        .returning();
+
+      if (group.translations.length > 0) {
+        await tx.insert(productAttributeGroupTranslations).values(
+          group.translations.map((t) => ({
+            groupId: newGroup.id,
+            locale: t.locale,
+            name: t.name,
+          })),
+        );
+      }
+
+      for (const attr of group.attributes) {
+        const [newAttr] = await tx
+          .insert(productAttributes)
+          .values({ groupId: newGroup.id, sortOrder: attr.sortOrder })
+          .returning();
+
+        if (attr.translations.length > 0) {
+          await tx.insert(productAttributeTranslations).values(
+            attr.translations.map((t) => ({
+              attributeId: newAttr.id,
+              locale: t.locale,
+              name: t.name,
+              value: t.value,
+            })),
+          );
+        }
+      }
     }
 
     return created.id;

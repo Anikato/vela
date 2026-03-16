@@ -8,6 +8,8 @@ import { auth } from '@/server/auth';
 import type { ActionResult } from '@/types';
 import type { ProductAttributeEditorData, ProductOption } from '@/server/services/product-attribute.service';
 import {
+  bulkImportAttributes,
+  copyAttributesFromProduct,
   createAttribute,
   createAttributeGroup,
   deleteAttribute,
@@ -255,6 +257,56 @@ export async function reorderAttributesAction(
   try {
     await reorderAttributes(parsedGroupId.data, parsedOrder.data);
     return { success: true, data: undefined };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+const bulkImportSchema = z.object({
+  productId: z.string().uuid(),
+  locale: z.string().min(2).max(10),
+  rows: z.array(z.object({
+    group: z.string().min(1).max(255),
+    name: z.string().min(1).max(255),
+    value: z.string().max(500),
+  })).min(1),
+});
+
+export async function bulkImportAttributesAction(
+  input: z.input<typeof bulkImportSchema>,
+): Promise<ActionResult<{ groupsCreated: number; attributesCreated: number }>> {
+  const unauthed = await ensureAuthed();
+  if (unauthed) return unauthed;
+
+  const parsed = bulkImportSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: formatZodErrors(parsed.error) };
+
+  try {
+    const data = await bulkImportAttributes(parsed.data);
+    return { success: true, data };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+const copyAttributesSchema = z.object({
+  sourceProductId: z.string().uuid(),
+  targetProductId: z.string().uuid(),
+  copyValues: z.boolean(),
+});
+
+export async function copyAttributesFromProductAction(
+  input: z.input<typeof copyAttributesSchema>,
+): Promise<ActionResult<{ groupsCopied: number; attributesCopied: number }>> {
+  const unauthed = await ensureAuthed();
+  if (unauthed) return unauthed;
+
+  const parsed = copyAttributesSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: formatZodErrors(parsed.error) };
+
+  try {
+    const data = await copyAttributesFromProduct(parsed.data);
+    return { success: true, data };
   } catch (error) {
     return handleError(error);
   }

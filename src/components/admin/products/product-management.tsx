@@ -9,6 +9,8 @@ import {
   Copy,
   ExternalLink,
   FileText,
+  LayoutGrid,
+  List,
   Pencil,
   Plus,
   Search,
@@ -116,6 +118,23 @@ export function ProductManagement({
   const [cloneTarget, setCloneTarget] = useState<ProductListItem | null>(null);
   const [cloneSku, setCloneSku] = useState('');
   const [cloneSlug, setCloneSlug] = useState('');
+  const [densityCompact, setDensityCompact] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('vela:product-list-density') === 'compact';
+    }
+    return false;
+  });
+
+  function toggleDensity() {
+    setDensityCompact((prev) => {
+      const next = !prev;
+      localStorage.setItem('vela:product-list-density', next ? 'compact' : 'comfortable');
+      return next;
+    });
+  }
+
+  const thumbClass = densityCompact ? 'h-10 w-10' : 'h-16 w-16';
+  const thumbSize = densityCompact ? '40px' : '64px';
 
   const defaultLocale = useMemo(
     () => locales.find((l) => l.isDefault)?.code ?? locales[0]?.code ?? '',
@@ -362,13 +381,21 @@ export function ProductManagement({
             </Button>
           )}
         </div>
-        <Button
-          onClick={() => router.push('/admin/products/new')}
-          className="shrink-0"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          新建产品
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9"
+            onClick={toggleDensity}
+            title={densityCompact ? '宽松视图' : '紧凑视图'}
+          >
+            {densityCompact ? <LayoutGrid className="h-4 w-4" /> : <List className="h-4 w-4" />}
+          </Button>
+          <Button onClick={() => router.push('/admin/products/new')}>
+            <Plus className="mr-2 h-4 w-4" />
+            新建产品
+          </Button>
+        </div>
       </div>
 
       {/* ─── 批量操作 ─── */}
@@ -480,13 +507,13 @@ export function ProductManagement({
                       />
                     </TableCell>
                     <TableCell>
-                      <div className="relative h-10 w-10 overflow-hidden rounded-md border border-border/50 bg-muted/20">
+                      <div className={`relative ${thumbClass} overflow-hidden rounded-md border border-border/50 bg-muted/20 transition-all`}>
                         {thumb && thumb.mimeType.startsWith('image/') ? (
                           <Image
                             src={thumb.url}
                             alt={item.displayName}
                             fill
-                            sizes="40px"
+                            sizes={thumbSize}
                             className="object-cover"
                           />
                         ) : (

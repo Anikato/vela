@@ -20,6 +20,7 @@ import type {
   CategoryListItem,
   Language,
   Media,
+  ProductAttributeEditorData,
   ProductListItem,
   ProductStatus,
   TagListItem,
@@ -52,6 +53,7 @@ import {
 import { RichTextEditor } from '@/components/admin/common/rich-text-editor';
 import { MediaPickerDialog } from '@/components/admin/common/media-picker-dialog';
 import { SortableImageGrid } from '@/components/admin/common/sortable-image-grid';
+import { ProductAttributeEditor } from '@/components/admin/products/product-attribute-editor';
 
 type MediaWithUrl = Media & { url: string };
 
@@ -64,7 +66,7 @@ type TranslationForm = {
   seoDescription: string;
 };
 
-type ProductEditTab = 'basic' | 'media' | 'commercial' | 'i18n';
+type ProductEditTab = 'basic' | 'media' | 'commercial' | 'i18n' | 'attributes';
 
 interface ProductFormProps {
   product?: ProductListItem | null;
@@ -72,6 +74,7 @@ interface ProductFormProps {
   categories: CategoryListItem[];
   tags: TagListItem[];
   mediaItems: MediaWithUrl[];
+  initialAttributeData?: ProductAttributeEditorData | null;
 }
 
 function slugify(text: string): string {
@@ -113,6 +116,7 @@ export function ProductForm({
   categories,
   tags,
   mediaItems,
+  initialAttributeData,
 }: ProductFormProps) {
   const router = useRouter();
   const isEditing = Boolean(product);
@@ -310,11 +314,12 @@ export function ProductForm({
     router.push('/admin/products');
   }
 
-  const tabs: { key: ProductEditTab; label: string }[] = [
+  const tabs: { key: ProductEditTab; label: string; disabled?: boolean }[] = [
     { key: 'basic', label: '基础信息' },
     { key: 'media', label: '媒体附件' },
     { key: 'commercial', label: '商业信息' },
     { key: 'i18n', label: '多语言' },
+    { key: 'attributes', label: '产品参数', disabled: !isEditing },
   ];
 
   return (
@@ -374,11 +379,15 @@ export function ProductForm({
           <button
             key={tab.key}
             type="button"
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => !tab.disabled && setActiveTab(tab.key)}
+            disabled={tab.disabled}
+            title={tab.disabled ? '请先保存产品后再管理参数' : undefined}
             className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-              activeTab === tab.key
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+              tab.disabled
+                ? 'cursor-not-allowed text-muted-foreground/50'
+                : activeTab === tab.key
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {tab.label}
@@ -905,6 +914,21 @@ export function ProductForm({
             );
           })}
         </div>
+      )}
+
+      {/* ─── 产品参数 ─── */}
+      {activeTab === 'attributes' && isEditing && product && (
+        initialAttributeData ? (
+          <ProductAttributeEditor
+            productId={product.id}
+            initialData={initialAttributeData}
+            locales={locales}
+          />
+        ) : (
+          <div className="rounded-lg border border-border/50 bg-card p-8 text-center text-sm text-muted-foreground">
+            加载参数数据失败，请刷新页面重试。
+          </div>
+        )
       )}
 
       {/* ─── 底部保存栏 ─── */}
