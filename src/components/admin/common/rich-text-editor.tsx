@@ -30,6 +30,9 @@ import {
   Table as TableIcon,
   Video,
   Paperclip,
+  Plus,
+  Minus,
+  Trash2,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -293,6 +296,10 @@ export function RichTextEditor({
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
   const [videoUrl, setVideoUrl] = useState('');
   const [videoWidth, setVideoWidth] = useState(0);
+  const [tableDialogOpen, setTableDialogOpen] = useState(false);
+  const [tableRows, setTableRows] = useState(3);
+  const [tableCols, setTableCols] = useState(3);
+  const [tableHasHeader, setTableHasHeader] = useState(true);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -485,6 +492,21 @@ export function RichTextEditor({
     setVideoDialogOpen(false);
   }
 
+  function openTableDialog() {
+    setTableRows(3);
+    setTableCols(3);
+    setTableHasHeader(true);
+    setTableDialogOpen(true);
+  }
+
+  function handleInsertTable() {
+    if (!editor) return;
+    editor.chain().focus().insertTable({ rows: tableRows, cols: tableCols, withHeaderRow: tableHasHeader }).run();
+    setTableDialogOpen(false);
+  }
+
+  const isInTable = editor?.isActive('table') ?? false;
+
   return (
     <div className={cn('rounded-md border border-border/60 bg-card', className)}>
       <div className="flex flex-wrap items-center gap-1 border-b border-border/60 bg-muted/20 p-2">
@@ -574,13 +596,7 @@ export function RichTextEditor({
           label="插入表格"
           icon={<TableIcon className="h-4 w-4" />}
           disabled={!editor || disabled}
-          onClick={() =>
-            editor
-              ?.chain()
-              .focus()
-              .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-              .run()
-          }
+          onClick={openTableDialog}
         />
         {attachments && attachments.length > 0 && (
           <ToolbarButton
@@ -592,6 +608,46 @@ export function RichTextEditor({
         )}
         {typeof toolbarExtras === 'function' ? toolbarExtras(editor) : toolbarExtras}
       </div>
+      {isInTable && (
+        <div className="flex flex-wrap items-center gap-1 border-b border-border/60 bg-muted/30 px-2 py-1">
+          <span className="mr-1 text-[11px] text-muted-foreground">表格：</span>
+          <Button
+            type="button" variant="ghost" size="sm"
+            className="h-7 gap-1 px-2 text-xs"
+            onClick={() => editor?.chain().focus().addRowAfter().run()}
+          >
+            <Plus className="h-3 w-3" /> 添加行
+          </Button>
+          <Button
+            type="button" variant="ghost" size="sm"
+            className="h-7 gap-1 px-2 text-xs"
+            onClick={() => editor?.chain().focus().addColumnAfter().run()}
+          >
+            <Plus className="h-3 w-3" /> 添加列
+          </Button>
+          <Button
+            type="button" variant="ghost" size="sm"
+            className="h-7 gap-1 px-2 text-xs"
+            onClick={() => editor?.chain().focus().deleteRow().run()}
+          >
+            <Minus className="h-3 w-3" /> 删除行
+          </Button>
+          <Button
+            type="button" variant="ghost" size="sm"
+            className="h-7 gap-1 px-2 text-xs"
+            onClick={() => editor?.chain().focus().deleteColumn().run()}
+          >
+            <Minus className="h-3 w-3" /> 删除列
+          </Button>
+          <Button
+            type="button" variant="ghost" size="sm"
+            className="h-7 gap-1 px-2 text-xs text-destructive hover:text-destructive"
+            onClick={() => editor?.chain().focus().deleteTable().run()}
+          >
+            <Trash2 className="h-3 w-3" /> 删除表格
+          </Button>
+        </div>
+      )}
       {editor ? (
         <EditorContent editor={editor} />
       ) : (
@@ -800,6 +856,57 @@ export function RichTextEditor({
               取消
             </Button>
             <Button onClick={handleInsertVideo} disabled={!videoUrl.trim()}>
+              插入
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={tableDialogOpen} onOpenChange={setTableDialogOpen}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle>插入表格</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="tbl-rows">行数</Label>
+                <Input
+                  id="tbl-rows" type="number" min={1} max={50}
+                  value={tableRows}
+                  onChange={(e) => setTableRows(Math.max(1, parseInt(e.target.value) || 1))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="tbl-cols">列数</Label>
+                <Input
+                  id="tbl-cols" type="number" min={1} max={20}
+                  value={tableCols}
+                  onChange={(e) => setTableCols(Math.max(1, parseInt(e.target.value) || 1))}
+                />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={tableHasHeader}
+                onChange={(e) => setTableHasHeader(e.target.checked)}
+                className="h-4 w-4 rounded border-border"
+              />
+              包含表头行
+            </label>
+            <div className="rounded-lg border border-border/50 bg-muted/20 p-3">
+              <p className="mb-1 text-[11px] text-muted-foreground">预览</p>
+              <div className="text-xs text-muted-foreground">
+                {tableRows} 行 × {tableCols} 列{tableHasHeader ? '（含表头）' : ''}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTableDialogOpen(false)}>
+              取消
+            </Button>
+            <Button onClick={handleInsertTable}>
               插入
             </Button>
           </DialogFooter>
