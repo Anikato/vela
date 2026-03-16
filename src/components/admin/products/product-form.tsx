@@ -116,22 +116,28 @@ function buildAttributeTableHtml(
   attributeData: ProductAttributeEditorData,
   locale: string,
 ): string {
-  const borderStyle = 'border:1px solid #e5e7eb';
-  const cellPad = 'padding:10px 14px';
+  const tbl = 'width:100%;border-collapse:collapse;border:1px solid #d1d5db;border-radius:6px;overflow:hidden;font-size:14px;line-height:1.5';
+  const thStyle = 'padding:10px 16px;background:#1e293b;color:#fff;font-weight:600;text-align:left;border:1px solid #334155';
+  const labelCell = (odd: boolean) =>
+    `padding:9px 16px;width:35%;font-weight:500;border:1px solid #e5e7eb;background:${odd ? '#f8fafc' : '#ffffff'}`;
+  const valueCell = (odd: boolean) =>
+    `padding:9px 16px;border:1px solid #e5e7eb;background:${odd ? '#f8fafc' : '#ffffff'}`;
+
   return attributeData.groups
     .map((group) => {
       const groupName =
         group.translations.find((t) => t.locale === locale)?.name ??
         group.displayName;
       const rows = group.attributes
-        .map((attr) => {
+        .map((attr, idx) => {
           const attrTr = attr.translations.find((t) => t.locale === locale);
           const name = attrTr?.name ?? attr.displayName;
           const value = attrTr?.value ?? attr.displayValue;
-          return `<tr><td style="${borderStyle};${cellPad};width:35%;background:#f9fafb"><strong>${name}</strong></td><td style="${borderStyle};${cellPad}">${value}</td></tr>`;
+          const odd = idx % 2 === 0;
+          return `<tr><td style="${labelCell(odd)}">${name}</td><td style="${valueCell(odd)}">${value}</td></tr>`;
         })
         .join('');
-      return `<h3>${groupName}</h3><table style="width:100%;border-collapse:collapse"><tbody>${rows}</tbody></table>`;
+      return `<h3>${groupName}</h3><table style="${tbl}"><thead><tr><th style="${thStyle}">Parameter</th><th style="${thStyle}">Value</th></tr></thead><tbody>${rows}</tbody></table>`;
     })
     .join('');
 }

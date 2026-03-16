@@ -260,13 +260,11 @@ const ResizableImage = TiptapImage.extend({
   },
 });
 
-function insertYouTube(editor: Editor | null): void {
-  if (!editor) return;
-  const url = window.prompt('请输入 YouTube 或 Vimeo 视频链接');
-  if (!url?.trim()) return;
-
-  editor.chain().focus().setYoutubeVideo({ src: url.trim() }).run();
-}
+const VIDEO_WIDTH_PRESETS = [
+  { label: '小 (480px)', value: 480 },
+  { label: '中 (640px)', value: 640 },
+  { label: '大 (100%)', value: 0 },
+] as const;
 
 export function RichTextEditor({
   value,
@@ -291,6 +289,10 @@ export function RichTextEditor({
   const [imageSizeDialogOpen, setImageSizeDialogOpen] = useState(false);
   const [pendingImages, setPendingImages] = useState<Array<{ src: string; alt: string }>>([]);
   const [imageWidth, setImageWidth] = useState('');
+  const [editingImageMode, setEditingImageMode] = useState(false);
+  const [videoDialogOpen, setVideoDialogOpen] = useState(false);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoWidth, setVideoWidth] = useState(0);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -326,6 +328,19 @@ export function RichTextEditor({
       attributes: {
         class:
           'admin-rich-editor min-h-[260px] w-full rounded-b-md px-4 py-3 text-sm focus:outline-none',
+      },
+      handleClickOn(_view, _pos, node) {
+        if (node.type.name === 'image') {
+          const src = node.attrs.src as string;
+          const alt = (node.attrs.alt as string) || '';
+          const w = node.attrs.width as string | null;
+          setPendingImages([{ src, alt }]);
+          setImageWidth(w ?? '');
+          setEditingImageMode(true);
+          setImageSizeDialogOpen(true);
+          return true;
+        }
+        return false;
       },
     },
     onUpdate({ editor: current }) {
@@ -377,16 +392,31 @@ export function RichTextEditor({
     if (!editor) return;
     const w = imageWidth.trim();
     const widthVal = w ? parseInt(w, 10) : null;
-    for (const img of pendingImages) {
+
+    if (editingImageMode && pendingImages.length === 1) {
+      const img = pendingImages[0];
       const attrs: Record<string, unknown> = { src: img.src, alt: img.alt };
       if (widthVal && widthVal > 0) {
         attrs.width = String(widthVal);
         attrs.style = `width:${widthVal}px;max-width:100%;height:auto`;
+      } else {
+        attrs.width = null;
+        attrs.style = null;
       }
-      editor.chain().focus().setImage(attrs as { src: string; alt?: string }).run();
+      editor.chain().focus().updateAttributes('image', attrs).run();
+    } else {
+      for (const img of pendingImages) {
+        const attrs: Record<string, unknown> = { src: img.src, alt: img.alt };
+        if (widthVal && widthVal > 0) {
+          attrs.width = String(widthVal);
+          attrs.style = `width:${widthVal}px;max-width:100%;height:auto`;
+        }
+        editor.chain().focus().setImage(attrs as { src: string; alt?: string }).run();
+      }
     }
     setImageSizeDialogOpen(false);
     setPendingImages([]);
+    setEditingImageMode(false);
   }
 
   function handleSelectAttachment(item: AttachmentItem) {
@@ -434,6 +464,25 @@ export function RichTextEditor({
       editor.chain().focus().insertContent(html).run();
     }
     setLinkDialogOpen(false);
+  }
+
+  function openVideoDialog() {
+    setVideoUrl('');
+    setVideoWidth(0);
+    setVideoDialogOpen(true);
+  }
+
+  function handleInsertVideo() {
+    if (!editor) return;
+    const url = videoUrl.trim();
+    if (!url) return;
+    const opts: { src: string; width?: number; height?: number } = { src: url };
+    if (videoWidth > 0) {
+      opts.width = videoWidth;
+      opts.height = Math.round(videoWidth * 9 / 16);
+    }
+    editor.chain().focus().setYoutubeVideo(opts).run();
+    setVideoDialogOpen(false);
   }
 
   return (
@@ -519,7 +568,7 @@ export function RichTextEditor({
           label="嵌入视频"
           icon={<Video className="h-4 w-4" />}
           disabled={!editor || disabled}
-          onClick={() => insertYouTube(editor)}
+          onClick={openVideoDialog}
         />
         <ToolbarButton
           label="插入表格"
@@ -666,17 +715,24 @@ export function RichTextEditor({
       </Dialog>
 
       <Dialog open={imageSizeDialogOpen} onOpenChange={(open) => {
-        if (!open) { setPendingImages([]); }
+        if (!open) { setPendingImages([]); setEditingImageMode(false); }
         setImageSizeDialogOpen(open);
       }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>设置图片尺寸</DialogTitle>
+            <DialogTitle>{editingImageMode ? '调整图片尺寸' : '设置图片尺寸'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              已选择 {pendingImages.length} 张图片，可设置统一宽度（留空则使用原始尺寸）
-            </p>
+            {editingImageMode && pendingImages[0] && (
+              <div className="rounded-lg border border-border/50 bg-muted/20 p-2">
+                <img src={pendingImages[0].src} alt="" className="max-h-32 rounded object-contain" />
+              </div>
+            )}
+            {!editingImageMode && (
+              <p className="text-sm text-muted-foreground">
+                已选择 {pendingImages.length} 张图片，可设置统一宽度（留空则使用原始尺寸）
+              </p>
+            )}
             <div className="space-y-2">
               <Label htmlFor="img-width">宽度（像素）</Label>
               <Input
@@ -693,10 +749,57 @@ export function RichTextEditor({
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setImageSizeDialogOpen(false); setPendingImages([]); }}>
+            <Button variant="outline" onClick={() => { setImageSizeDialogOpen(false); setPendingImages([]); setEditingImageMode(false); }}>
               取消
             </Button>
             <Button onClick={handleConfirmImageInsert}>
+              {editingImageMode ? '应用' : '插入'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={videoDialogOpen} onOpenChange={setVideoDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>嵌入视频</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="video-url">视频链接</Label>
+              <Input
+                id="video-url"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="粘贴 YouTube 或 Vimeo 链接"
+                onKeyDown={(e) => e.key === 'Enter' && handleInsertVideo()}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>视频尺寸</Label>
+              <div className="flex gap-2">
+                {VIDEO_WIDTH_PRESETS.map((preset) => (
+                  <Button
+                    key={preset.value}
+                    type="button"
+                    variant={videoWidth === preset.value ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setVideoWidth(preset.value)}
+                  >
+                    {preset.label}
+                  </Button>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                选择「大」会自适应容器宽度（推荐），选择固定尺寸可精确控制视频大小
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVideoDialogOpen(false)}>
+              取消
+            </Button>
+            <Button onClick={handleInsertVideo} disabled={!videoUrl.trim()}>
               插入
             </Button>
           </DialogFooter>
