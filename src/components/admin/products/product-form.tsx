@@ -496,7 +496,7 @@ export function ProductForm({
               </SelectContent>
             </Select>
             <p className="text-[11px] text-muted-foreground">
-              控制产品参数表格在产品详情页面的展示位置，选择"不单独显示"后可通过描述内插入参数表格
+              控制产品参数表格在产品详情页面的展示位置，选择「不单独显示」后可通过描述内插入参数表格
             </p>
           </div>
 
