@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowDown,
@@ -232,6 +232,10 @@ export function SectionItemsManagement({
   const [items, setItems] = useState<SectionItemForUI[]>(initialItems);
   const [allMedia, setAllMedia] = useState<MediaWithUrl[]>(initialMediaItems);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    setItems(initialItems);
+  }, [initialItems]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<SectionItemForUI | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SectionItemForUI | null>(null);

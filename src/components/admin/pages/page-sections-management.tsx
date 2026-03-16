@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowDown, ArrowUp, Layers, Pencil, Plus, Trash2 } from 'lucide-react';
@@ -110,6 +110,10 @@ export function PageSectionsManagement({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<SectionListItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SectionListItem | null>(null);
+
+  useEffect(() => {
+    setSections(initialSections);
+  }, [initialSections]);
 
   const [type, setType] = useState<SectionType>('hero');
   const [isActive, setIsActive] = useState(true);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -81,6 +81,10 @@ export function NavigationManagement({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<NavigationListItem | null>(null);
+
+  useEffect(() => {
+    setItems(initialItems);
+  }, [initialItems]);
   const [deleteTarget, setDeleteTarget] = useState<NavigationListItem | null>(null);
 
   const [parentId, setParentId] = useState(EMPTY_ID);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -89,6 +89,10 @@ export function SectionList({
   const [sections, setSections] = useState(initialSections);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<SectionListItem | null>(null);
+
+  useEffect(() => {
+    setSections(initialSections);
+  }, [initialSections]);
 
   const sortedSections = useMemo(
     () => [...sections].sort((a, b) => a.sortOrder - b.sortOrder),

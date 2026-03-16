@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronDown, ChevronRight, GripVertical, Layers, Pencil, Plus, Trash2 } from 'lucide-react';
@@ -147,6 +147,10 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
   const router = useRouter();
   const [categories, setCategories] = useState(initialCategories);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    setCategories(initialCategories);
+  }, [initialCategories]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<CategoryListItem | null>(null);

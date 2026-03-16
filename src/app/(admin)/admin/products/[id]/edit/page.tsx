@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 
+import { NotFoundError } from '@/lib/errors';
 import { ProductForm } from '@/components/admin/products/product-form';
 import { getCategoryList } from '@/server/services/category.service';
 import { getAllLanguages, getDefaultLanguage } from '@/server/services/language.service';
@@ -15,8 +16,9 @@ interface EditProductPageProps {
 async function loadProduct(id: string) {
   try {
     return await getProductById(id);
-  } catch {
-    notFound();
+  } catch (error) {
+    if (error instanceof NotFoundError) notFound();
+    throw error;
   }
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Blocks, ChevronDown, ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react';
@@ -79,6 +79,10 @@ export function PageManagement({ initialPages, locales }: PageManagementProps) {
   const router = useRouter();
   const [pages, setPages] = useState(initialPages);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    setPages(initialPages);
+  }, [initialPages]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<PageListItem | null>(null);

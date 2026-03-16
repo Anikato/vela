@@ -17,7 +17,7 @@ export default async function NewNewsPage() {
     <NewsForm
       locales={allLanguages}
       tags={tags}
-      mediaItems={media.items.map((m) => ({ ...m, url: `/uploads/${m.filename}` }))}
+      mediaItems={media.items}
     />
   );
 }

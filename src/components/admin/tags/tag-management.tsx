@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -58,6 +58,10 @@ function buildTranslationForm(locales: Language[]): TranslationForm[] {
 export function TagManagement({ initialTags, locales }: TagManagementProps) {
   const router = useRouter();
   const [tags, setTags] = useState(initialTags);
+
+  useEffect(() => {
+    setTags(initialTags);
+  }, [initialTags]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [dialogOpen, setDialogOpen] = useState(false);

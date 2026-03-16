@@ -300,6 +300,7 @@ export function RichTextEditor({
   const [tableRows, setTableRows] = useState(3);
   const [tableCols, setTableCols] = useState(3);
   const [tableHasHeader, setTableHasHeader] = useState(true);
+  const [isInTable, setIsInTable] = useState(false);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -353,6 +354,10 @@ export function RichTextEditor({
     onUpdate({ editor: current }) {
       const html = sanitizeHtml(current.getHTML());
       onChange(html);
+      setIsInTable(current.isActive('table'));
+    },
+    onSelectionUpdate({ editor: e }) {
+      setIsInTable(e.isActive('table'));
     },
   });
 
@@ -504,8 +509,6 @@ export function RichTextEditor({
     editor.chain().focus().insertTable({ rows: tableRows, cols: tableCols, withHeaderRow: tableHasHeader }).run();
     setTableDialogOpen(false);
   }
-
-  const isInTable = editor?.isActive('table') ?? false;
 
   return (
     <div className={cn('rounded-md border border-border/60 bg-card', className)}>

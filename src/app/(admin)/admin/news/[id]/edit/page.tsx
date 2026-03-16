@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 
+import { NotFoundError } from '@/lib/errors';
 import { NewsForm } from '@/components/admin/news/news-form';
 import { getAllLanguages, getDefaultLanguage } from '@/server/services/language.service';
 import { listMedia } from '@/server/services/media.service';
@@ -13,8 +14,9 @@ interface EditNewsPageProps {
 async function loadNews(id: string) {
   try {
     return await getNewsById(id);
-  } catch {
-    notFound();
+  } catch (error) {
+    if (error instanceof NotFoundError) notFound();
+    throw error;
   }
 }
 
@@ -36,7 +38,7 @@ export default async function EditNewsPage({ params }: EditNewsPageProps) {
       news={newsItem}
       locales={allLanguages}
       tags={tags}
-      mediaItems={media.items.map((m) => ({ ...m, url: `/uploads/${m.filename}` }))}
+      mediaItems={media.items}
     />
   );
 }
