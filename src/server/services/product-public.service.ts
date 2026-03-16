@@ -58,6 +58,7 @@ export interface PublicProductDetail {
   packagingDetails: string | null;
   customizationSupport: boolean;
   attributeDisplayPosition: string;
+  showAttachmentSection: boolean;
   primaryCategory: {
     id: string;
     slug: string;
@@ -358,6 +359,7 @@ export async function getPublishedProductDetailBySlug(
     packagingDetails: product.packagingDetails,
     customizationSupport: product.customizationSupport,
     attributeDisplayPosition: product.attributeDisplayPosition,
+    showAttachmentSection: product.showAttachmentSection,
     primaryCategory: {
       id: product.primaryCategory.id,
       slug: product.primaryCategory.slug,

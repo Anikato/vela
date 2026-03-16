@@ -272,7 +272,7 @@ export function ProductDetailPage({
           </div>
         )}
 
-        {product.attachments.length > 0 && (
+        {product.showAttachmentSection && product.attachments.length > 0 && (
           <div className="mt-12 space-y-4 border-t border-border/30 pt-10 lg:mt-16">
             <h2 className="text-xl font-bold tracking-tight sm:text-2xl">{uiLabels.attachments}</h2>
             <div className="space-y-2">

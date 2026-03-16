@@ -74,6 +74,7 @@ export interface CreateProductInput {
   packagingDetails?: string | null;
   customizationSupport?: boolean;
   attributeDisplayPosition?: string;
+  showAttachmentSection?: boolean;
   translations: ProductTranslationInput[];
   additionalCategoryIds?: string[];
   tagIds?: string[];
@@ -433,6 +434,7 @@ export async function createProduct(input: CreateProductInput): Promise<ProductW
         packagingDetails: normalizeNullableText(input.packagingDetails) ?? null,
         customizationSupport: input.customizationSupport ?? false,
         attributeDisplayPosition: input.attributeDisplayPosition ?? 'after_description',
+        showAttachmentSection: input.showAttachmentSection ?? true,
       })
       .returning();
 
@@ -522,6 +524,10 @@ export async function updateProduct(
           input.attributeDisplayPosition === undefined
             ? existing.attributeDisplayPosition
             : input.attributeDisplayPosition,
+        showAttachmentSection:
+          input.showAttachmentSection === undefined
+            ? existing.showAttachmentSection
+            : input.showAttachmentSection,
         updatedAt: new Date(),
       })
       .where(eq(products.id, id));

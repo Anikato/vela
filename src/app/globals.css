@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -215,6 +216,7 @@
   .admin-rich-editor img {
     margin: 0.5rem 0;
     max-width: 100%;
+    height: auto;
     border-radius: 0.5rem;
   }
 
@@ -270,6 +272,25 @@
     width: 100%;
     height: 100%;
     margin: 0;
+  }
+
+  .admin-rich-editor a.rte-download-link,
+  .prose a.rte-download-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: var(--accent, #f1f5f9);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-weight: 500;
+    transition: background 0.15s;
+  }
+
+  .admin-rich-editor a.rte-download-link:hover,
+  .prose a.rte-download-link:hover {
+    background: var(--accent, #e2e8f0);
   }
 }
 

@@ -13,7 +13,7 @@ import { Table } from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
-import Image from '@tiptap/extension-image';
+import TiptapImage from '@tiptap/extension-image';
 import Youtube from '@tiptap/extension-youtube';
 import {
   Bold,
@@ -33,9 +33,12 @@ import {
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -93,6 +96,9 @@ function sanitizeHtml(input: string): string {
     'IMG',
     'IFRAME',
     'DIV',
+    'SVG',
+    'PATH',
+    'SPAN',
   ]);
 
   const ALLOWED_IFRAME_HOSTS = [
@@ -103,12 +109,16 @@ function sanitizeHtml(input: string): string {
   ];
 
   const allowedAttrs: Record<string, Set<string>> = {
-    A: new Set(['href', 'target', 'rel']),
-    IMG: new Set(['src', 'alt']),
-    TH: new Set(['colspan', 'rowspan']),
-    TD: new Set(['colspan', 'rowspan']),
+    A: new Set(['href', 'target', 'rel', 'class', 'download']),
+    IMG: new Set(['src', 'alt', 'width', 'height', 'style']),
+    TABLE: new Set(['style']),
+    TH: new Set(['colspan', 'rowspan', 'style']),
+    TD: new Set(['colspan', 'rowspan', 'style']),
     IFRAME: new Set(['src', 'width', 'height', 'allowfullscreen', 'allow', 'frameborder', 'title', 'style']),
     DIV: new Set(['data-youtube-video', 'style', 'class']),
+    SVG: new Set(['xmlns', 'viewbox', 'width', 'height', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'class', 'style']),
+    PATH: new Set(['d', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin']),
+    SPAN: new Set(['class', 'style']),
   };
 
   function walk(node: Node): void {
@@ -214,21 +224,41 @@ function ToolbarButton({
   );
 }
 
-function insertLink(editor: Editor | null): void {
-  if (!editor) return;
-  const existing = editor.getAttributes('link').href as string | undefined;
-  const value = window.prompt('请输入链接地址（https://）', existing ?? 'https://');
-  if (value === null) return;
+const LINK_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:3px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>';
 
-  const url = value.trim();
-  if (!url) {
-    editor.chain().focus().unsetLink().run();
-    return;
-  }
+const DOWNLOAD_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg>';
 
-  const normalized = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
-  editor.chain().focus().setLink({ href: normalized }).run();
-}
+const ResizableImage = TiptapImage.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: null,
+        parseHTML: (element: HTMLElement) => element.getAttribute('width'),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          if (!attributes.width) return {};
+          return { width: attributes.width };
+        },
+      },
+      height: {
+        default: null,
+        parseHTML: (element: HTMLElement) => element.getAttribute('height'),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          if (!attributes.height) return {};
+          return { height: attributes.height };
+        },
+      },
+      style: {
+        default: null,
+        parseHTML: (element: HTMLElement) => element.getAttribute('style'),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          if (!attributes.style) return {};
+          return { style: attributes.style };
+        },
+      },
+    };
+  },
+});
 
 function insertYouTube(editor: Editor | null): void {
   if (!editor) return;
@@ -253,6 +283,14 @@ export function RichTextEditor({
 
   const [imagePickerOpen, setImagePickerOpen] = useState(false);
   const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
+  const [selectedAttachment, setSelectedAttachment] = useState<AttachmentItem | null>(null);
+  const [attachmentDisplayText, setAttachmentDisplayText] = useState('');
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkText, setLinkText] = useState('');
+  const [imageSizeDialogOpen, setImageSizeDialogOpen] = useState(false);
+  const [pendingImages, setPendingImages] = useState<Array<{ src: string; alt: string }>>([]);
+  const [imageWidth, setImageWidth] = useState('');
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -273,7 +311,10 @@ export function RichTextEditor({
       TableRow,
       TableHeader,
       TableCell,
-      Image,
+      ResizableImage.configure({
+        inline: false,
+        allowBase64: false,
+      }),
       Youtube.configure({
         inline: false,
         nocookie: true,
@@ -322,20 +363,77 @@ export function RichTextEditor({
 
   function handleImageSelected(ids: string[]) {
     if (!editor || !mediaItems) return;
-    for (const id of ids) {
-      const item = mediaItems.find((m) => m.id === id);
-      if (item) {
-        editor.chain().focus().setImage({ src: item.url, alt: item.alt ?? item.originalName }).run();
-      }
-    }
+    const images = ids
+      .map((id) => mediaItems.find((m) => m.id === id))
+      .filter(Boolean)
+      .map((item) => ({ src: item!.url, alt: item!.alt ?? item!.originalName }));
+    if (images.length === 0) return;
+    setPendingImages(images);
+    setImageWidth('');
+    setImageSizeDialogOpen(true);
   }
 
-  function handleInsertAttachment(item: AttachmentItem) {
+  function handleConfirmImageInsert() {
     if (!editor) return;
-    const icon = item.mimeType.startsWith('image/') ? '🖼️' : '📄';
-    const html = `<a href="${item.url}" target="_blank" rel="noopener noreferrer">${icon} ${item.name}</a>`;
+    const w = imageWidth.trim();
+    const widthVal = w ? parseInt(w, 10) : null;
+    for (const img of pendingImages) {
+      const attrs: Record<string, unknown> = { src: img.src, alt: img.alt };
+      if (widthVal && widthVal > 0) {
+        attrs.width = String(widthVal);
+        attrs.style = `width:${widthVal}px;max-width:100%;height:auto`;
+      }
+      editor.chain().focus().setImage(attrs as { src: string; alt?: string }).run();
+    }
+    setImageSizeDialogOpen(false);
+    setPendingImages([]);
+  }
+
+  function handleSelectAttachment(item: AttachmentItem) {
+    setSelectedAttachment(item);
+    setAttachmentDisplayText(item.name);
+  }
+
+  function handleConfirmAttachment() {
+    if (!editor || !selectedAttachment) return;
+    const displayText = attachmentDisplayText.trim() || selectedAttachment.name;
+    const html = `<a href="${selectedAttachment.url}" target="_blank" rel="noopener noreferrer" class="rte-download-link">${DOWNLOAD_ICON_SVG}${displayText}</a>`;
     editor.chain().focus().insertContent(html).run();
     setAttachmentDialogOpen(false);
+    setSelectedAttachment(null);
+    setAttachmentDisplayText('');
+  }
+
+  function openLinkDialog() {
+    if (!editor) return;
+    const existing = editor.getAttributes('link').href as string | undefined;
+    const { from, to } = editor.state.selection;
+    const selectedText = from !== to ? editor.state.doc.textBetween(from, to, '') : '';
+    setLinkUrl(existing ?? 'https://');
+    setLinkText(selectedText);
+    setLinkDialogOpen(true);
+  }
+
+  function handleInsertLink() {
+    if (!editor) return;
+    const url = linkUrl.trim();
+    if (!url) {
+      editor.chain().focus().unsetLink().run();
+      setLinkDialogOpen(false);
+      return;
+    }
+    const normalized = url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/') ? url : `https://${url}`;
+    const displayText = linkText.trim() || normalized;
+    const { from, to } = editor.state.selection;
+    const hasSelection = from !== to;
+
+    if (hasSelection) {
+      editor.chain().focus().setLink({ href: normalized }).run();
+    } else {
+      const html = `<a href="${normalized}" target="_blank" rel="noopener noreferrer">${LINK_ICON_SVG}${displayText}</a>`;
+      editor.chain().focus().insertContent(html).run();
+    }
+    setLinkDialogOpen(false);
   }
 
   return (
@@ -409,7 +507,7 @@ export function RichTextEditor({
           icon={<LinkIcon className="h-4 w-4" />}
           active={editor?.isActive('link')}
           disabled={!editor || disabled}
-          onClick={() => insertLink(editor)}
+          onClick={openLinkDialog}
         />
         <ToolbarButton
           label="图片"
@@ -466,24 +564,142 @@ export function RichTextEditor({
         />
       )}
 
-      <Dialog open={attachmentDialogOpen} onOpenChange={setAttachmentDialogOpen}>
+      <Dialog open={attachmentDialogOpen} onOpenChange={(open) => {
+        setAttachmentDialogOpen(open);
+        if (!open) { setSelectedAttachment(null); setAttachmentDisplayText(''); }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>插入附件链接</DialogTitle>
           </DialogHeader>
-          <div className="max-h-72 space-y-2 overflow-auto">
-            {attachments?.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className="flex w-full items-center gap-3 rounded-lg border border-border/50 p-3 text-left text-sm transition-colors hover:bg-accent"
-                onClick={() => handleInsertAttachment(item)}
-              >
+          {!selectedAttachment ? (
+            <div className="max-h-72 space-y-2 overflow-auto">
+              {attachments?.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="flex w-full items-center gap-3 rounded-lg border border-border/50 p-3 text-left text-sm transition-colors hover:bg-accent"
+                  onClick={() => handleSelectAttachment(item)}
+                >
+                  <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="truncate">{item.name}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 rounded-lg bg-muted/30 p-3 text-sm">
                 <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="truncate">{item.name}</span>
-              </button>
-            ))}
+                <span className="truncate">{selectedAttachment.name}</span>
+                <Button variant="ghost" size="sm" className="ml-auto h-7 text-xs" onClick={() => setSelectedAttachment(null)}>
+                  重新选择
+                </Button>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="att-display-text">显示文本</Label>
+                <Input
+                  id="att-display-text"
+                  value={attachmentDisplayText}
+                  onChange={(e) => setAttachmentDisplayText(e.target.value)}
+                  placeholder="如：点击下载产品规格书"
+                  onKeyDown={(e) => e.key === 'Enter' && handleConfirmAttachment()}
+                />
+              </div>
+              <div className="rounded-lg border border-border/50 p-3 text-sm">
+                <p className="mb-1 text-xs text-muted-foreground">预览</p>
+                <span className="inline-flex items-center gap-1 text-primary underline">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                  {attachmentDisplayText.trim() || selectedAttachment.name}
+                </span>
+              </div>
+            </div>
+          )}
+          {selectedAttachment && (
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setAttachmentDialogOpen(false); setSelectedAttachment(null); }}>
+                取消
+              </Button>
+              <Button onClick={handleConfirmAttachment}>
+                插入
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>插入链接</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="link-url">链接地址</Label>
+              <Input
+                id="link-url"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                placeholder="https://example.com"
+                onKeyDown={(e) => e.key === 'Enter' && handleInsertLink()}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="link-text">显示文本（可选）</Label>
+              <Input
+                id="link-text"
+                value={linkText}
+                onChange={(e) => setLinkText(e.target.value)}
+                placeholder="留空则显示链接地址"
+                onKeyDown={(e) => e.key === 'Enter' && handleInsertLink()}
+              />
+            </div>
           </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLinkDialogOpen(false)}>
+              取消
+            </Button>
+            <Button onClick={handleInsertLink}>
+              确认
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={imageSizeDialogOpen} onOpenChange={(open) => {
+        if (!open) { setPendingImages([]); }
+        setImageSizeDialogOpen(open);
+      }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>设置图片尺寸</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              已选择 {pendingImages.length} 张图片，可设置统一宽度（留空则使用原始尺寸）
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="img-width">宽度（像素）</Label>
+              <Input
+                id="img-width"
+                type="number"
+                min={50}
+                max={2000}
+                value={imageWidth}
+                onChange={(e) => setImageWidth(e.target.value)}
+                placeholder="如 600，留空为原始大小"
+                onKeyDown={(e) => e.key === 'Enter' && handleConfirmImageInsert()}
+              />
+              <p className="text-[11px] text-muted-foreground">高度会按比例自动计算，最大不超过容器宽度</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setImageSizeDialogOpen(false); setPendingImages([]); }}>
+              取消
+            </Button>
+            <Button onClick={handleConfirmImageInsert}>
+              插入
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

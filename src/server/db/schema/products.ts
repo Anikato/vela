@@ -39,6 +39,7 @@ export const products = pgTable('products', {
   packagingDetails: text('packaging_details'),
   customizationSupport: boolean('customization_support').default(false).notNull(),
   attributeDisplayPosition: varchar('attribute_display_position', { length: 30 }).default('after_description').notNull(),
+  showAttachmentSection: boolean('show_attachment_section').default(true).notNull(),
   templateConfig: jsonb('template_config'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

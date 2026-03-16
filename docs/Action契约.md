@@ -434,6 +434,7 @@ defaultLocale: string;
   packagingDetails?: string | null;
   customizationSupport?: boolean;
   attributeDisplayPosition?: 'before_description' | 'after_description' | 'hidden';
+  showAttachmentSection?: boolean;
   additionalCategoryIds?: string[]; // uuid[]
   tagIds?: string[]; // uuid[]
   galleryImageIds?: string[]; // uuid[]
@@ -473,6 +474,7 @@ input: {
   packagingDetails?: string | null;
   customizationSupport?: boolean;
   attributeDisplayPosition?: 'before_description' | 'after_description' | 'hidden';
+  showAttachmentSection?: boolean;
   additionalCategoryIds?: string[]; // uuid[]
   tagIds?: string[]; // uuid[]
   galleryImageIds?: string[]; // uuid[]
@@ -979,6 +981,7 @@ targetGroupId: string; // uuid
 | 2026-03 | 新增产品参数管理 Action 契约 | 收录参数分组/参数项 CRUD、拖拽排序与跨组移动 |
 | 2026-03-16 | 产品参数管理新增 CSV 导入与跨产品复制 | 新增 `bulkImportAttributesAction`、`copyAttributesFromProductAction` |
 | 2026-03-16 | 产品管理新增 `attributeDisplayPosition` 字段 | `createProductAction` 和 `updateProductAction` 入参新增 `attributeDisplayPosition?: 'before_description' \| 'after_description' \| 'hidden'` |
+| 2026-03-16 | 产品管理新增 `showAttachmentSection` 字段 | `createProductAction` 和 `updateProductAction` 入参新增 `showAttachmentSection?: boolean`（默认 true） |
 
 ---
 

@@ -51,6 +51,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Switch } from '@/components/ui/switch';
 import { RichTextEditor } from '@/components/admin/common/rich-text-editor';
 import { MediaPickerDialog } from '@/components/admin/common/media-picker-dialog';
 import { SortableImageGrid } from '@/components/admin/common/sortable-image-grid';
@@ -115,6 +116,8 @@ function buildAttributeTableHtml(
   attributeData: ProductAttributeEditorData,
   locale: string,
 ): string {
+  const borderStyle = 'border:1px solid #e5e7eb';
+  const cellPad = 'padding:10px 14px';
   return attributeData.groups
     .map((group) => {
       const groupName =
@@ -125,10 +128,10 @@ function buildAttributeTableHtml(
           const attrTr = attr.translations.find((t) => t.locale === locale);
           const name = attrTr?.name ?? attr.displayName;
           const value = attrTr?.value ?? attr.displayValue;
-          return `<tr><td><strong>${name}</strong></td><td>${value}</td></tr>`;
+          return `<tr><td style="${borderStyle};${cellPad};width:35%;background:#f9fafb"><strong>${name}</strong></td><td style="${borderStyle};${cellPad}">${value}</td></tr>`;
         })
         .join('');
-      return `<h3>${groupName}</h3><table><tbody>${rows}</tbody></table>`;
+      return `<h3>${groupName}</h3><table style="width:100%;border-collapse:collapse"><tbody>${rows}</tbody></table>`;
     })
     .join('');
 }
@@ -182,6 +185,9 @@ export function ProductForm({
   );
   const [attributeDisplayPosition, setAttributeDisplayPosition] = useState(
     product?.attributeDisplayPosition ?? 'after_description',
+  );
+  const [showAttachmentSection, setShowAttachmentSection] = useState(
+    product?.showAttachmentSection ?? true,
   );
   const [additionalCategoryIds, setAdditionalCategoryIds] = useState<string[]>(
     product?.additionalCategoryIds ?? [],
@@ -295,6 +301,7 @@ export function ProductForm({
       packagingDetails: packagingDetails.trim() || null,
       customizationSupport,
       attributeDisplayPosition: attributeDisplayPosition as 'before_description' | 'after_description' | 'hidden',
+      showAttachmentSection,
       additionalCategoryIds: additionalCategoryIds.filter(
         (id) => id !== primaryCategoryId,
       ),
@@ -498,6 +505,20 @@ export function ProductForm({
             <p className="text-[11px] text-muted-foreground">
               控制产品参数表格在产品详情页面的展示位置，选择「不单独显示」后可通过描述内插入参数表格
             </p>
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border border-border/50 p-4">
+            <div className="space-y-0.5">
+              <label className="text-sm font-medium">显示附件下载区</label>
+              <p className="text-[11px] text-muted-foreground">
+                关闭后前台产品详情页不再单独显示附件下载区域，但描述中插入的附件链接仍然有效
+              </p>
+            </div>
+            <Switch
+              checked={showAttachmentSection}
+              onCheckedChange={setShowAttachmentSection}
+              disabled={isSubmitting}
+            />
           </div>
 
           <div className="space-y-2">
