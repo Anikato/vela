@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { ChevronDown, Globe } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { setLocaleCookie } from '@/lib/locale-cookie';
 
 interface LocaleOption {
   code: string;
@@ -87,7 +88,10 @@ export function LanguageSwitcher({ locales, defaultLocale }: LanguageSwitcherPro
                 key={item.code}
                 href={switchLocalePath(pathname, item.code, defaultLocale, localeCodes)}
                 prefetch={false}
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  setLocaleCookie(item.code);
+                  setOpen(false);
+                }}
                 className={cn(
                   'flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors',
                   isActive

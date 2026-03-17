@@ -705,23 +705,22 @@ export function ThemeManagement({ initialThemes }: Props) {
           </DialogHeader>
 
           <div className="flex-1 min-h-0 overflow-hidden">
-            <div className="grid h-full grid-cols-1 lg:grid-cols-[1fr_420px] gap-4">
-              <Tabs defaultValue="colors" className="flex h-full flex-col">
-                <TabsList className="w-full justify-start flex-wrap h-auto gap-1 shrink-0">
-                  <TabsTrigger value="colors" className="gap-1"><Palette className="h-3.5 w-3.5" />颜色</TabsTrigger>
-                  <TabsTrigger value="fonts" className="gap-1"><Type className="h-3.5 w-3.5" />字体</TabsTrigger>
-                  <TabsTrigger value="button" className="gap-1"><MousePointer className="h-3.5 w-3.5" />按钮</TabsTrigger>
-                  <TabsTrigger value="nav" className="gap-1"><Navigation className="h-3.5 w-3.5" />导航</TabsTrigger>
-                  <TabsTrigger value="layout" className="gap-1"><Layout className="h-3.5 w-3.5" />布局</TabsTrigger>
-                  <TabsTrigger value="background" className="gap-1"><ImageIcon className="h-3.5 w-3.5" />背景</TabsTrigger>
-                  <TabsTrigger value="card" className="gap-1"><ShoppingBag className="h-3.5 w-3.5" />产品卡片</TabsTrigger>
-                  <TabsTrigger value="announcement" className="gap-1"><Megaphone className="h-3.5 w-3.5" />公告栏</TabsTrigger>
-                  <TabsTrigger value="css" className="gap-1"><Code className="h-3.5 w-3.5" />自定义 CSS</TabsTrigger>
-                </TabsList>
+            <Tabs defaultValue="colors" className="grid h-full grid-cols-[160px_minmax(320px,400px)_1fr] gap-4">
+              <TabsList className="flex-col items-stretch h-auto gap-0.5 bg-transparent p-0 overflow-y-auto">
+                <TabsTrigger value="colors" className="justify-start gap-1.5 px-2 text-xs"><Palette className="h-3.5 w-3.5 shrink-0" />颜色</TabsTrigger>
+                <TabsTrigger value="fonts" className="justify-start gap-1.5 px-2 text-xs"><Type className="h-3.5 w-3.5 shrink-0" />字体</TabsTrigger>
+                <TabsTrigger value="button" className="justify-start gap-1.5 px-2 text-xs"><MousePointer className="h-3.5 w-3.5 shrink-0" />按钮</TabsTrigger>
+                <TabsTrigger value="nav" className="justify-start gap-1.5 px-2 text-xs"><Navigation className="h-3.5 w-3.5 shrink-0" />导航</TabsTrigger>
+                <TabsTrigger value="layout" className="justify-start gap-1.5 px-2 text-xs"><Layout className="h-3.5 w-3.5 shrink-0" />布局</TabsTrigger>
+                <TabsTrigger value="background" className="justify-start gap-1.5 px-2 text-xs"><ImageIcon className="h-3.5 w-3.5 shrink-0" />背景</TabsTrigger>
+                <TabsTrigger value="card" className="justify-start gap-1.5 px-2 text-xs"><ShoppingBag className="h-3.5 w-3.5 shrink-0" />产品卡片</TabsTrigger>
+                <TabsTrigger value="announcement" className="justify-start gap-1.5 px-2 text-xs"><Megaphone className="h-3.5 w-3.5 shrink-0" />公告栏</TabsTrigger>
+                <TabsTrigger value="css" className="justify-start gap-1.5 px-2 text-xs"><Code className="h-3.5 w-3.5 shrink-0" />自定义 CSS</TabsTrigger>
+              </TabsList>
 
-                <div className="flex-1 min-h-0 overflow-y-auto">
+              <div className="min-h-0 overflow-y-auto pr-2">
                 {/* 颜色 */}
-                <TabsContent value="colors" className="space-y-3 pt-4">
+                <TabsContent value="colors" className="space-y-3 mt-0">
                   <div className="grid grid-cols-2 gap-3">
                     {(Object.keys(COLOR_LABELS) as Array<keyof ThemeColors>).map((key) => (
                       <ColorInput key={key} label={COLOR_LABELS[key]} value={editConfig.colors[key]} onChange={(v) => updateColors(key, v)} />
@@ -730,7 +729,7 @@ export function ThemeManagement({ initialThemes }: Props) {
                 </TabsContent>
 
                 {/* 字体 */}
-                <TabsContent value="fonts" className="space-y-4 pt-4">
+                <TabsContent value="fonts" className="space-y-4 mt-0">
                   <div><label className="text-sm font-medium mb-1 block">拉丁字体</label><Input value={editConfig.fonts.latin} onChange={(e) => setEditConfig((p) => ({ ...p, fonts: { ...p.fonts, latin: e.target.value } }))} /></div>
                   <div><label className="text-sm font-medium mb-1 block">CJK 字体</label><Input value={editConfig.fonts.cjk} onChange={(e) => setEditConfig((p) => ({ ...p, fonts: { ...p.fonts, cjk: e.target.value } }))} /></div>
                   <div><label className="text-sm font-medium mb-1 block">阿拉伯字体</label><Input value={editConfig.fonts.arabic} onChange={(e) => setEditConfig((p) => ({ ...p, fonts: { ...p.fonts, arabic: e.target.value } }))} /></div>
@@ -741,7 +740,7 @@ export function ThemeManagement({ initialThemes }: Props) {
                 </TabsContent>
 
                 {/* 按钮 */}
-                <TabsContent value="button" className="space-y-4 pt-4">
+                <TabsContent value="button" className="space-y-4 mt-0">
                   <SelectGroup label="形状" options={BUTTON_SHAPES} value={editConfig.button.shape} onChange={(v) => setEditConfig((p) => ({ ...p, button: { ...p.button, shape: v } }))} />
                   <SelectGroup label="尺寸" options={BUTTON_SIZES} value={editConfig.button.size} onChange={(v) => setEditConfig((p) => ({ ...p, button: { ...p.button, size: v } }))} />
                   <SelectGroup label="动画效果" options={BUTTON_ANIMATIONS} value={editConfig.button.animation} onChange={(v) => setEditConfig((p) => ({ ...p, button: { ...p.button, animation: v } }))} />
@@ -755,7 +754,7 @@ export function ThemeManagement({ initialThemes }: Props) {
                 </TabsContent>
 
                 {/* 导航 */}
-                <TabsContent value="nav" className="space-y-4 pt-4">
+                <TabsContent value="nav" className="space-y-4 mt-0">
                   <SelectGroup label="菜单样式" options={NAV_STYLES} value={editConfig.nav.style} onChange={(v) => setEditConfig((p) => ({ ...p, nav: { ...p.nav, style: v } }))} />
                   <SelectGroup label="间距" options={NAV_SPACINGS} value={editConfig.nav.spacing} onChange={(v) => setEditConfig((p) => ({ ...p, nav: { ...p.nav, spacing: v } }))} />
                   <div><label className="text-sm font-medium mb-1 block">字重</label><Input value={editConfig.nav.fontWeight} onChange={(e) => setEditConfig((p) => ({ ...p, nav: { ...p.nav, fontWeight: e.target.value } }))} placeholder="500" /></div>
@@ -763,7 +762,7 @@ export function ThemeManagement({ initialThemes }: Props) {
                 </TabsContent>
 
                 {/* 布局 */}
-                <TabsContent value="layout" className="space-y-4 pt-4">
+                <TabsContent value="layout" className="space-y-4 mt-0">
                   <SelectGroup label="Header 样式" options={HEADER_STYLES} value={editConfig.layout.headerStyle} onChange={(v) => setEditConfig((p) => ({ ...p, layout: { ...p.layout, headerStyle: v } }))} />
                   <div className="flex items-center gap-4">
                     <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={editConfig.layout.headerTransparent} onChange={(e) => setEditConfig((p) => ({ ...p, layout: { ...p.layout, headerTransparent: e.target.checked } }))} className="rounded" />Header 透明</label>
@@ -779,14 +778,14 @@ export function ThemeManagement({ initialThemes }: Props) {
                 </TabsContent>
 
                 {/* 背景 */}
-                <TabsContent value="background" className="space-y-4 pt-4">
+                <TabsContent value="background" className="space-y-4 mt-0">
                   <BackgroundEditor label="页面背景" value={editConfig.layout.pageBackground} onChange={(v) => setEditConfig((p) => ({ ...p, layout: { ...p.layout, pageBackground: v } }))} />
                   <BackgroundEditor label="Header 背景" value={editConfig.layout.headerBackground} onChange={(v) => setEditConfig((p) => ({ ...p, layout: { ...p.layout, headerBackground: v } }))} />
                   <BackgroundEditor label="Footer 背景" value={editConfig.layout.footerBackground} onChange={(v) => setEditConfig((p) => ({ ...p, layout: { ...p.layout, footerBackground: v } }))} />
                 </TabsContent>
 
                 {/* 产品卡片 */}
-                <TabsContent value="card" className="space-y-4 pt-4">
+                <TabsContent value="card" className="space-y-4 mt-0">
                   <SelectGroup label="图片比例" options={CARD_IMAGE_RATIOS} value={pc.imageRatio} onChange={(v) => setEditConfig((p) => ({ ...p, productCard: { ...p.productCard ?? DEFAULT_THEME_CONFIG.productCard, imageRatio: v } }))} />
                   <SelectGroup label="悬停效果" options={CARD_HOVER_EFFECTS} value={pc.hoverEffect} onChange={(v) => setEditConfig((p) => ({ ...p, productCard: { ...p.productCard ?? DEFAULT_THEME_CONFIG.productCard, hoverEffect: v } }))} />
                   <SelectGroup label="网格列数" options={GRID_COLUMNS} value={pc.gridColumns} onChange={(v) => setEditConfig((p) => ({ ...p, productCard: { ...p.productCard ?? DEFAULT_THEME_CONFIG.productCard, gridColumns: v } }))} />
@@ -797,7 +796,7 @@ export function ThemeManagement({ initialThemes }: Props) {
                 </TabsContent>
 
                 {/* 公告栏 */}
-                <TabsContent value="announcement" className="space-y-4 pt-4">
+                <TabsContent value="announcement" className="space-y-4 mt-0">
                   <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={ab.enabled} onChange={(e) => setEditConfig((p) => ({ ...p, announcementBar: { ...p.announcementBar ?? DEFAULT_THEME_CONFIG.announcementBar, enabled: e.target.checked } }))} className="rounded" />启用公告栏</label>
                   {ab.enabled && (
                     <>
@@ -811,7 +810,7 @@ export function ThemeManagement({ initialThemes }: Props) {
                 </TabsContent>
 
                 {/* 自定义 CSS */}
-                <TabsContent value="css" className="space-y-3 pt-4">
+                <TabsContent value="css" className="space-y-3 mt-0">
                   <div className="rounded-md border border-yellow-500/30 bg-yellow-500/5 p-3 text-xs text-yellow-200">
                     ⚠️ 高级功能：自定义 CSS 会注入到网站前台，仅限有 CSS 经验的用户使用。作用域为 <code>.vt-page-content</code>。
                   </div>
@@ -822,14 +821,13 @@ export function ThemeManagement({ initialThemes }: Props) {
                     placeholder={`.vt-page-content h1 {\n  color: red;\n}`}
                   />
                 </TabsContent>
-                </div>
-              </Tabs>
+              </div>
 
-              {/* 侧边预览 */}
-              <div className="hidden lg:block h-full overflow-y-auto rounded-lg border border-border/60 bg-card">
+              {/* 预览面板 */}
+              <div className="h-full overflow-y-auto rounded-lg border border-border/60 bg-card">
                 <EnhancedPreview config={editConfig} />
               </div>
-            </div>
+            </Tabs>
           </div>
 
           <DialogFooter className="shrink-0">

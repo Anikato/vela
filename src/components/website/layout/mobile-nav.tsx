@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Menu, X, Globe } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { setLocaleCookie } from '@/lib/locale-cookie';
 import { Button } from '@/components/ui/button';
 
 interface NavNode {
@@ -129,7 +130,10 @@ export function MobileNav({ items, locales, defaultLocale }: MobileNavProps) {
                       key={locale.code}
                       href={switchLocalePath(pathname, locale.code, defaultLocale!, localeCodes)}
                       prefetch={false}
-                      onClick={() => setOpen(false)}
+                      onClick={() => {
+                        setLocaleCookie(locale.code);
+                        setOpen(false);
+                      }}
                       className={cn(
                         'flex items-center justify-between rounded-md px-2 py-2 text-sm transition-colors',
                         isActive

@@ -2,16 +2,7 @@
 
 import { useEffect } from 'react';
 
-const COOKIE_KEY = 'vela_locale';
-
-function getLocaleCookie(): string | null {
-  const target = `${COOKIE_KEY}=`;
-  for (const part of document.cookie.split(';')) {
-    const trimmed = part.trim();
-    if (trimmed.startsWith(target)) return trimmed.slice(target.length);
-  }
-  return null;
-}
+import { getLocaleCookie } from '@/lib/locale-cookie';
 
 export function HtmlLangSync() {
   useEffect(() => {
