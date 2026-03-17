@@ -1,7 +1,6 @@
 import NextAuth from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { matchLocale } from '@/lib/i18n';
 import { authConfig } from '@/server/auth.config';
 
 const { auth } = NextAuth(authConfig);
@@ -175,19 +174,17 @@ export default auth(async (request) => {
   }
 
   const cookieLocale = request.cookies.get(LOCALE_COOKIE_KEY)?.value;
-  const preferredLocale = cookieLocale && localeSet.has(cookieLocale)
-    ? cookieLocale
-    : matchLocale(request.headers.get('accept-language'), activeLocales, defaultLocale);
 
-  if (preferredLocale !== defaultLocale) {
-    const redirectUrl = new URL(`/${preferredLocale}${pathname}${search}`, origin);
+  if (cookieLocale && localeSet.has(cookieLocale) && cookieLocale !== defaultLocale) {
+    const redirectUrl = new URL(`/${cookieLocale}${pathname}${search}`, origin);
     const response = NextResponse.redirect(redirectUrl, 307);
-    setLocaleCookie(response, preferredLocale);
     return response;
   }
 
   const response = NextResponse.next();
-  setLocaleCookie(response, defaultLocale);
+  if (!cookieLocale) {
+    setLocaleCookie(response, defaultLocale);
+  }
   return response;
 });
 
