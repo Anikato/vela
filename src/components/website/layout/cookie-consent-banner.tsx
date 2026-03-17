@@ -51,16 +51,29 @@ export function CookieConsentBanner({
   if (!canRender || hasConsent || dismissed) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 p-4 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <p className="text-sm font-semibold">{title}</p>
-          <p className="text-sm text-muted-foreground">{description}</p>
+    <div className="fixed bottom-4 left-4 z-50 w-[calc(100%-2rem)] max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500 sm:bottom-6 sm:left-6">
+      <div className="rounded-2xl border border-border/60 bg-background/95 p-5 shadow-2xl backdrop-blur-lg">
+        <div className="mb-4 flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+            <svg className="h-4.5 w-4.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5" />
+              <path d="M8.5 8.5v.01" />
+              <path d="M16 15.5v.01" />
+              <path d="M12 12v.01" />
+              <path d="M11 17v.01" />
+              <path d="M7 14v.01" />
+            </svg>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-semibold leading-tight">{title}</p>
+            <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
+            className="flex-1 text-xs"
             onClick={() => {
               setConsentCookie('rejected');
               setDismissed(true);
@@ -70,6 +83,7 @@ export function CookieConsentBanner({
           </Button>
           <Button
             size="sm"
+            className="flex-1 text-xs"
             onClick={() => {
               setConsentCookie('accepted');
               setDismissed(true);

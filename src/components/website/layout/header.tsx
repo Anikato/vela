@@ -172,10 +172,18 @@ export async function Header({ locale, defaultLocale }: HeaderProps) {
     </div>
   );
 
-  const mobileNav = <MobileNav items={navigationItems} />;
+  const mobileNav = <MobileNav items={navigationItems} locales={localeOptions} defaultLocale={defaultLocale} />;
 
   const logo = <LogoBlock homePath={homePath} siteName={siteInfo.siteName} logoUrl={siteInfo.logoUrl} />;
   const nav = <NavBar items={navigationItems} />;
+
+  const rightActions = (
+    <div className="flex items-center gap-1 sm:gap-2">
+      {actionsBlock}
+      {langBlock}
+      {mobileNav}
+    </div>
+  );
 
   if (headerStyle === 'centered') {
     return (
@@ -183,11 +191,7 @@ export async function Header({ locale, defaultLocale }: HeaderProps) {
         <div className="vt-container flex flex-col items-center py-3">
           <div className="flex w-full items-center justify-between md:justify-end">
             <div className="md:hidden">{logo}</div>
-            <div className="flex items-center gap-2">
-              {actionsBlock}
-              {langBlock}
-            </div>
-            {mobileNav}
+            {rightActions}
           </div>
           <div className="hidden md:block">{logo}</div>
           <div className="mt-2 hidden md:block">{nav}</div>
@@ -204,11 +208,7 @@ export async function Header({ locale, defaultLocale }: HeaderProps) {
             {logo}
             {nav}
           </div>
-          <div className="flex items-center gap-2">
-            {actionsBlock}
-            {langBlock}
-          </div>
-          {mobileNav}
+          {rightActions}
         </div>
       </header>
     );
@@ -219,11 +219,7 @@ export async function Header({ locale, defaultLocale }: HeaderProps) {
       <header className="vt-header sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-lg backdrop-saturate-150">
         <div className="vt-container flex h-14 items-center justify-between">
           {logo}
-          <div className="flex items-center gap-2">
-            {actionsBlock}
-            {langBlock}
-          </div>
-          {mobileNav}
+          {rightActions}
         </div>
         <div className="hidden border-t border-border/20 md:block">
           <div className="vt-container flex items-center py-1">
@@ -242,11 +238,7 @@ export async function Header({ locale, defaultLocale }: HeaderProps) {
             {logo}
             {nav}
           </div>
-          <div className="flex items-center gap-2">
-            {actionsBlock}
-            {langBlock}
-          </div>
-          {mobileNav}
+          {rightActions}
         </div>
       </header>
     );
@@ -259,11 +251,7 @@ export async function Header({ locale, defaultLocale }: HeaderProps) {
           {logo}
           {nav}
         </div>
-        <div className="flex items-center gap-2">
-          {actionsBlock}
-          {langBlock}
-        </div>
-        {mobileNav}
+        {rightActions}
       </div>
     </header>
   );

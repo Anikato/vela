@@ -401,6 +401,7 @@ function CommonAppearanceConfig({ value, onChange, disabled }: Omit<BlockConfigF
           <Select value={str(value.background, 'white')} onValueChange={(v) => onChange({ ...value, background: v })} disabled={disabled}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
+              <SelectItem value="transparent">透明（显示网站背景）</SelectItem>
               <SelectItem value="white">白色</SelectItem>
               <SelectItem value="gray">浅灰</SelectItem>
               <SelectItem value="primary">主题色</SelectItem>
@@ -415,12 +416,25 @@ function CommonAppearanceConfig({ value, onChange, disabled }: Omit<BlockConfigF
           <Select value={str(value.container_width, 'default')} onValueChange={(v) => onChange({ ...value, container_width: v })} disabled={disabled}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="narrow">窄 (max-w-3xl)</SelectItem>
-              <SelectItem value="default">默认 (max-w-5xl)</SelectItem>
-              <SelectItem value="wide">宽 (max-w-7xl)</SelectItem>
+              <SelectItem value="xs">超窄 (672px)</SelectItem>
+              <SelectItem value="narrow">窄 (768px)</SelectItem>
+              <SelectItem value="medium">中 (896px)</SelectItem>
+              <SelectItem value="default">默认 (1024px)</SelectItem>
+              <SelectItem value="wide">宽 (跟随主题)</SelectItem>
+              <SelectItem value="extra-wide">超宽 (1400px)</SelectItem>
               <SelectItem value="full">全宽</SelectItem>
+              <SelectItem value="custom">自定义</SelectItem>
             </SelectContent>
           </Select>
+          {str(value.container_width, 'default') === 'custom' && (
+            <Input
+              placeholder="例：1200px"
+              value={str(value.container_width_custom, '')}
+              onChange={(e) => onChange({ ...value, container_width_custom: e.target.value })}
+              disabled={disabled}
+              className="mt-1.5"
+            />
+          )}
         </div>
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-foreground">上间距</label>

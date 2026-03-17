@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Plus,
   Trash2,
@@ -170,6 +171,112 @@ const BG_TYPES: { value: ThemeBackground['type']; label: string }[] = [
   { value: 'image', label: '图片' },
 ];
 
+const GRADIENT_PRESETS = [
+  { name: '暖白纸质', css: 'radial-gradient(ellipse at center, hsl(40 30% 97%) 0%, hsl(35 20% 94%) 100%)' },
+  { name: '奶油色', css: 'linear-gradient(180deg, hsl(45 40% 97%) 0%, hsl(40 25% 95%) 100%)' },
+  { name: '亚麻纹理', css: 'radial-gradient(ellipse at top, hsl(30 25% 96%) 0%, hsl(25 15% 93%) 60%, hsl(20 20% 91%) 100%)' },
+  { name: '冷灰渐变', css: 'linear-gradient(180deg, hsl(220 15% 97%) 0%, hsl(215 10% 93%) 100%)' },
+  { name: '海洋渐变', css: 'linear-gradient(135deg, hsl(200 80% 94%) 0%, hsl(210 60% 88%) 100%)' },
+  { name: '日落渐变', css: 'linear-gradient(135deg, hsl(25 90% 95%) 0%, hsl(340 60% 92%) 100%)' },
+  { name: '薰衣草', css: 'linear-gradient(135deg, hsl(270 50% 96%) 0%, hsl(260 40% 92%) 100%)' },
+  { name: '薄荷清新', css: 'linear-gradient(135deg, hsl(160 40% 95%) 0%, hsl(170 35% 91%) 100%)' },
+  { name: '深空', css: 'linear-gradient(135deg, hsl(230 30% 15%) 0%, hsl(260 35% 20%) 100%)' },
+];
+
+type ColorPreset = { name: string; colors: ThemeColors; swatches: string[] };
+
+const COLOR_PRESETS: ColorPreset[] = [
+  {
+    name: '经典商务',
+    swatches: ['222.2 47.4% 11.2%', '210 40% 96.1%', '210 40% 96.1%', '0 0% 100%', '222.2 84% 4.9%'],
+    colors: DEFAULT_THEME_CONFIG.colors,
+  },
+  {
+    name: '海洋蓝',
+    swatches: ['210 100% 45%', '200 80% 92%', '200 60% 94%', '210 20% 99%', '210 50% 10%'],
+    colors: {
+      primary: '210 100% 45%', primaryForeground: '0 0% 100%',
+      secondary: '200 80% 92%', secondaryForeground: '210 50% 15%',
+      accent: '200 60% 94%', accentForeground: '210 50% 15%',
+      background: '210 20% 99%', foreground: '210 50% 10%',
+      muted: '200 30% 95%', mutedForeground: '210 15% 45%',
+      card: '0 0% 100%', cardForeground: '210 50% 10%',
+      destructive: '0 84% 60%', destructiveForeground: '0 0% 100%',
+      border: '210 25% 90%', ring: '210 100% 45%',
+    },
+  },
+  {
+    name: '森林绿',
+    swatches: ['152 60% 32%', '150 30% 92%', '148 25% 94%', '140 15% 99%', '150 40% 8%'],
+    colors: {
+      primary: '152 60% 32%', primaryForeground: '0 0% 100%',
+      secondary: '150 30% 92%', secondaryForeground: '150 40% 15%',
+      accent: '148 25% 94%', accentForeground: '150 40% 15%',
+      background: '140 15% 99%', foreground: '150 40% 8%',
+      muted: '148 20% 95%', mutedForeground: '150 10% 45%',
+      card: '0 0% 100%', cardForeground: '150 40% 8%',
+      destructive: '0 84% 60%', destructiveForeground: '0 0% 100%',
+      border: '148 20% 90%', ring: '152 60% 32%',
+    },
+  },
+  {
+    name: '暖阳橙',
+    swatches: ['25 95% 53%', '30 80% 94%', '28 50% 96%', '35 30% 99%', '20 50% 8%'],
+    colors: {
+      primary: '25 95% 53%', primaryForeground: '0 0% 100%',
+      secondary: '30 80% 94%', secondaryForeground: '20 50% 15%',
+      accent: '28 50% 96%', accentForeground: '20 50% 15%',
+      background: '35 30% 99%', foreground: '20 50% 8%',
+      muted: '30 25% 95%', mutedForeground: '20 15% 45%',
+      card: '0 0% 100%', cardForeground: '20 50% 8%',
+      destructive: '0 84% 60%', destructiveForeground: '0 0% 100%',
+      border: '30 20% 90%', ring: '25 95% 53%',
+    },
+  },
+  {
+    name: '优雅紫',
+    swatches: ['270 60% 50%', '270 40% 94%', '268 30% 96%', '270 15% 99%', '270 50% 8%'],
+    colors: {
+      primary: '270 60% 50%', primaryForeground: '0 0% 100%',
+      secondary: '270 40% 94%', secondaryForeground: '270 50% 15%',
+      accent: '268 30% 96%', accentForeground: '270 50% 15%',
+      background: '270 15% 99%', foreground: '270 50% 8%',
+      muted: '268 20% 95%', mutedForeground: '270 10% 45%',
+      card: '0 0% 100%', cardForeground: '270 50% 8%',
+      destructive: '0 84% 60%', destructiveForeground: '0 0% 100%',
+      border: '268 20% 90%', ring: '270 60% 50%',
+    },
+  },
+  {
+    name: '极简灰',
+    swatches: ['220 10% 30%', '220 10% 95%', '220 8% 96%', '0 0% 100%', '220 15% 10%'],
+    colors: {
+      primary: '220 10% 30%', primaryForeground: '0 0% 100%',
+      secondary: '220 10% 95%', secondaryForeground: '220 15% 15%',
+      accent: '220 8% 96%', accentForeground: '220 15% 15%',
+      background: '0 0% 100%', foreground: '220 15% 10%',
+      muted: '220 8% 96%', mutedForeground: '220 8% 46%',
+      card: '0 0% 100%', cardForeground: '220 15% 10%',
+      destructive: '0 84% 60%', destructiveForeground: '0 0% 100%',
+      border: '220 10% 91%', ring: '220 10% 30%',
+    },
+  },
+  {
+    name: '中国红',
+    swatches: ['0 80% 48%', '0 50% 94%', '0 30% 96%', '0 10% 99%', '0 40% 8%'],
+    colors: {
+      primary: '0 80% 48%', primaryForeground: '0 0% 100%',
+      secondary: '0 50% 94%', secondaryForeground: '0 40% 15%',
+      accent: '0 30% 96%', accentForeground: '0 40% 15%',
+      background: '0 10% 99%', foreground: '0 40% 8%',
+      muted: '0 15% 95%', mutedForeground: '0 10% 45%',
+      card: '0 0% 100%', cardForeground: '0 40% 8%',
+      destructive: '0 84% 60%', destructiveForeground: '0 0% 100%',
+      border: '0 15% 90%', ring: '0 80% 48%',
+    },
+  },
+];
+
 function SelectGroup<T extends string | number>({
   label,
   options,
@@ -223,13 +330,35 @@ function BackgroundEditor({
         onChange={(v) => onChange({ ...bg, type: v })}
       />
       {bg.type === 'gradient' && (
-        <div>
-          <label className="text-sm font-medium mb-1 block">渐变 CSS</label>
-          <Input
-            value={bg.gradient ?? ''}
-            onChange={(e) => onChange({ ...bg, gradient: e.target.value })}
-            placeholder="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-          />
+        <div className="space-y-2">
+          <label className="text-sm font-medium mb-1 block">渐变预设</label>
+          <div className="grid grid-cols-3 gap-1.5">
+            {GRADIENT_PRESETS.map((preset) => (
+              <button
+                key={preset.name}
+                type="button"
+                onClick={() => onChange({ ...bg, gradient: preset.css })}
+                className="group flex flex-col items-center gap-1 rounded-md border border-border p-1.5 transition-colors hover:border-primary/40"
+              >
+                <div
+                  className="h-6 w-full rounded"
+                  style={{ background: preset.css }}
+                />
+                <span className="text-[10px] text-muted-foreground group-hover:text-foreground">{preset.name}</span>
+              </button>
+            ))}
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">自定义渐变 CSS</label>
+            <Input
+              value={bg.gradient ?? ''}
+              onChange={(e) => onChange({ ...bg, gradient: e.target.value })}
+              placeholder="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+            />
+          </div>
+          {bg.gradient && (
+            <div className="h-10 w-full rounded-md border" style={{ background: bg.gradient }} />
+          )}
         </div>
       )}
       {bg.type === 'image' && (
@@ -258,108 +387,149 @@ function BackgroundEditor({
   );
 }
 
-function InlinePreview({ config }: { config: ThemeConfig }) {
-  const bg = `hsl(${config.colors.background})`;
-  const fg = `hsl(${config.colors.foreground})`;
-  const primary = `hsl(${config.colors.primary})`;
-  const primaryFg = `hsl(${config.colors.primaryForeground})`;
-  const muted = `hsl(${config.colors.muted})`;
-  const mutedFg = `hsl(${config.colors.mutedForeground})`;
-  const accent = `hsl(${config.colors.accent})`;
-  const card = `hsl(${config.colors.card})`;
-  const cardFg = `hsl(${config.colors.cardForeground})`;
-  const border = `hsl(${config.colors.border})`;
+function EnhancedPreview({ config }: { config: ThemeConfig }) {
+  const c = {
+    bg: `hsl(${config.colors.background})`,
+    fg: `hsl(${config.colors.foreground})`,
+    primary: `hsl(${config.colors.primary})`,
+    primaryFg: `hsl(${config.colors.primaryForeground})`,
+    secondary: `hsl(${config.colors.secondary})`,
+    secondaryFg: `hsl(${config.colors.secondaryForeground})`,
+    muted: `hsl(${config.colors.muted})`,
+    mutedFg: `hsl(${config.colors.mutedForeground})`,
+    accent: `hsl(${config.colors.accent})`,
+    card: `hsl(${config.colors.card})`,
+    cardFg: `hsl(${config.colors.cardForeground})`,
+    border: `hsl(${config.colors.border})`,
+  };
+  const btnRadius = config.button.shape === 'pill' ? '9999px' : config.button.shape === 'square' ? '0' : config.button.shape === 'soft' ? '0.25rem' : '0.5rem';
+  const btnStyle = {
+    borderRadius: btnRadius,
+    fontWeight: Number(config.button.fontWeight) || 500,
+    textTransform: (config.button.uppercase ? 'uppercase' : undefined) as React.CSSProperties['textTransform'],
+    letterSpacing: config.button.uppercase ? '0.05em' : undefined,
+  };
+  const navStyle = (label: string) => ({
+    fontSize: '0.75rem' as const,
+    padding: '0.2rem 0.5rem',
+    color: c.mutedFg,
+    fontWeight: Number(config.nav.fontWeight) || 500,
+    textTransform: (config.nav.uppercase ? 'uppercase' : undefined) as React.CSSProperties['textTransform'],
+    letterSpacing: config.nav.uppercase ? '0.05em' : undefined,
+    borderBottom: config.nav.style === 'underline' ? `2px solid ${c.primary}` : undefined,
+    backgroundColor: config.nav.style === 'pill' ? c.accent : config.nav.style === 'default' ? c.accent : undefined,
+    borderRadius: config.nav.style === 'pill' ? '9999px' : config.nav.style === 'default' ? '0.375rem' : undefined,
+  });
+  const font = `${config.fonts.latin}, sans-serif`;
+  const ab = config.announcementBar ?? DEFAULT_THEME_CONFIG.announcementBar;
 
   return (
-    <div className="rounded-lg border border-border/60 overflow-hidden">
-      <div className="px-3 py-2 text-xs font-medium bg-muted/50 border-b border-border/60">预览</div>
-      <div className="p-4 space-y-4" style={{ backgroundColor: bg, color: fg, fontFamily: `${config.fonts.latin}, sans-serif`, fontSize: config.fonts.bodySize }}>
-        <div>
-          <h3 style={{ fontWeight: Number(config.fonts.headingWeight) || 700, fontSize: '1.25rem' }}>
-            标题文字 Heading
-          </h3>
-          <p style={{ color: mutedFg }}>正文内容 Body text preview</p>
+    <div className="text-[11px] leading-relaxed" style={{ fontFamily: font }}>
+      {/* Announcement Bar */}
+      {ab.enabled && (
+        <div style={{ backgroundColor: ab.bgColor, color: ab.textColor, padding: '0.25rem 0.5rem', textAlign: 'center', fontSize: '0.6rem' }}>
+          📢 公告栏预览文本 — Announcement Bar
         </div>
+      )}
 
-        <div className="flex gap-2 flex-wrap">
-          <button
-            style={{
-              backgroundColor: primary,
-              color: primaryFg,
-              padding: '0.5rem 1rem',
-              borderRadius: config.button.shape === 'pill' ? '9999px' : config.button.shape === 'square' ? '0' : config.button.shape === 'soft' ? '0.25rem' : '0.5rem',
-              fontSize: '0.875rem',
-              fontWeight: Number(config.button.fontWeight) || 500,
-              textTransform: config.button.uppercase ? 'uppercase' : undefined,
-              letterSpacing: config.button.uppercase ? '0.05em' : undefined,
-              border: 'none',
-            }}
-          >
-            按钮 Button
+      {/* Header */}
+      <div style={{ backgroundColor: c.bg, borderBottom: `1px solid ${c.border}`, padding: '0.5rem 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ width: '1.5rem', height: '1.5rem', backgroundColor: c.primary, borderRadius: '0.25rem' }} />
+          <div style={{ display: 'flex', gap: '0.25rem' }}>
+            {['Home', 'Products', 'News', 'Contact'].map((l) => (
+              <span key={l} style={navStyle(l)}>{l}</span>
+            ))}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+          <div style={{ width: '1rem', height: '1rem', borderRadius: '50%', border: `1px solid ${c.border}` }} />
+          <div style={{ width: '1rem', height: '1rem', borderRadius: '50%', border: `1px solid ${c.border}` }} />
+        </div>
+      </div>
+
+      {/* Hero Section */}
+      <div style={{ backgroundColor: c.primary, color: c.primaryFg, padding: '2rem 1rem', textAlign: 'center' }}>
+        <div style={{ fontWeight: Number(config.fonts.headingWeight) || 700, fontSize: '1.1rem', marginBottom: '0.35rem' }}>
+          Hero Heading
+        </div>
+        <div style={{ fontSize: '0.7rem', opacity: 0.85, marginBottom: '0.75rem' }}>
+          Subtitle text goes here — describe your business
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+          <button style={{ ...btnStyle, backgroundColor: c.bg, color: c.fg, padding: '0.35rem 0.75rem', fontSize: '0.65rem', border: 'none' }}>
+            Primary CTA
           </button>
-          <button
-            style={{
-              backgroundColor: 'transparent',
-              color: fg,
-              padding: '0.5rem 1rem',
-              borderRadius: '0.5rem',
-              fontSize: '0.875rem',
-              border: `1px solid ${border}`,
-            }}
-          >
-            次要 Secondary
+          <button style={{ ...btnStyle, backgroundColor: 'transparent', color: c.primaryFg, padding: '0.35rem 0.75rem', fontSize: '0.65rem', border: `1px solid ${c.primaryFg}40` }}>
+            Secondary
           </button>
         </div>
+      </div>
 
-        <div className="flex gap-3">
-          {['首页', '产品', '新闻', '联系我们'].map((label) => (
-            <span
-              key={label}
-              style={{
-                fontSize: '0.875rem',
-                padding: '0.25rem 0.75rem',
-                color: mutedFg,
-                fontWeight: Number(config.nav.fontWeight) || 500,
-                textTransform: config.nav.uppercase ? 'uppercase' : undefined,
-                letterSpacing: config.nav.uppercase ? '0.05em' : undefined,
-                borderBottom: config.nav.style === 'underline' ? `2px solid ${primary}` : undefined,
-                backgroundColor: config.nav.style === 'pill' ? accent : config.nav.style === 'default' ? accent : undefined,
-                borderRadius: config.nav.style === 'pill' ? '9999px' : config.nav.style === 'default' ? '0.5rem' : undefined,
-              }}
-            >
-              {label}
-            </span>
+      {/* Feature Grid */}
+      <div style={{ backgroundColor: c.bg, color: c.fg, padding: '1rem 0.75rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '0.75rem' }}>
+          <div style={{ fontWeight: Number(config.fonts.headingWeight) || 700, fontSize: '0.85rem' }}>Features</div>
+          <div style={{ fontSize: '0.6rem', color: c.mutedFg }}>What we offer</div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+          {['⚡', '🛡️', '🚀'].map((icon, i) => (
+            <div key={i} style={{ backgroundColor: c.card, border: `1px solid ${c.border}`, borderRadius: '0.5rem', padding: '0.5rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '1rem', marginBottom: '0.25rem' }}>{icon}</div>
+              <div style={{ fontWeight: 600, fontSize: '0.65rem' }}>Feature {i + 1}</div>
+              <div style={{ fontSize: '0.55rem', color: c.mutedFg, marginTop: '0.15rem' }}>Short description</div>
+            </div>
           ))}
         </div>
+      </div>
 
-        <div
-          className="flex gap-3"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: `repeat(${config.productCard?.gridColumns ?? 3}, 1fr)`,
-            gap: '0.5rem',
-          }}
-        >
-          {[1, 2, 3].slice(0, config.productCard?.gridColumns ?? 3).map((i) => (
-            <div
-              key={i}
-              style={{
-                backgroundColor: card,
-                color: cardFg,
-                borderRadius: '0.75rem',
-                border: `1px solid ${border}`,
-                overflow: 'hidden',
-              }}
-            >
-              <div style={{ aspectRatio: config.productCard?.imageRatio?.replace(':', '/') ?? '4/3', backgroundColor: muted }} />
-              <div style={{ padding: '0.5rem' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 600 }}>产品名称</div>
+      {/* Product Cards */}
+      <div style={{ backgroundColor: c.muted, padding: '1rem 0.75rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '0.75rem', color: c.fg }}>
+          <div style={{ fontWeight: Number(config.fonts.headingWeight) || 700, fontSize: '0.85rem' }}>Products</div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(config.productCard?.gridColumns ?? 3, 3)}, 1fr)`, gap: '0.4rem' }}>
+          {Array.from({ length: Math.min(config.productCard?.gridColumns ?? 3, 3) }).map((_, i) => (
+            <div key={i} style={{ backgroundColor: c.card, color: c.cardFg, borderRadius: '0.5rem', border: `1px solid ${c.border}`, overflow: 'hidden' }}>
+              <div style={{ aspectRatio: config.productCard?.imageRatio?.replace(':', '/') ?? '4/3', backgroundColor: c.muted }} />
+              <div style={{ padding: '0.35rem' }}>
+                <div style={{ fontWeight: 600, fontSize: '0.6rem' }}>Product Name</div>
                 {config.productCard?.showSku !== false && (
-                  <div style={{ fontSize: '0.625rem', color: mutedFg }}>SKU-001</div>
+                  <div style={{ fontSize: '0.5rem', color: c.mutedFg }}>SKU-00{i + 1}</div>
                 )}
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* CTA Section */}
+      <div style={{ backgroundColor: c.primary, color: c.primaryFg, padding: '1.25rem 0.75rem', textAlign: 'center' }}>
+        <div style={{ fontWeight: Number(config.fonts.headingWeight) || 700, fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+          Ready to Get Started?
+        </div>
+        <div style={{ fontSize: '0.6rem', opacity: 0.85, marginBottom: '0.5rem' }}>
+          Contact us today for a free quote
+        </div>
+        <button style={{ ...btnStyle, backgroundColor: c.bg, color: c.fg, padding: '0.3rem 0.75rem', fontSize: '0.6rem', border: 'none' }}>
+          Contact Us
+        </button>
+      </div>
+
+      {/* Footer */}
+      <div style={{ backgroundColor: c.fg, color: c.bg, padding: '0.75rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginBottom: '0.5rem' }}>
+          {['Company', 'Products', 'Support'].map((title) => (
+            <div key={title}>
+              <div style={{ fontWeight: 600, fontSize: '0.6rem', marginBottom: '0.25rem' }}>{title}</div>
+              {['Link 1', 'Link 2'].map((link) => (
+                <div key={link} style={{ fontSize: '0.5rem', opacity: 0.6 }}>{link}</div>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div style={{ borderTop: `1px solid ${c.bg}20`, paddingTop: '0.35rem', textAlign: 'center', fontSize: '0.5rem', opacity: 0.5 }}>
+          © 2026 Company Name. All rights reserved.
         </div>
       </div>
     </div>
@@ -367,6 +537,7 @@ function InlinePreview({ config }: { config: ThemeConfig }) {
 }
 
 export function ThemeManagement({ initialThemes }: Props) {
+  const router = useRouter();
   const [themeList, setThemeList] = useState(initialThemes);
   const [isPending, startTransition] = useTransition();
   const [editingTheme, setEditingTheme] = useState<ThemeListItem | null>(null);
@@ -374,9 +545,11 @@ export function ThemeManagement({ initialThemes }: Props) {
   const [editName, setEditName] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
+  const [newPresetIdx, setNewPresetIdx] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<ThemeListItem | null>(null);
 
   function refreshList() {
+    router.refresh();
     startTransition(async () => {
       const res = await getThemeListAction();
       if (res.success) setThemeList(res.data);
@@ -413,11 +586,14 @@ export function ThemeManagement({ initialThemes }: Props) {
 
   function handleCreate() {
     if (!newName.trim()) return;
+    const preset = COLOR_PRESETS[newPresetIdx];
+    const config: ThemeConfig = { ...DEFAULT_THEME_CONFIG, colors: preset.colors };
     startTransition(async () => {
-      const res = await createThemeAction({ name: newName.trim() });
+      const res = await createThemeAction({ name: newName.trim(), config });
       if (res.success) {
         setShowCreate(false);
         setNewName('');
+        setNewPresetIdx(0);
         refreshList();
       }
     });
@@ -520,20 +696,18 @@ export function ThemeManagement({ initialThemes }: Props) {
 
       {/* 主题编辑对话框 */}
       <Dialog open={!!editingTheme} onOpenChange={() => setEditingTheme(null)}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>编辑主题</DialogTitle>
+        <DialogContent className="max-w-[95vw] h-[90vh] flex flex-col">
+          <DialogHeader className="shrink-0">
+            <DialogTitle className="flex items-center gap-3">
+              编辑主题
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="max-w-xs h-8 text-sm" />
+            </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-1 block">主题名称</label>
-              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
-              <Tabs defaultValue="colors">
-                <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="grid h-full grid-cols-1 lg:grid-cols-[1fr_420px] gap-4">
+              <Tabs defaultValue="colors" className="flex h-full flex-col">
+                <TabsList className="w-full justify-start flex-wrap h-auto gap-1 shrink-0">
                   <TabsTrigger value="colors" className="gap-1"><Palette className="h-3.5 w-3.5" />颜色</TabsTrigger>
                   <TabsTrigger value="fonts" className="gap-1"><Type className="h-3.5 w-3.5" />字体</TabsTrigger>
                   <TabsTrigger value="button" className="gap-1"><MousePointer className="h-3.5 w-3.5" />按钮</TabsTrigger>
@@ -545,6 +719,7 @@ export function ThemeManagement({ initialThemes }: Props) {
                   <TabsTrigger value="css" className="gap-1"><Code className="h-3.5 w-3.5" />自定义 CSS</TabsTrigger>
                 </TabsList>
 
+                <div className="flex-1 min-h-0 overflow-y-auto">
                 {/* 颜色 */}
                 <TabsContent value="colors" className="space-y-3 pt-4">
                   <div className="grid grid-cols-2 gap-3">
@@ -647,16 +822,17 @@ export function ThemeManagement({ initialThemes }: Props) {
                     placeholder={`.vt-page-content h1 {\n  color: red;\n}`}
                   />
                 </TabsContent>
+                </div>
               </Tabs>
 
               {/* 侧边预览 */}
-              <div className="hidden lg:block sticky top-4">
-                <InlinePreview config={editConfig} />
+              <div className="hidden lg:block h-full overflow-y-auto rounded-lg border border-border/60 bg-card">
+                <EnhancedPreview config={editConfig} />
               </div>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="shrink-0">
             <Button variant="outline" onClick={() => setEditingTheme(null)}>取消</Button>
             <Button onClick={handleSave} disabled={isPending}>保存</Button>
           </DialogFooter>
@@ -665,11 +841,41 @@ export function ThemeManagement({ initialThemes }: Props) {
 
       {/* 新建主题对话框 */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>新建主题</DialogTitle></DialogHeader>
-          <div>
-            <label className="text-sm font-medium mb-1 block">主题名称</label>
-            <Input placeholder="例：Ocean Blue" value={newName} onChange={(e) => setNewName(e.target.value)} />
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-1 block">主题名称</label>
+              <Input placeholder="例：Ocean Blue" value={newName} onChange={(e) => setNewName(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">选择色板</label>
+              <div className="grid grid-cols-2 gap-2">
+                {COLOR_PRESETS.map((preset, idx) => (
+                  <button
+                    key={preset.name}
+                    type="button"
+                    onClick={() => setNewPresetIdx(idx)}
+                    className={`flex items-center gap-2.5 rounded-lg border p-2.5 text-left transition-colors ${
+                      newPresetIdx === idx
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                        : 'border-border hover:bg-accent'
+                    }`}
+                  >
+                    <div className="flex -space-x-1">
+                      {preset.swatches.slice(0, 4).map((hsl, i) => (
+                        <div
+                          key={i}
+                          className="h-6 w-6 rounded-full border-2 border-background"
+                          style={{ backgroundColor: `hsl(${hsl})` }}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs font-medium">{preset.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>取消</Button>

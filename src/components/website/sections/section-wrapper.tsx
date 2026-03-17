@@ -11,6 +11,7 @@ interface SectionWrapperProps {
 }
 
 const BACKGROUND_CLASS_MAP: Record<string, string> = {
+  transparent: 'bg-transparent',
   white: 'bg-background',
   gray: 'bg-muted/40',
   primary: 'bg-primary text-primary-foreground',
@@ -36,9 +37,12 @@ const SPACING_BOTTOM_CLASS_MAP: Record<string, string> = {
 };
 
 const CONTAINER_CLASS_MAP: Record<string, string> = {
+  xs: 'max-w-2xl',
   narrow: 'max-w-3xl',
+  medium: 'max-w-4xl',
   default: 'max-w-5xl',
   wide: 'max-w-[var(--max-width,80rem)]',
+  'extra-wide': 'max-w-[1400px]',
   full: 'max-w-none px-0',
 };
 
@@ -54,6 +58,7 @@ export function SectionWrapper({ section, children }: SectionWrapperProps) {
   const spacingTop = getConfigString(section.config, 'padding_top') ?? 'md';
   const spacingBottom = getConfigString(section.config, 'padding_bottom') ?? 'md';
   const containerWidth = getConfigString(section.config, 'container_width') ?? 'default';
+  const containerWidthCustom = getConfigString(section.config, 'container_width_custom');
   const backgroundImage = getConfigString(section.config, 'background_image');
   const overlayOpacity = Number(section.config.overlay_opacity) || 0;
 
@@ -84,8 +89,9 @@ export function SectionWrapper({ section, children }: SectionWrapperProps) {
       <div
         className={cn(
           'relative mx-auto px-4 sm:px-6 lg:px-8',
-          CONTAINER_CLASS_MAP[containerWidth] ?? CONTAINER_CLASS_MAP.default,
+          containerWidth !== 'custom' && (CONTAINER_CLASS_MAP[containerWidth] ?? CONTAINER_CLASS_MAP.default),
         )}
+        style={containerWidth === 'custom' && containerWidthCustom ? { maxWidth: containerWidthCustom } : undefined}
       >
         {children}
       </div>

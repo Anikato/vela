@@ -35,7 +35,7 @@ export function CtaSection({ section }: SectionComponentProps) {
               </Button>
             ) : null}
             {hasSecondaryButton ? (
-              <Button asChild variant="outline" size="lg" className="rounded-full border-primary-foreground/30 px-8 text-base text-primary-foreground hover:bg-primary-foreground/10">
+              <Button asChild size="lg" className="rounded-full border-2 border-primary-foreground/40 bg-transparent px-8 text-base text-primary-foreground hover:bg-primary-foreground/10">
                 <Link href={tr.secondaryButtonLink!}>{tr.secondaryButtonText}</Link>
               </Button>
             ) : null}

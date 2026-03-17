@@ -55,7 +55,7 @@ export function HeroSection({ section }: SectionComponentProps) {
                     </Button>
                   ) : null}
                   {hasSecondaryButton ? (
-                    <Button asChild variant="outline" size="lg" className="rounded-full border-white/30 px-8 text-base text-white hover:bg-white/10">
+                    <Button asChild size="lg" className="rounded-full border-2 border-white/40 bg-white/10 px-8 text-base text-white hover:bg-white/20">
                       <Link href={tr.secondaryButtonLink!}>{tr.secondaryButtonText}</Link>
                     </Button>
                   ) : null}
@@ -92,7 +92,7 @@ export function HeroSection({ section }: SectionComponentProps) {
             </Button>
           ) : null}
           {hasSecondaryButton ? (
-            <Button asChild variant="outline" size="lg" className="rounded-full px-8 text-base">
+            <Button asChild variant="secondary" size="lg" className="rounded-full px-8 text-base">
               <Link href={tr.secondaryButtonLink!}>{tr.secondaryButtonText}</Link>
             </Button>
           ) : null}

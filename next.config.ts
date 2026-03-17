@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['postgres', '@aws-sdk/client-s3', 'pino', 'pino-pretty'],
   experimental: {
     viewTransition: true,
+    staleTimes: {
+      dynamic: 0,
+    },
   },
   images: {
     loader: 'custom',

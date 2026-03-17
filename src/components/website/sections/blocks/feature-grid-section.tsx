@@ -15,12 +15,13 @@ export function FeatureGridSection({ section }: SectionComponentProps) {
 
   const columns = Number(section.config.columns) || 3;
   const variant = (section.config.card_variant as CardVariant) || 'default';
+  const mobileGrid = items.length >= 3 ? 'grid-cols-2' : 'grid-cols-1';
   const gridCols =
     columns === 2
-      ? 'sm:grid-cols-2'
+      ? `${mobileGrid} sm:grid-cols-2`
       : columns === 4
-        ? 'sm:grid-cols-2 lg:grid-cols-4'
-        : 'sm:grid-cols-2 lg:grid-cols-3';
+        ? `${mobileGrid} sm:grid-cols-2 lg:grid-cols-4`
+        : `${mobileGrid} sm:grid-cols-2 lg:grid-cols-3`;
 
   return (
     <div>
@@ -35,7 +36,7 @@ export function FeatureGridSection({ section }: SectionComponentProps) {
         </div>
       )}
 
-      <div className={cn('grid gap-6 lg:gap-8', gridCols)}>
+      <div className={cn('grid gap-3 sm:gap-6 lg:gap-8', gridCols)}>
         {items.map((item, idx) => (
           <FeatureCard key={item.id} item={item} variant={variant} index={idx} />
         ))}
@@ -97,10 +98,9 @@ function FeatureCard({ item, variant, index }: { item: WebsiteSectionItem; varia
           </p>
         )}
         {item.linkUrl && (
-          <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
-            Learn more
+          <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100" aria-hidden>
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
             </svg>
           </span>
         )}

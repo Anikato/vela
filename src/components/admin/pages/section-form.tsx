@@ -291,8 +291,8 @@ export function SectionForm({
       }
 
       toast.success(isEditing ? '区块已更新' : '区块已创建');
-      router.push(backUrl);
       router.refresh();
+      router.push(backUrl);
     } finally {
       setIsSubmitting(false);
     }
