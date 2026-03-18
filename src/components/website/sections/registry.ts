@@ -6,10 +6,12 @@ import { ContactFormSection } from './blocks/contact-form-section';
 import { CtaSection } from './blocks/cta-section';
 import { CustomHtmlSection } from './blocks/custom-html-section';
 import { FaqSection } from './blocks/faq-section';
+import { GoogleMapSection } from './blocks/google-map-section';
 import { NewsShowcaseSection } from './blocks/news-showcase-section';
 import { FeatureGridSection } from './blocks/feature-grid-section';
 import { HeroSection } from './blocks/hero-section';
 import { ImageGallerySection } from './blocks/image-gallery-section';
+import { ImageMarqueeSection } from './blocks/image-marquee-section';
 import { PartnerLogosSection } from './blocks/partner-logos-section';
 import { ProductShowcaseSection } from './blocks/product-showcase-section';
 import { RichTextSection } from './blocks/rich-text-section';
@@ -19,6 +21,7 @@ import { TestimonialsSection } from './blocks/testimonials-section';
 import { TimelineSection } from './blocks/timeline-section';
 import { TwoColumnSection } from './blocks/two-column-section';
 import { VideoEmbedSection } from './blocks/video-embed-section';
+import { VideoGallerySection } from './blocks/video-gallery-section';
 import type { SectionComponentProps } from './types';
 
 export const sectionRegistry: Record<string, ComponentType<SectionComponentProps>> = {
@@ -41,4 +44,7 @@ export const sectionRegistry: Record<string, ComponentType<SectionComponentProps
   contact_form: ContactFormSection,
   news_showcase: NewsShowcaseSection,
   custom_html: CustomHtmlSection,
+  google_map: GoogleMapSection,
+  image_marquee: ImageMarqueeSection,
+  video_gallery: VideoGallerySection,
 };

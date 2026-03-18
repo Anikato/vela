@@ -63,20 +63,22 @@ const UI_KEYS = [
   'product.totalCount',
   'product.categories',
   'product.addToInquiry',
+  'product.perPage',
 ];
 
 const VALID_SORTS = new Set<ProductSortOption>(['newest', 'popular', 'name_asc', 'name_desc']);
 
 interface ProductsPageProps {
-  searchParams: Promise<{ page?: string; tag?: string; sort?: string }>;
+  searchParams: Promise<{ page?: string; tag?: string; sort?: string; pageSize?: string }>;
 }
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
-  const { page, tag, sort } = await searchParams;
+  const { page, tag, sort, pageSize: pageSizeParam } = await searchParams;
   const pageNum = page ? Number(page) : 1;
   const currentSort: ProductSortOption = VALID_SORTS.has(sort as ProductSortOption)
     ? (sort as ProductSortOption)
     : 'newest';
+  const pageSize = pageSizeParam ? Math.max(1, Math.min(48, Number(pageSizeParam))) : 12;
 
   const defaultLanguage = await getCachedDefaultLanguage();
   const locale = defaultLanguage.code;
@@ -84,6 +86,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const [data, categoryTree, tagList, uiMap, systemSections, theme] = await Promise.all([
     getPublishedProductList(locale, locale, {
       page: Number.isFinite(pageNum) ? pageNum : 1,
+      pageSize,
       tagSlug: tag,
       sort: currentSort,
     }),
@@ -111,6 +114,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         productsBasePath="/products"
         activeTagSlug={tag}
         currentSort={currentSort}
+        currentPageSize={pageSize}
         productCardConfig={productCardConfig}
         uiLabels={{
           home: uiMap['nav.home'] ?? 'Home',
@@ -124,6 +128,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           totalCount: uiMap['product.totalCount'] ?? '{count} products',
           categories: uiMap['product.categories'] ?? 'Categories',
           addToInquiry: uiMap['product.addToInquiry'] ?? 'Add to Inquiry',
+          perPage: uiMap['product.perPage'] ?? '{n} / page',
         }}
       />
     </WebsiteShell>

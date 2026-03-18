@@ -144,12 +144,12 @@ const FIELDS_BY_TYPE: Record<
   },
   timeline: {
     showIcon: false,
-    showImage: false,
+    showImage: true,
     showLink: false,
     showDescription: true,
     showContent: false,
     itemLabel: '里程碑',
-    hint: '每个子项是一个时间线节点。标题格式建议：\"2020 — 事件名称\"。',
+    hint: '每个子项是一个时间线节点。标题格式建议：\"2020 — 事件名称\"。可选上传图片，在时间线中展示。',
   },
   team: {
     showIcon: false,
@@ -204,6 +204,24 @@ const FIELDS_BY_TYPE: Record<
     showContent: false,
     itemLabel: 'FAQ 条目',
     hint: '标题 = 问题，描述 = 答案。',
+  },
+  image_marquee: {
+    showIcon: false,
+    showImage: true,
+    showLink: false,
+    showDescription: true,
+    showContent: false,
+    itemLabel: '走马灯图片',
+    hint: '每个子项是一张滚动展示的图片。标题在悬停时显示，描述可选。',
+  },
+  video_gallery: {
+    showIcon: false,
+    showImage: true,
+    showLink: true,
+    showDescription: true,
+    showContent: false,
+    itemLabel: '视频',
+    hint: '链接 = 视频URL（YouTube/Vimeo/Bilibili），标题 = 视频名称，描述 = 简介，图片 = 自定义缩略图（可选）。',
   },
 };
 

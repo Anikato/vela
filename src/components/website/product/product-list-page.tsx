@@ -12,7 +12,7 @@ import type { ThemeProductCard } from '@/types/theme';
 import { Breadcrumb } from '@/components/website/layout/breadcrumb';
 import { ProductCard } from './product-card';
 import { CategoryTree } from './category-tree';
-import { TagFilter, SortSelect } from './product-filters';
+import { TagFilter, SortSelect, PageSizeSelect } from './product-filters';
 
 export interface ProductListPageUiLabels {
   home: string;
@@ -26,6 +26,7 @@ export interface ProductListPageUiLabels {
   totalCount: string;
   categories: string;
   addToInquiry: string;
+  perPage?: string;
 }
 
 interface ProductListPageProps {
@@ -38,6 +39,7 @@ interface ProductListPageProps {
   productsBasePath: string;
   activeTagSlug?: string;
   currentSort: ProductSortOption;
+  currentPageSize: number;
   uiLabels: ProductListPageUiLabels;
   productCardConfig?: ThemeProductCard;
 }
@@ -68,6 +70,7 @@ export function ProductListPage({
   productsBasePath,
   activeTagSlug,
   currentSort,
+  currentPageSize,
   uiLabels,
   productCardConfig,
 }: ProductListPageProps) {
@@ -88,6 +91,7 @@ export function ProductListPage({
   const filterParams: Record<string, string | undefined> = {
     tag: activeTagSlug,
     sort: currentSort !== 'newest' ? currentSort : undefined,
+    pageSize: currentPageSize !== 12 ? String(currentPageSize) : undefined,
   };
 
   return (
@@ -123,6 +127,13 @@ export function ProductListPage({
                 <span className="whitespace-nowrap text-sm text-muted-foreground">
                   {uiLabels.totalCount.replace('{count}', String(data.total))}
                 </span>
+                <Suspense>
+                  <PageSizeSelect
+                    currentPageSize={currentPageSize}
+                    basePath={basePath}
+                    label={uiLabels.perPage ?? '{n} / page'}
+                  />
+                </Suspense>
                 <Suspense>
                   <SortSelect
                     currentSort={currentSort}

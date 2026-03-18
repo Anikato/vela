@@ -66,7 +66,8 @@ type SectionType =
   | 'hero' | 'rich_text' | 'cta' | 'product_showcase' | 'feature_grid'
   | 'carousel_banner' | 'stats' | 'faq' | 'two_column' | 'partner_logos'
   | 'testimonials' | 'category_nav' | 'video_embed' | 'timeline'
-  | 'image_gallery' | 'team' | 'contact_form' | 'news_showcase' | 'custom_html';
+  | 'image_gallery' | 'team' | 'contact_form' | 'news_showcase' | 'custom_html'
+  | 'google_map' | 'image_marquee' | 'video_gallery';
 
 type TranslationForm = {
   locale: string;
@@ -121,6 +122,7 @@ interface SectionFormProps {
 const itemBasedBlockTypes = new Set([
   'hero', 'feature_grid', 'carousel_banner', 'two_column', 'timeline',
   'team', 'partner_logos', 'image_gallery', 'stats', 'testimonials', 'faq',
+  'image_marquee', 'video_gallery',
 ]);
 
 const richTextBlockTypes = new Set([
@@ -147,6 +149,9 @@ const SECTION_TYPE_LABELS: Record<string, string> = {
   cta: '行动号召',
   contact_form: '联系表单',
   custom_html: '自定义HTML',
+  google_map: '谷歌地图',
+  image_marquee: '图片走马灯',
+  video_gallery: '视频画廊',
 };
 
 const ITEM_FIELDS_BY_TYPE: Record<
@@ -172,6 +177,8 @@ const ITEM_FIELDS_BY_TYPE: Record<
   stats: { showIcon: false, showImage: false, showLink: false, showDescription: true, showContent: false, itemLabel: '数据统计项', hint: '标题 = 数据标签，描述 = 数值+后缀（如 "1000+"）。' },
   testimonials: { showIcon: false, showImage: true, showLink: false, showDescription: true, showContent: false, itemLabel: '客户评价', hint: '标题 = 客户姓名，描述 = 评价内容。可上传头像。' },
   faq: { showIcon: false, showImage: false, showLink: false, showDescription: true, showContent: false, itemLabel: 'FAQ 条目', hint: '标题 = 问题，描述 = 答案。' },
+  image_marquee: { showIcon: false, showImage: true, showLink: false, showDescription: true, showContent: false, itemLabel: '走马灯图片', hint: '每个子项是一张滚动展示的图片。标题用于悬停时显示，描述可选。' },
+  video_gallery: { showIcon: false, showImage: true, showLink: true, showDescription: true, showContent: false, itemLabel: '视频', hint: '每个子项是一个视频。链接 = 视频地址（YouTube/Vimeo/Bilibili），标题 = 视频名称，描述 = 简介，图片 = 自定义缩略图（可选）。' },
 };
 
 const DEFAULT_ITEM_FIELDS = {

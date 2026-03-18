@@ -110,3 +110,46 @@ export function SortSelect({ currentSort, basePath, labels }: SortSelectProps) {
     </select>
   );
 }
+
+const PAGE_SIZE_OPTIONS = [12, 24, 36, 48];
+
+interface PageSizeSelectProps {
+  currentPageSize: number;
+  basePath: string;
+  label: string;
+}
+
+export function PageSizeSelect({ currentPageSize, basePath, label }: PageSizeSelectProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const handleChange = useCallback(
+    (value: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('page');
+      const size = Number(value);
+      if (size && size !== 12) {
+        params.set('pageSize', value);
+      } else {
+        params.delete('pageSize');
+      }
+      const qs = params.toString();
+      router.push(qs ? `${basePath}?${qs}` : basePath);
+    },
+    [searchParams, basePath, router],
+  );
+
+  return (
+    <select
+      value={currentPageSize}
+      onChange={(e) => handleChange(e.target.value)}
+      className="rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+    >
+      {PAGE_SIZE_OPTIONS.map((n) => (
+        <option key={n} value={n}>
+          {label.replace('{n}', String(n))}
+        </option>
+      ))}
+    </select>
+  );
+}

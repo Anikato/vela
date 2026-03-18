@@ -154,7 +154,7 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
     shadow: 'sm',
     maxWidth: '1280px',
     headerBlur: true,
-    logoHeight: 36,
+    logoHeight: 44,
   },
   productCard: {
     imageRatio: '4:3',

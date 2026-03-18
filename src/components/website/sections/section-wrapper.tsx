@@ -40,7 +40,7 @@ const CONTAINER_CLASS_MAP: Record<string, string> = {
   xs: 'max-w-2xl',
   narrow: 'max-w-3xl',
   medium: 'max-w-4xl',
-  default: 'max-w-5xl',
+  default: 'vt-container-inner',
   wide: 'max-w-[var(--max-width,80rem)]',
   'extra-wide': 'max-w-[1400px]',
   full: 'max-w-none px-0',

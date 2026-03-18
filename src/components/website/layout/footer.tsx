@@ -110,13 +110,11 @@ function WhatsAppFloat({ number }: { number: string }) {
 }
 
 function CopyrightBar({ siteInfo }: { siteInfo: SiteInfo }) {
-  return (
-    <p className="text-xs text-muted-foreground">
-      {siteInfo.copyright
-        ? siteInfo.copyright
-        : `© ${new Date().getFullYear()} ${siteInfo.companyName || siteInfo.siteName}`}
-    </p>
-  );
+  const year = String(new Date().getFullYear());
+  const text = siteInfo.copyright
+    ? siteInfo.copyright.replace(/\{year\}/g, year)
+    : `© ${year} ${siteInfo.companyName || siteInfo.siteName}`;
+  return <p className="text-xs text-muted-foreground">{text}</p>;
 }
 
 function SocialIcons({ links }: { links: SocialEntry[] }) {

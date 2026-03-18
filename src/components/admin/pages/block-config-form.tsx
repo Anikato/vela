@@ -338,6 +338,104 @@ function PartnerLogosConfig({ value, onChange, disabled }: Omit<BlockConfigFormP
   );
 }
 
+function GoogleMapConfig({ value, onChange, disabled }: Omit<BlockConfigFormProps, 'type'>) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div className="space-y-1.5 sm:col-span-2">
+        <label className="text-sm font-medium">Google Maps 嵌入 URL</label>
+        <Input
+          placeholder="https://www.google.com/maps/embed?pb=..."
+          value={str(value.embed_url, '')}
+          onChange={(e) => onChange({ ...value, embed_url: e.target.value })}
+          disabled={disabled}
+        />
+        <p className="text-xs text-muted-foreground">在 Google Maps 中点击"分享" → "嵌入地图" → 复制 src 链接</p>
+      </div>
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium">地图高度</label>
+        <Input
+          placeholder="450px"
+          value={str(value.map_height, '450px')}
+          onChange={(e) => onChange({ ...value, map_height: e.target.value })}
+          disabled={disabled}
+        />
+      </div>
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium">圆角</label>
+        <Input
+          placeholder="12px"
+          value={str(value.border_radius, '12px')}
+          onChange={(e) => onChange({ ...value, border_radius: e.target.value })}
+          disabled={disabled}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ImageMarqueeConfig({ value, onChange, disabled }: Omit<BlockConfigFormProps, 'type'>) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium">滚动速度 (秒)</label>
+        <Input
+          type="number"
+          min={5}
+          max={120}
+          value={num(value.scroll_speed, 30)}
+          onChange={(e) => onChange({ ...value, scroll_speed: Number(e.target.value) })}
+          disabled={disabled}
+        />
+        <p className="text-xs text-muted-foreground">完成一轮滚动需要的秒数，数值越大越慢</p>
+      </div>
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium">图片高度</label>
+        <Input
+          placeholder="200px"
+          value={str(value.image_height, '200px')}
+          onChange={(e) => onChange({ ...value, image_height: e.target.value })}
+          disabled={disabled}
+        />
+      </div>
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium">滚动方向</label>
+        <Select value={str(value.direction, 'left')} onValueChange={(v) => onChange({ ...value, direction: v })} disabled={disabled}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="left">向左</SelectItem>
+            <SelectItem value="right">向右</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex items-center gap-2 pt-5">
+        <Switch
+          checked={value.pause_on_hover !== false}
+          onCheckedChange={(v) => onChange({ ...value, pause_on_hover: v })}
+          disabled={disabled}
+        />
+        <label className="text-sm">鼠标悬停暂停</label>
+      </div>
+    </div>
+  );
+}
+
+function VideoGalleryConfig({ value, onChange, disabled }: Omit<BlockConfigFormProps, 'type'>) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium">布局</label>
+        <Select value={str(value.layout, 'video_left')} onValueChange={(v) => onChange({ ...value, layout: v })} disabled={disabled}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="video_left">视频在左 | 列表在右</SelectItem>
+            <SelectItem value="video_right">列表在左 | 视频在右</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+}
+
 function CustomHtmlConfig({ value, onChange, disabled }: Omit<BlockConfigFormProps, 'type'>) {
   return (
     <div className="space-y-1.5">
@@ -377,6 +475,9 @@ const configFormRegistry: Record<
   video_embed: VideoEmbedConfig,
   partner_logos: PartnerLogosConfig,
   custom_html: CustomHtmlConfig,
+  google_map: GoogleMapConfig,
+  image_marquee: ImageMarqueeConfig,
+  video_gallery: VideoGalleryConfig,
 };
 
 /* 没有配置项的区块类型 */

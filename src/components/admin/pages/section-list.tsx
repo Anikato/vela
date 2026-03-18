@@ -54,6 +54,9 @@ const SECTION_TYPE_LABELS: Record<string, string> = {
   cta: '行动号召',
   contact_form: '联系表单',
   custom_html: '自定义HTML',
+  google_map: '谷歌地图',
+  image_marquee: '图片走马灯',
+  video_gallery: '视频画廊',
 };
 
 const TYPE_ICONS: Record<string, string> = {
@@ -76,6 +79,9 @@ const TYPE_ICONS: Record<string, string> = {
   cta: '🎯',
   contact_form: '✉️',
   custom_html: '⟨/⟩',
+  google_map: '📍',
+  image_marquee: '🎞️',
+  video_gallery: '🎥',
 };
 
 export function SectionList({

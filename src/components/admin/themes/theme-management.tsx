@@ -800,7 +800,7 @@ export function ThemeManagement({ initialThemes }: Props) {
                   <SelectGroup label="阴影" options={SHADOW_PRESETS} value={editConfig.layout.shadow} onChange={(v) => setEditConfig((p) => ({ ...p, layout: { ...p.layout, shadow: v } }))} />
                   <div className="grid grid-cols-2 gap-4">
                     <div><label className="text-sm font-medium mb-1 block">内容区最大宽度</label><Input value={editConfig.layout.maxWidth} onChange={(e) => setEditConfig((p) => ({ ...p, layout: { ...p.layout, maxWidth: e.target.value } }))} placeholder="1280px" /></div>
-                    <div><label className="text-sm font-medium mb-1 block">Logo 高度 (px)</label><Input type="number" min={20} max={120} value={editConfig.layout.logoHeight ?? 36} onChange={(e) => setEditConfig((p) => ({ ...p, layout: { ...p.layout, logoHeight: Number(e.target.value) } }))} /></div>
+                    <div><label className="text-sm font-medium mb-1 block">Logo 高度 (px)</label><Input type="number" min={20} max={200} value={editConfig.layout.logoHeight ?? 44} onChange={(e) => setEditConfig((p) => ({ ...p, layout: { ...p.layout, logoHeight: Number(e.target.value) } }))} /></div>
                   </div>
                 </div>
               )}

@@ -76,7 +76,7 @@ const layoutSchema = z.object({
   headerBackground: backgroundSchema,
   headerBlur: z.boolean().optional(),
   footerBackground: backgroundSchema,
-  logoHeight: z.number().min(20).max(120).optional(),
+  logoHeight: z.number().min(20).max(200).optional(),
 });
 
 const productCardSchema = z.object({

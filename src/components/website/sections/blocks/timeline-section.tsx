@@ -38,29 +38,24 @@ function TimelineItem({ item, index }: { item: WebsiteSectionItem; index: number
   const isEven = index % 2 === 0;
   const year = item.translation.content;
 
+  const contentBlock = <TimelineContent item={item} align={isEven ? 'right' : 'left'} />;
+  const yearBlock = <YearBadge year={year} align={isEven ? 'left' : 'right'} />;
+
   return (
     <div className="relative pl-12 md:pl-0">
       <div className="absolute left-[11px] top-1.5 h-4 w-4 rounded-full border-[3px] border-primary bg-background shadow-[0_0_0_4px_hsl(var(--primary)/0.15)] md:hidden" />
 
       <div className="md:flex md:items-start md:gap-8">
-        <div className={cn('hidden md:block md:w-1/2', isEven ? 'md:text-right' : 'md:order-2')}>
-          {isEven ? (
-            <TimelineContent item={item} align="right" />
-          ) : (
-            <YearBadge year={year} align="left" />
-          )}
+        <div className={cn('hidden md:block md:w-1/2', isEven ? 'text-right' : '')}>
+          {isEven ? contentBlock : yearBlock}
         </div>
 
         <div className="relative z-10 hidden md:flex md:shrink-0">
           <div className="h-5 w-5 rounded-full border-[3px] border-primary bg-background shadow-[0_0_0_4px_hsl(var(--primary)/0.15)]" />
         </div>
 
-        <div className={cn('hidden md:block md:w-1/2', isEven ? '' : 'md:order-1 md:text-right')}>
-          {isEven ? (
-            <YearBadge year={year} align="left" />
-          ) : (
-            <TimelineContent item={item} align="left" />
-          )}
+        <div className={cn('hidden md:block md:w-1/2', isEven ? '' : 'text-left')}>
+          {isEven ? yearBlock : contentBlock}
         </div>
 
         <div className="md:hidden">

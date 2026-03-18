@@ -380,6 +380,10 @@
   .vt-container { padding-inline: 2rem; }
 }
 
+.vt-container-inner {
+  max-width: var(--max-width, 80rem);
+}
+
 /* ===== Button animation effects ===== */
 @media not (prefers-reduced-motion: reduce) {
   [data-btn-animation="lift"] .vt-page-content [data-slot="button"] {
