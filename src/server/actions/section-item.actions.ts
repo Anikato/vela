@@ -101,7 +101,7 @@ export async function createSectionItemAction(
 
   try {
     const data = await createSectionItem(parsed.data);
-    revalidateTag('pages');
+    revalidateTag('pages', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);
@@ -128,7 +128,7 @@ export async function updateSectionItemAction(
 
   try {
     const data = await updateSectionItem(parsedId.data, parsed.data);
-    revalidateTag('pages');
+    revalidateTag('pages', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);
@@ -149,7 +149,7 @@ export async function deleteSectionItemAction(
 
   try {
     await deleteSectionItem(parsedId.data);
-    revalidateTag('pages');
+    revalidateTag('pages', 'max');
     return { success: true, data: undefined };
   } catch (error) {
     return handleError(error);
@@ -170,7 +170,7 @@ export async function reorderSectionItemsAction(
 
   try {
     await reorderSectionItems(parsed.data.sectionId, parsed.data.orderedItemIds);
-    revalidateTag('pages');
+    revalidateTag('pages', 'max');
     return { success: true, data: undefined };
   } catch (error) {
     return handleError(error);
