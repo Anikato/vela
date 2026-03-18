@@ -11,6 +11,9 @@ import type {
   CategoryWithTranslations,
 } from '@/server/services/category.service';
 import {
+  batchDeleteCategories,
+  batchMoveCategories,
+  batchToggleCategories,
   createCategory,
   deleteCategory,
   getCategoryList,
@@ -178,6 +181,72 @@ export async function reorderCategoryTreeAction(
     await reorderCategoryTree(parsed.data.items);
     revalidateTag('categories', 'max');
     return { success: true, data: undefined };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+const batchIdsSchema = z.array(z.string().uuid()).min(1, '请至少选择一个分类');
+
+export async function batchToggleCategoriesAction(
+  ids: string[],
+  isActive: boolean,
+): Promise<ActionResult<{ count: number }>> {
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
+
+  const parsed = batchIdsSchema.safeParse(ids);
+  if (!parsed.success) return { success: false, error: formatZodErrors(parsed.error) };
+
+  try {
+    const count = await batchToggleCategories(parsed.data, isActive);
+    revalidateTag('categories', 'max');
+    revalidateTag('products', 'max');
+    return { success: true, data: { count } };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+export async function batchDeleteCategoriesAction(
+  ids: string[],
+): Promise<ActionResult<{ deleted: number; skipped: string[] }>> {
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
+
+  const parsed = batchIdsSchema.safeParse(ids);
+  if (!parsed.success) return { success: false, error: formatZodErrors(parsed.error) };
+
+  try {
+    const result = await batchDeleteCategories(parsed.data);
+    revalidateTag('categories', 'max');
+    revalidateTag('products', 'max');
+    return { success: true, data: result };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+export async function batchMoveCategoriesAction(
+  ids: string[],
+  targetParentId: string | null,
+): Promise<ActionResult<{ count: number }>> {
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
+
+  const parsed = batchIdsSchema.safeParse(ids);
+  if (!parsed.success) return { success: false, error: formatZodErrors(parsed.error) };
+
+  if (targetParentId) {
+    const parsedTarget = z.string().uuid().safeParse(targetParentId);
+    if (!parsedTarget.success) return { success: false, error: '无效的目标分类 ID' };
+  }
+
+  try {
+    const count = await batchMoveCategories(parsed.data, targetParentId);
+    revalidateTag('categories', 'max');
+    revalidateTag('products', 'max');
+    return { success: true, data: { count } };
   } catch (error) {
     return handleError(error);
   }

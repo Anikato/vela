@@ -86,6 +86,13 @@ export interface PublicProductDetail {
   attributeGroups: PublicProductAttributeGroup[];
 }
 
+export interface ProductBadge {
+  name: string;
+  style: string;
+  color: string;
+  position: string;
+}
+
 export interface PublicProductCardItem {
   id: string;
   slug: string;
@@ -95,6 +102,7 @@ export interface PublicProductCardItem {
   name: string;
   shortDescription: string | null;
   featuredImage: PublicProductMediaItem | null;
+  badges: ProductBadge[];
 }
 
 export interface ProductShowcaseQueryOptions {
@@ -776,10 +784,58 @@ async function mapProductRowsToCards(
   const mediaMap = new Map(mediaRows.map((item) => [item.id, item]));
   const storage = getStorageAdapter();
 
+  const productIds = rows.map((r) => r.id);
+  const badgeRows = productIds.length > 0
+    ? await db
+        .select({
+          productId: productTags.productId,
+          tagId: tags.id,
+          badgeStyle: tags.badgeStyle,
+          badgeColor: tags.badgeColor,
+          badgePosition: tags.badgePosition,
+          locale: tagTranslations.locale,
+          tagName: tagTranslations.name,
+        })
+        .from(productTags)
+        .innerJoin(tags, eq(productTags.tagId, tags.id))
+        .leftJoin(tagTranslations, eq(tagTranslations.tagId, tags.id))
+        .where(and(
+          inArray(productTags.productId, productIds),
+          sql`${tags.badgeStyle} != 'none'`,
+        ))
+    : [];
+
+  const badgeMap = new Map<string, Map<string, { tag: typeof badgeRows[number]; translations: typeof badgeRows }>>();
+  for (const row of badgeRows) {
+    let productBadges = badgeMap.get(row.productId);
+    if (!productBadges) { productBadges = new Map(); badgeMap.set(row.productId, productBadges); }
+    let entry = productBadges.get(row.tagId);
+    if (!entry) { entry = { tag: row, translations: [] }; productBadges.set(row.tagId, entry); }
+    entry.translations.push(row);
+  }
+
   return rows.map((item) => {
     const translated = getTranslation(item.translations, locale, defaultLocale);
     const translatedCategory = getTranslation(item.primaryCategory.translations, locale, defaultLocale);
     const featuredMedia = item.featuredImageId ? mediaMap.get(item.featuredImageId) : null;
+
+    const productBadges = badgeMap.get(item.id);
+    const badges: ProductBadge[] = [];
+    if (productBadges) {
+      for (const entry of productBadges.values()) {
+        const tagTranslated = getTranslation(
+          entry.translations.filter((t) => t.locale).map((t) => ({ locale: t.locale!, name: t.tagName })),
+          locale,
+          defaultLocale,
+        );
+        badges.push({
+          name: tagTranslated?.name ?? entry.tag.tagId,
+          style: entry.tag.badgeStyle,
+          color: entry.tag.badgeColor,
+          position: entry.tag.badgePosition,
+        });
+      }
+    }
 
     return {
       id: item.id,
@@ -792,6 +848,7 @@ async function mapProductRowsToCards(
       featuredImage: featuredMedia
         ? { id: featuredMedia.id, url: storage.getPublicUrl(featuredMedia.filename), alt: featuredMedia.alt }
         : null,
+      badges,
     };
   });
 }

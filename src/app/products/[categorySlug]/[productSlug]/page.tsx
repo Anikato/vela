@@ -16,6 +16,7 @@ import {
   getCachedUiTranslationMap,
 } from '@/lib/data-cache';
 import {
+  getPublicCategoryTree,
   getPublishedProductDetailBySlug,
   getRelatedPublishedProducts,
   incrementProductViewCount,
@@ -52,6 +53,7 @@ const PRODUCT_DETAIL_UI_KEYS = [
   'inquiry.error',
   'product.parameterHeader',
   'product.valueHeader',
+  'product.categories',
 ];
 
 interface ProductDetailRoutePageProps {
@@ -112,12 +114,13 @@ export default async function ProductDetailRoutePage({ params }: ProductDetailRo
     ? product.primaryCategory.name
     : (matchedAdditional?.name ?? product.primaryCategory.name);
 
-  const [relatedProducts, uiMap, captchaSiteKey, customFormFields] = await Promise.all([
+  const [relatedProducts, categoryTree, uiMap, captchaSiteKey, customFormFields] = await Promise.all([
     getRelatedPublishedProducts(locale, locale, {
       productId: product.id,
       primaryCategoryId: product.primaryCategory.id,
       limit: 6,
     }),
+    getPublicCategoryTree(locale, locale),
     getCachedUiTranslationMap(locale, locale, PRODUCT_DETAIL_UI_KEYS),
     getCachedCaptchaSiteKey(),
     getCachedPublicFormFields(locale, locale),
@@ -148,7 +151,9 @@ export default async function ProductDetailRoutePage({ params }: ProductDetailRo
         defaultLocale={locale}
         product={product}
         currentCategoryName={currentCategoryName}
+        currentCategorySlug={normalizedCategorySlug}
         relatedProducts={relatedProducts}
+        categoryTree={categoryTree}
         captchaSiteKey={captchaSiteKey}
         customFormFields={customFormFields}
         uiLabels={{
@@ -182,6 +187,7 @@ export default async function ProductDetailRoutePage({ params }: ProductDetailRo
           formError: uiMap['inquiry.error'] ?? 'Failed to submit inquiry',
           parameterHeader: uiMap['product.parameterHeader'] ?? 'Parameter',
           valueHeader: uiMap['product.valueHeader'] ?? 'Value',
+          categories: uiMap['product.categories'] ?? 'Categories',
         }}
       />
     </WebsiteShell>

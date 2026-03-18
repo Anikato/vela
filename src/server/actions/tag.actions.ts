@@ -15,12 +15,19 @@ const translationSchema = z.object({
   name: z.string().max(100).optional(),
 });
 
+const badgeStyleEnum = z.enum(['none', 'ribbon', 'badge', 'corner']);
+const badgeColorEnum = z.enum(['red', 'orange', 'green', 'blue', 'purple', 'black', 'custom']);
+const badgePositionEnum = z.enum(['top-left', 'top-right']);
+
 const createTagSchema = z.object({
   slug: z
     .string()
     .min(1)
     .max(100)
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug must be kebab-case'),
+  badgeStyle: badgeStyleEnum.optional(),
+  badgeColor: badgeColorEnum.optional(),
+  badgePosition: badgePositionEnum.optional(),
   translations: z.array(translationSchema).min(1),
 });
 
@@ -31,6 +38,9 @@ const updateTagSchema = z.object({
     .max(100)
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug must be kebab-case')
     .optional(),
+  badgeStyle: badgeStyleEnum.optional(),
+  badgeColor: badgeColorEnum.optional(),
+  badgePosition: badgePositionEnum.optional(),
   translations: z.array(translationSchema).optional(),
 });
 

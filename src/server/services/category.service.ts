@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 
 import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
 import { getTranslation } from '@/lib/i18n';
@@ -301,6 +301,70 @@ export async function reorderCategoryTree(items: ReorderCategoryItemInput[]): Pr
         .where(eq(categories.id, item.id));
     }
   });
+}
+
+/** 批量启用/停用分类 */
+export async function batchToggleCategories(ids: string[], isActive: boolean): Promise<number> {
+  if (ids.length === 0) return 0;
+  const result = await db
+    .update(categories)
+    .set({ isActive, updatedAt: new Date() })
+    .where(inArray(categories.id, ids));
+  return result.rowCount ?? ids.length;
+}
+
+/** 批量删除分类（仅允许删除没有子分类的） */
+export async function batchDeleteCategories(ids: string[]): Promise<{ deleted: number; skipped: string[] }> {
+  if (ids.length === 0) return { deleted: 0, skipped: [] };
+
+  const allCats = await db.select({ id: categories.id, parentId: categories.parentId }).from(categories);
+  const childParentIds = new Set(allCats.filter((c) => c.parentId).map((c) => c.parentId!));
+
+  const idSet = new Set(ids);
+  const canDelete: string[] = [];
+  const skipped: string[] = [];
+
+  for (const id of ids) {
+    const hasChildren = childParentIds.has(id) &&
+      allCats.some((c) => c.parentId === id && !idSet.has(c.id));
+    if (hasChildren) {
+      skipped.push(id);
+    } else {
+      canDelete.push(id);
+    }
+  }
+
+  if (canDelete.length > 0) {
+    await db.delete(categories).where(inArray(categories.id, canDelete));
+  }
+
+  return { deleted: canDelete.length, skipped };
+}
+
+/** 批量移动分类到指定父级 */
+export async function batchMoveCategories(ids: string[], targetParentId: string | null): Promise<number> {
+  if (ids.length === 0) return 0;
+
+  const idSet = new Set(ids);
+  if (targetParentId && idSet.has(targetParentId)) {
+    throw new ValidationError('不能将分类移动到自身');
+  }
+
+  if (targetParentId) {
+    const allCats = await db.select({ id: categories.id, parentId: categories.parentId }).from(categories);
+    const parentMap = new Map(allCats.map((c) => [c.id, c.parentId]));
+    let cursor: string | null = targetParentId;
+    while (cursor) {
+      if (idSet.has(cursor)) throw new ValidationError('不能将分类移动到自身的子分类下');
+      cursor = parentMap.get(cursor) ?? null;
+    }
+  }
+
+  const result = await db
+    .update(categories)
+    .set({ parentId: targetParentId, updatedAt: new Date() })
+    .where(inArray(categories.id, ids));
+  return result.rowCount ?? ids.length;
 }
 
 export async function getAllLocales(): Promise<string[]> {

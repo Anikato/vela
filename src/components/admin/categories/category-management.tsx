@@ -3,10 +3,13 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronDown, ChevronRight, GripVertical, Layers, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, FolderInput, GripVertical, Layers, Pencil, Plus, Power, PowerOff, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
+  batchDeleteCategoriesAction,
+  batchMoveCategoriesAction,
+  batchToggleCategoriesAction,
   createCategoryAction,
   deleteCategoryAction,
   reorderCategoryTreeAction,
@@ -15,6 +18,7 @@ import {
 import type { CategoryListItem, Language } from '@/types/admin';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -152,6 +156,12 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
     setCategories(initialCategories);
   }, [initialCategories]);
 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchLoading, setBatchLoading] = useState(false);
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [moveTargetParentId, setMoveTargetParentId] = useState(EMPTY_ID);
+  const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<CategoryListItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CategoryListItem | null>(null);
@@ -287,6 +297,87 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
     }
   }
 
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === treeRows.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(treeRows.map((r) => r.id)));
+    }
+  }
+
+  async function handleBatchToggle(isActive: boolean) {
+    const ids = Array.from(selectedIds);
+    setBatchLoading(true);
+    try {
+      const result = await batchToggleCategoriesAction(ids, isActive);
+      if (!result.success) {
+        toast.error(typeof result.error === 'string' ? result.error : '操作失败');
+        return;
+      }
+      toast.success(`已${isActive ? '启用' : '停用'} ${result.data.count} 个分类`);
+      setSelectedIds(new Set());
+      router.refresh();
+    } finally {
+      setBatchLoading(false);
+    }
+  }
+
+  async function handleBatchDelete() {
+    const ids = Array.from(selectedIds);
+    setBatchLoading(true);
+    try {
+      const result = await batchDeleteCategoriesAction(ids);
+      if (!result.success) {
+        toast.error(typeof result.error === 'string' ? result.error : '删除失败');
+        return;
+      }
+      if (result.data.skipped.length > 0) {
+        const skippedNames = result.data.skipped
+          .map((id) => categories.find((c) => c.id === id)?.displayName ?? id)
+          .join('、');
+        toast.warning(`已删除 ${result.data.deleted} 个，${result.data.skipped.length} 个含子分类无法删除: ${skippedNames}`);
+      } else {
+        toast.success(`已删除 ${result.data.deleted} 个分类`);
+      }
+      setSelectedIds(new Set());
+      setBatchDeleteOpen(false);
+      router.refresh();
+    } finally {
+      setBatchLoading(false);
+    }
+  }
+
+  async function handleBatchMove() {
+    const ids = Array.from(selectedIds);
+    const targetParent = moveTargetParentId === EMPTY_ID ? null : moveTargetParentId;
+    setBatchLoading(true);
+    try {
+      const result = await batchMoveCategoriesAction(ids, targetParent);
+      if (!result.success) {
+        toast.error(typeof result.error === 'string' ? result.error : '移动失败');
+        return;
+      }
+      toast.success(`已移动 ${result.data.count} 个分类`);
+      setSelectedIds(new Set());
+      setMoveDialogOpen(false);
+      router.refresh();
+    } finally {
+      setBatchLoading(false);
+    }
+  }
+
+  const moveParentOptions = useMemo(() => {
+    return categories.filter((c) => !selectedIds.has(c.id));
+  }, [categories, selectedIds]);
+
   const orderedTranslations = useMemo(() => {
     const list = [...translations];
     list.sort((a, b) => {
@@ -387,7 +478,47 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        <div>
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                已选 {selectedIds.size} 项
+              </span>
+              <Button
+                variant="outline" size="sm" disabled={batchLoading}
+                onClick={() => handleBatchToggle(true)}
+              >
+                <Check className="mr-1 h-3.5 w-3.5" />启用
+              </Button>
+              <Button
+                variant="outline" size="sm" disabled={batchLoading}
+                onClick={() => handleBatchToggle(false)}
+              >
+                <PowerOff className="mr-1 h-3.5 w-3.5" />停用
+              </Button>
+              <Button
+                variant="outline" size="sm" disabled={batchLoading}
+                onClick={() => { setMoveTargetParentId(EMPTY_ID); setMoveDialogOpen(true); }}
+              >
+                <FolderInput className="mr-1 h-3.5 w-3.5" />移动
+              </Button>
+              <Button
+                variant="outline" size="sm" disabled={batchLoading}
+                className="text-destructive hover:text-destructive"
+                onClick={() => setBatchDeleteOpen(true)}
+              >
+                <Trash2 className="mr-1 h-3.5 w-3.5" />删除
+              </Button>
+              <Button
+                variant="ghost" size="sm" disabled={batchLoading}
+                onClick={() => setSelectedIds(new Set())}
+              >
+                <X className="mr-1 h-3.5 w-3.5" />取消
+              </Button>
+            </div>
+          )}
+        </div>
         <Button onClick={openCreateDialog}>
           <Plus className="mr-2 h-4 w-4" />
           新建分类
@@ -401,6 +532,13 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
         <Table>
           <TableHeader>
             <TableRow className="border-border/50 hover:bg-transparent">
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={treeRows.length > 0 && selectedIds.size === treeRows.length}
+                  onCheckedChange={toggleSelectAll}
+                  aria-label="全选"
+                />
+              </TableHead>
               <TableHead>名称</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead>父级</TableHead>
@@ -412,7 +550,7 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
           <TableBody>
             {treeRows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                   暂无分类
                 </TableCell>
               </TableRow>
@@ -438,6 +576,13 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
                     void handleDrop(item.id);
                   }}
                 >
+                  <TableCell className="w-10">
+                    <Checkbox
+                      checked={selectedIds.has(item.id)}
+                      onCheckedChange={() => toggleSelect(item.id)}
+                      aria-label={`选择 ${item.displayName}`}
+                    />
+                  </TableCell>
                   <TableCell>
                     <div
                       className="flex items-center gap-2"
@@ -638,6 +783,44 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
         onConfirm={handleDelete}
         loading={isSubmitting}
       />
+
+      <ConfirmDeleteDialog
+        open={batchDeleteOpen}
+        onOpenChange={setBatchDeleteOpen}
+        description={<>确定删除选中的 <strong>{selectedIds.size}</strong> 个分类吗？含有子分类的将被跳过。此操作不可撤销。</>}
+        onConfirm={handleBatchDelete}
+        loading={batchLoading}
+      />
+
+      <Dialog open={moveDialogOpen} onOpenChange={setMoveDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>批量移动分类</DialogTitle>
+            <DialogDescription>
+              将选中的 {selectedIds.size} 个分类移动到指定父级下
+            </DialogDescription>
+          </DialogHeader>
+          <Select value={moveTargetParentId} onValueChange={setMoveTargetParentId}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value={EMPTY_ID}>无（顶级分类）</SelectItem>
+              {moveParentOptions.map((item) => (
+                <SelectItem key={item.id} value={item.id}>
+                  {item.displayName} ({item.slug})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMoveDialogOpen(false)} disabled={batchLoading}>
+              取消
+            </Button>
+            <Button onClick={handleBatchMove} disabled={batchLoading}>
+              确认移动
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

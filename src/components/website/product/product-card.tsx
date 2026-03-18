@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
-import type { PublicProductCardItem } from '@/server/services/product-public.service';
+import type { ProductBadge, PublicProductCardItem } from '@/server/services/product-public.service';
 import type { CardHoverEffect, CardImageRatio } from '@/types/theme';
 import { AddToBasketButton } from '@/components/website/inquiry/add-to-basket-button';
 
@@ -19,6 +19,54 @@ const HOVER_CLASS_MAP: Record<CardHoverEffect, string> = {
   'border-glow': 'vt-card-hover-border-glow',
   shadow: 'vt-card-hover-shadow',
 };
+
+const BADGE_COLOR_CLASS: Record<string, string> = {
+  red: 'bg-red-500',
+  orange: 'bg-orange-500',
+  green: 'bg-green-500',
+  blue: 'bg-blue-500',
+  purple: 'bg-purple-500',
+  black: 'bg-gray-900',
+};
+
+function ProductBadgeRender({ badge }: { badge: ProductBadge }) {
+  const colorClass = BADGE_COLOR_CLASS[badge.color] ?? 'bg-red-500';
+  const isLeft = badge.position !== 'top-right';
+
+  if (badge.style === 'ribbon') {
+    return (
+      <div className={`absolute ${isLeft ? 'left-0' : 'right-0'} top-0 z-10`}>
+        <div className={`${colorClass} px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white ${
+          isLeft ? 'rounded-br-lg' : 'rounded-bl-lg'
+        }`}>
+          {badge.name}
+        </div>
+      </div>
+    );
+  }
+
+  if (badge.style === 'badge') {
+    return (
+      <div className={`absolute ${isLeft ? 'left-2' : 'right-2'} top-2 z-10`}>
+        <div className={`${colorClass} rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm`}>
+          {badge.name}
+        </div>
+      </div>
+    );
+  }
+
+  if (badge.style === 'corner') {
+    return (
+      <div className={`absolute ${isLeft ? 'left-0' : 'right-0'} top-0 z-10 overflow-hidden`} style={{ width: 64, height: 64 }}>
+        <div className={`${colorClass} absolute ${isLeft ? '-left-[14px]' : '-right-[14px]'} top-[10px] w-[96px] text-center ${isLeft ? '-rotate-45' : 'rotate-45'} py-[2px] text-[9px] font-bold uppercase tracking-wider text-white shadow-sm`}>
+          {badge.name}
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
 
 interface ProductCardProps {
   item: PublicProductCardItem;
@@ -46,6 +94,9 @@ export function ProductCard({
     <div className={`group relative overflow-hidden rounded-2xl border border-border/40 bg-card ${hoverClass}`}>
       <Link href={href} className="block">
         <div className={`relative ${aspectClass} overflow-hidden bg-muted/20`}>
+          {item.badges?.map((badge, i) => (
+            <ProductBadgeRender key={i} badge={badge} />
+          ))}
           {item.featuredImage ? (
             <Image
               src={item.featuredImage.url}

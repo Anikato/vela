@@ -16,6 +16,7 @@ import {
   getCachedUiTranslationMap,
 } from '@/lib/data-cache';
 import {
+  getPublicCategoryTree,
   getPublishedProductDetailBySlug,
   getRelatedPublishedProducts,
   incrementProductViewCount,
@@ -52,6 +53,7 @@ const PRODUCT_DETAIL_UI_KEYS = [
   'inquiry.error',
   'product.parameterHeader',
   'product.valueHeader',
+  'product.categories',
 ];
 
 interface LocaleProductDetailRoutePageProps {
@@ -117,12 +119,13 @@ export default async function LocaleProductDetailRoutePage({
     ? product.primaryCategory.name
     : (matchedAdditional?.name ?? product.primaryCategory.name);
 
-  const [relatedProducts, uiMap, captchaSiteKey, customFormFields] = await Promise.all([
+  const [relatedProducts, categoryTree, uiMap, captchaSiteKey, customFormFields] = await Promise.all([
     getRelatedPublishedProducts(locale, defaultLanguage.code, {
       productId: product.id,
       primaryCategoryId: product.primaryCategory.id,
       limit: 6,
     }),
+    getPublicCategoryTree(locale, defaultLanguage.code),
     getCachedUiTranslationMap(locale, defaultLanguage.code, PRODUCT_DETAIL_UI_KEYS),
     getCachedCaptchaSiteKey(),
     getCachedPublicFormFields(locale, defaultLanguage.code),
@@ -154,7 +157,9 @@ export default async function LocaleProductDetailRoutePage({
         defaultLocale={defaultLanguage.code}
         product={product}
         currentCategoryName={currentCategoryName}
+        currentCategorySlug={normalizedCategorySlug}
         relatedProducts={relatedProducts}
+        categoryTree={categoryTree}
         captchaSiteKey={captchaSiteKey}
         customFormFields={customFormFields}
         uiLabels={{
@@ -188,6 +193,7 @@ export default async function LocaleProductDetailRoutePage({
           formError: uiMap['inquiry.error'] ?? 'Failed to submit inquiry',
           parameterHeader: uiMap['product.parameterHeader'] ?? 'Parameter',
           valueHeader: uiMap['product.valueHeader'] ?? 'Value',
+          categories: uiMap['product.categories'] ?? 'Categories',
         }}
       />
     </WebsiteShell>

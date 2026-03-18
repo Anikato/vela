@@ -23,6 +23,9 @@ export interface TagTranslationInput {
 
 export interface CreateTagInput {
   slug: string;
+  badgeStyle?: string;
+  badgeColor?: string;
+  badgePosition?: string;
   translations: TagTranslationInput[];
 }
 
@@ -124,6 +127,9 @@ export async function createTag(input: CreateTagInput): Promise<TagWithTranslati
     .insert(tags)
     .values({
       slug,
+      ...(input.badgeStyle && { badgeStyle: input.badgeStyle }),
+      ...(input.badgeColor && { badgeColor: input.badgeColor }),
+      ...(input.badgePosition && { badgePosition: input.badgePosition }),
     })
     .returning();
 
@@ -150,6 +156,9 @@ export async function updateTag(id: string, input: UpdateTagInput): Promise<TagW
     .update(tags)
     .set({
       slug: input.slug ?? existing.slug,
+      ...(input.badgeStyle !== undefined && { badgeStyle: input.badgeStyle }),
+      ...(input.badgeColor !== undefined && { badgeColor: input.badgeColor }),
+      ...(input.badgePosition !== undefined && { badgePosition: input.badgePosition }),
     })
     .where(eq(tags.id, id));
 
