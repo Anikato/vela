@@ -18,7 +18,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-RUN node ./node_modules/.bin/next build
+RUN npx next build
 
 # --- Runtime deps (npm flat layout, avoids pnpm symlink issues) ---
 FROM base AS runtime-deps
