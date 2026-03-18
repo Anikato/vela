@@ -349,7 +349,7 @@ function GoogleMapConfig({ value, onChange, disabled }: Omit<BlockConfigFormProp
           onChange={(e) => onChange({ ...value, embed_url: e.target.value })}
           disabled={disabled}
         />
-        <p className="text-xs text-muted-foreground">在 Google Maps 中点击"分享" → "嵌入地图" → 复制 src 链接</p>
+        <p className="text-xs text-muted-foreground">在 Google Maps 中点击「分享」→「嵌入地图」→ 复制 src 链接</p>
       </div>
       <div className="space-y-1.5">
         <label className="text-sm font-medium">地图高度</label>
