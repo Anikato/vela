@@ -46,6 +46,18 @@ const CONTAINER_CLASS_MAP: Record<string, string> = {
   full: 'max-w-none px-0',
 };
 
+const DEFAULT_CONTAINER_BY_TYPE: Record<string, string> = {
+  rich_text: 'medium',
+  faq: 'narrow',
+  cta: 'medium',
+  video_embed: 'medium',
+  timeline: 'medium',
+  contact_form: 'narrow',
+  hero: 'medium',
+  testimonials: 'default',
+  google_map: 'default',
+};
+
 function getConfigString(config: Record<string, unknown>, key: string): string | null {
   const value = config[key];
   return typeof value === 'string' ? value : null;
@@ -63,7 +75,8 @@ export function SectionWrapper({ section, children }: SectionWrapperProps) {
   const background = explicitBg ?? getDefaultBlockBg();
   const spacingTop = getConfigString(section.config, 'padding_top') ?? 'md';
   const spacingBottom = getConfigString(section.config, 'padding_bottom') ?? 'md';
-  const containerWidth = getConfigString(section.config, 'container_width') ?? 'default';
+  const explicitContainerWidth = getConfigString(section.config, 'container_width');
+  const containerWidth = explicitContainerWidth ?? DEFAULT_CONTAINER_BY_TYPE[section.type] ?? 'default';
   const containerWidthCustom = getConfigString(section.config, 'container_width_custom');
   const backgroundImage = getConfigString(section.config, 'background_image');
   const overlayOpacity = Number(section.config.overlay_opacity) || 0;
