@@ -306,11 +306,12 @@ export async function reorderCategoryTree(items: ReorderCategoryItemInput[]): Pr
 /** 批量启用/停用分类 */
 export async function batchToggleCategories(ids: string[], isActive: boolean): Promise<number> {
   if (ids.length === 0) return 0;
-  const result = await db
+  const updated = await db
     .update(categories)
     .set({ isActive, updatedAt: new Date() })
-    .where(inArray(categories.id, ids));
-  return result.rowCount ?? ids.length;
+    .where(inArray(categories.id, ids))
+    .returning({ id: categories.id });
+  return updated.length;
 }
 
 /** 批量删除分类（仅允许删除没有子分类的） */
@@ -360,11 +361,12 @@ export async function batchMoveCategories(ids: string[], targetParentId: string 
     }
   }
 
-  const result = await db
+  const updated = await db
     .update(categories)
     .set({ parentId: targetParentId, updatedAt: new Date() })
-    .where(inArray(categories.id, ids));
-  return result.rowCount ?? ids.length;
+    .where(inArray(categories.id, ids))
+    .returning({ id: categories.id });
+  return updated.length;
 }
 
 export async function getAllLocales(): Promise<string[]> {

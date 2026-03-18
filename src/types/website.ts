@@ -11,6 +11,13 @@ export interface PublicProductMediaItem {
   alt: string | null;
 }
 
+export interface ProductBadge {
+  name: string;
+  style: string;
+  color: string;
+  position: string;
+}
+
 export interface PublicProductCardItem {
   id: string;
   slug: string;
@@ -20,6 +27,7 @@ export interface PublicProductCardItem {
   name: string;
   shortDescription: string | null;
   featuredImage: PublicProductMediaItem | null;
+  badges: ProductBadge[];
 }
 
 export type ProductSortOption = 'newest' | 'popular' | 'name_asc' | 'name_desc';

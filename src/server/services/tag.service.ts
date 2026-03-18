@@ -4,6 +4,7 @@ import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
 import { getTranslation } from '@/lib/i18n';
 import { db } from '@/server/db';
 import { tagTranslations, tags } from '@/server/db/schema';
+import type { TagBadgeColor, TagBadgePosition, TagBadgeStyle } from '@/server/db/schema/tags';
 
 export type Tag = typeof tags.$inferSelect;
 export type TagTranslation = typeof tagTranslations.$inferSelect;
@@ -23,9 +24,9 @@ export interface TagTranslationInput {
 
 export interface CreateTagInput {
   slug: string;
-  badgeStyle?: string;
-  badgeColor?: string;
-  badgePosition?: string;
+  badgeStyle?: TagBadgeStyle;
+  badgeColor?: TagBadgeColor;
+  badgePosition?: TagBadgePosition;
   translations: TagTranslationInput[];
 }
 

@@ -477,44 +477,7 @@ export async function getPublishedProductsForShowcase(
   });
 
   if (rows.length === 0) return [];
-
-  const mediaIds = rows
-    .map((item) => item.featuredImageId)
-    .filter((id): id is string => Boolean(id));
-  const mediaRows =
-    mediaIds.length > 0
-      ? await db.select().from(media).where(inArray(media.id, mediaIds))
-      : [];
-  const mediaMap = new Map(mediaRows.map((item) => [item.id, item]));
-  const storage = getStorageAdapter();
-
-  return rows.map((item) => {
-    const translated = getTranslation(item.translations, locale, defaultLocale);
-    const translatedCategory = getTranslation(
-      item.primaryCategory.translations,
-      locale,
-      defaultLocale,
-    );
-    const featuredMedia = item.featuredImageId ? mediaMap.get(item.featuredImageId) : null;
-
-    return {
-      id: item.id,
-      slug: item.slug,
-      primaryCategorySlug: item.primaryCategory.slug,
-      primaryCategoryName: translatedCategory?.name ?? item.primaryCategory.slug,
-      sku: item.sku,
-      name: translated?.name ?? item.sku,
-      shortDescription:
-        typeof translated?.shortDescription === 'string' ? translated.shortDescription : null,
-      featuredImage: featuredMedia
-        ? {
-            id: featuredMedia.id,
-            url: storage.getPublicUrl(featuredMedia.filename),
-            alt: featuredMedia.alt,
-          }
-        : null,
-    };
-  });
+  return mapProductRowsToCards(rows, locale, defaultLocale);
 }
 
 export async function getPublicCategoryBySlug(
@@ -569,43 +532,7 @@ export async function getRelatedPublishedProducts(
     return [];
   }
 
-  const mediaIds = filteredRows
-    .map((item) => item.featuredImageId)
-    .filter((id): id is string => Boolean(id));
-  const mediaRows =
-    mediaIds.length > 0
-      ? await db.select().from(media).where(inArray(media.id, mediaIds))
-      : [];
-  const mediaMap = new Map(mediaRows.map((item) => [item.id, item]));
-  const storage = getStorageAdapter();
-
-  return filteredRows.map((item) => {
-    const translated = getTranslation(item.translations, locale, defaultLocale);
-    const translatedCategory = getTranslation(
-      item.primaryCategory.translations,
-      locale,
-      defaultLocale,
-    );
-    const featuredMedia = item.featuredImageId ? mediaMap.get(item.featuredImageId) : null;
-
-    return {
-      id: item.id,
-      slug: item.slug,
-      primaryCategorySlug: item.primaryCategory.slug,
-      primaryCategoryName: translatedCategory?.name ?? item.primaryCategory.slug,
-      sku: item.sku,
-      name: translated?.name ?? item.sku,
-      shortDescription:
-        typeof translated?.shortDescription === 'string' ? translated.shortDescription : null,
-      featuredImage: featuredMedia
-        ? {
-            id: featuredMedia.id,
-            url: storage.getPublicUrl(featuredMedia.filename),
-            alt: featuredMedia.alt,
-          }
-        : null,
-    };
-  });
+  return mapProductRowsToCards(filteredRows, locale, defaultLocale);
 }
 
 /**
