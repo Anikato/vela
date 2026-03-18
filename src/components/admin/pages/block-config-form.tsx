@@ -520,9 +520,11 @@ function CommonAppearanceConfig({ value, onChange, disabled }: Omit<BlockConfigF
               <SelectItem value="xs">超窄 (672px)</SelectItem>
               <SelectItem value="narrow">窄 (768px)</SelectItem>
               <SelectItem value="medium">中 (896px)</SelectItem>
-              <SelectItem value="default">默认 (1024px)</SelectItem>
-              <SelectItem value="wide">宽 (跟随主题)</SelectItem>
+              <SelectItem value="default">默认 (跟随主题)</SelectItem>
+              <SelectItem value="wide">宽 (1280px)</SelectItem>
               <SelectItem value="extra-wide">超宽 (1400px)</SelectItem>
+              <SelectItem value="1600">1600px</SelectItem>
+              <SelectItem value="1800">1800px</SelectItem>
               <SelectItem value="full">全宽</SelectItem>
               <SelectItem value="custom">自定义</SelectItem>
             </SelectContent>

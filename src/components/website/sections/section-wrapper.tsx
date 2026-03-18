@@ -43,6 +43,8 @@ const CONTAINER_CLASS_MAP: Record<string, string> = {
   default: 'vt-container-inner',
   wide: 'max-w-[var(--max-width,80rem)]',
   'extra-wide': 'max-w-[1400px]',
+  '1600': 'max-w-[1600px]',
+  '1800': 'max-w-[1800px]',
   full: 'max-w-none px-0',
 };
 
