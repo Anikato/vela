@@ -51,10 +51,16 @@ function getConfigString(config: Record<string, unknown>, key: string): string |
   return typeof value === 'string' ? value : null;
 }
 
+function getDefaultBlockBg(): string {
+  if (typeof document === 'undefined') return 'white';
+  return document.documentElement.dataset.defaultBlockBg || 'white';
+}
+
 export function SectionWrapper({ section, children }: SectionWrapperProps) {
   const ref = useScrollReveal<HTMLElement>();
 
-  const background = getConfigString(section.config, 'background') ?? 'white';
+  const explicitBg = getConfigString(section.config, 'background');
+  const background = explicitBg ?? getDefaultBlockBg();
   const spacingTop = getConfigString(section.config, 'padding_top') ?? 'md';
   const spacingBottom = getConfigString(section.config, 'padding_bottom') ?? 'md';
   const containerWidth = getConfigString(section.config, 'container_width') ?? 'default';

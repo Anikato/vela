@@ -50,6 +50,8 @@ const PRODUCT_DETAIL_UI_KEYS = [
   'common.cancel',
   'inquiry.success',
   'inquiry.error',
+  'product.parameterHeader',
+  'product.valueHeader',
 ];
 
 interface ProductDetailRoutePageProps {
@@ -178,6 +180,8 @@ export default async function ProductDetailRoutePage({ params }: ProductDetailRo
           formCancel: uiMap['common.cancel'] ?? 'Cancel',
           formSuccess: uiMap['inquiry.success'] ?? 'Inquiry submitted successfully!',
           formError: uiMap['inquiry.error'] ?? 'Failed to submit inquiry',
+          parameterHeader: uiMap['product.parameterHeader'] ?? 'Parameter',
+          valueHeader: uiMap['product.valueHeader'] ?? 'Value',
         }}
       />
     </WebsiteShell>

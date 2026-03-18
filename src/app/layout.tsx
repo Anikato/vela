@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { HtmlLangSync } from '@/components/html-lang-sync';
-import { getSiteName, getFaviconUrl } from '@/server/services/settings-public.service';
+import { getSiteName, getFaviconInfo } from '@/server/services/settings-public.service';
 import './globals.css';
 
 const geistSans = Geist({
@@ -21,17 +21,17 @@ export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
-    const [siteName, faviconUrl] = await Promise.all([
+    const [siteName, favicon] = await Promise.all([
       getSiteName(),
-      getFaviconUrl(),
+      getFaviconInfo(),
     ]);
     return {
       title: siteName,
       description: siteName,
-      ...(faviconUrl && {
+      ...(favicon && {
         icons: {
-          icon: faviconUrl,
-          apple: faviconUrl,
+          icon: { url: favicon.url, type: favicon.type },
+          apple: favicon.url,
         },
       }),
     };

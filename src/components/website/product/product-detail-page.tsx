@@ -48,6 +48,8 @@ interface ProductDetailPageProps {
     formCancel: string;
     formSuccess: string;
     formError: string;
+    parameterHeader: string;
+    valueHeader: string;
   };
 }
 
@@ -94,8 +96,8 @@ export function ProductDetailPage({
               <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="bg-foreground text-background">
-                    <th className="border-b border-foreground/20 px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider">Parameter</th>
-                    <th className="border-b border-foreground/20 px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider">Value</th>
+                    <th className="border-b border-foreground/20 px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider">{uiLabels.parameterHeader}</th>
+                    <th className="border-b border-foreground/20 px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider">{uiLabels.valueHeader}</th>
                   </tr>
                 </thead>
                 <tbody>

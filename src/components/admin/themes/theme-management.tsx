@@ -810,6 +810,23 @@ export function ThemeManagement({ initialThemes }: Props) {
                   <BackgroundEditor label="页面背景" value={editConfig.layout.pageBackground} onChange={(v) => setEditConfig((p) => ({ ...p, layout: { ...p.layout, pageBackground: v } }))} />
                   <BackgroundEditor label="Header 背景" value={editConfig.layout.headerBackground} onChange={(v) => setEditConfig((p) => ({ ...p, layout: { ...p.layout, headerBackground: v } }))} />
                   <BackgroundEditor label="Footer 背景" value={editConfig.layout.footerBackground} onChange={(v) => setEditConfig((p) => ({ ...p, layout: { ...p.layout, footerBackground: v } }))} />
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium">区块默认背景</label>
+                    <p className="mb-2 text-xs text-muted-foreground">未单独设置背景的区块将使用此默认值</p>
+                    <select
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      value={editConfig.layout.defaultBlockBackground ?? 'white'}
+                      onChange={(e) => setEditConfig((p) => ({ ...p, layout: { ...p.layout, defaultBlockBackground: e.target.value } }))}
+                    >
+                      <option value="transparent">透明（继承页面背景）</option>
+                      <option value="white">白色</option>
+                      <option value="gray">灰色</option>
+                      <option value="primary">主色调</option>
+                      <option value="secondary">次色调</option>
+                      <option value="gradient">渐变</option>
+                      <option value="dark">深色</option>
+                    </select>
+                  </div>
                 </div>
               )}
 

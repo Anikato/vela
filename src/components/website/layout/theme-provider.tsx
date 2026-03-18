@@ -57,6 +57,7 @@ function buildDataAttributes(config: ThemeConfig): Record<string, string> {
     'data-header-style': config.layout.headerStyle,
     'data-header-transparent': config.layout.headerTransparent ? '1' : '',
     'data-footer-style': config.layout.footerStyle,
+    'data-default-block-bg': config.layout.defaultBlockBackground ?? '',
   };
 }
 

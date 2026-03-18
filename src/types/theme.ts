@@ -92,6 +92,7 @@ export interface ThemeLayout {
   headerBlur: boolean;
   footerBackground?: ThemeBackground;
   logoHeight: number;
+  defaultBlockBackground?: string;
 }
 
 export interface ThemeConfig {

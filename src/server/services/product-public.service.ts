@@ -807,27 +807,23 @@ export async function getPublicCategoryTree(
     orderBy: [asc(categories.sortOrder), asc(categories.createdAt)],
   });
 
-  const primaryCountRows = await db
-    .select({ categoryId: products.primaryCategoryId, cnt: count() })
+  const primaryRows = await db
+    .select({ productId: products.id, categoryId: products.primaryCategoryId })
     .from(products)
-    .where(eq(products.status, 'published'))
-    .groupBy(products.primaryCategoryId);
-  const primaryCountMap = new Map(primaryCountRows.map((r) => [r.categoryId, r.cnt]));
+    .where(eq(products.status, 'published'));
 
-  const additionalCountRows = await db
-    .select({ categoryId: productCategories.categoryId, cnt: count() })
+  const additionalRows = await db
+    .select({ productId: productCategories.productId, categoryId: productCategories.categoryId })
     .from(productCategories)
     .innerJoin(products, eq(productCategories.productId, products.id))
-    .where(eq(products.status, 'published'))
-    .groupBy(productCategories.categoryId);
-  const additionalCountMap = new Map(additionalCountRows.map((r) => [r.categoryId, r.cnt]));
+    .where(eq(products.status, 'published'));
 
-  const directCountMap = new Map<string, number>();
-  for (const cat of allCategories) {
-    directCountMap.set(
-      cat.id,
-      (primaryCountMap.get(cat.id) ?? 0) + (additionalCountMap.get(cat.id) ?? 0),
-    );
+  const categoryProductsMap = new Map<string, Set<string>>();
+  for (const r of [...primaryRows, ...additionalRows]) {
+    if (!r.categoryId) continue;
+    let s = categoryProductsMap.get(r.categoryId);
+    if (!s) { s = new Set(); categoryProductsMap.set(r.categoryId, s); }
+    s.add(r.productId);
   }
 
   const childMap = new Map<string, string[]>();
@@ -839,15 +835,15 @@ export async function getPublicCategoryTree(
     }
   }
 
-  function getAggregatedCount(catId: string): number {
-    let total = directCountMap.get(catId) ?? 0;
+  function getAggregatedProducts(catId: string): Set<string> {
+    const result = new Set(categoryProductsMap.get(catId) ?? []);
     const children = childMap.get(catId);
     if (children) {
       for (const childId of children) {
-        total += getAggregatedCount(childId);
+        for (const pid of getAggregatedProducts(childId)) result.add(pid);
       }
     }
-    return total;
+    return result;
   }
 
   const nodeMap = new Map<string, PublicCategoryTreeNode>();
@@ -857,7 +853,7 @@ export async function getPublicCategoryTree(
       id: cat.id,
       slug: cat.slug,
       name: translated?.name ?? cat.slug,
-      productCount: getAggregatedCount(cat.id),
+      productCount: getAggregatedProducts(cat.id).size,
       children: [],
     });
   }

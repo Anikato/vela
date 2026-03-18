@@ -14,7 +14,7 @@ export function Breadcrumb({ items }: BreadcrumbProps) {
   if (!items.length) return null;
 
   return (
-    <nav aria-label="breadcrumb" className="border-b border-border bg-background">
+    <nav aria-label="breadcrumb" className="border-b border-border/40">
       <div className="vt-container flex items-center py-3 text-sm">
         {items.map((item, index) => {
           const isLast = index === items.length - 1;

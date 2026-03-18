@@ -45,14 +45,18 @@ export async function getSiteName(): Promise<string> {
   return row[0]?.siteName || DEFAULT_SITE_NAME;
 }
 
-/** 获取 favicon URL（供根布局 metadata.icons 使用） */
-export async function getFaviconUrl(): Promise<string | null> {
+/** 获取 favicon 信息（供根布局 metadata.icons 使用） */
+export async function getFaviconInfo(): Promise<{ url: string; type: string } | null> {
   const row = await db.query.siteSettings.findFirst({
     with: { favicon: true },
   });
   if (!row?.favicon) return null;
   const { getStorageAdapter } = await import('@/server/storage');
-  return getStorageAdapter().getPublicUrl(row.favicon.filename);
+  const thumbnailPath = row.favicon.filename.replace('/original.', '/thumbnail.');
+  return {
+    url: getStorageAdapter().getPublicUrl(thumbnailPath),
+    type: row.favicon.mimeType,
+  };
 }
 
 export interface InquiryAutoReplyTemplate {
