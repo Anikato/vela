@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 import { WebsiteShell } from '@/components/website/layout/website-shell';
 import { SearchPage } from '@/components/website/product/search-page';

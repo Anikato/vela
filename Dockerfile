@@ -6,7 +6,7 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN corepack enable pnpm && pnpm install --frozen-lockfile
+RUN corepack enable && corepack install && pnpm install --frozen-lockfile
 
 # --- Builder ---
 FROM base AS builder
@@ -18,7 +18,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-RUN corepack enable pnpm && pnpm build
+RUN node ./node_modules/.bin/next build
 
 # --- Runtime deps (npm flat layout, avoids pnpm symlink issues) ---
 FROM base AS runtime-deps

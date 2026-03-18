@@ -20,20 +20,24 @@ const geistMono = Geist_Mono({
 export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const [siteName, faviconUrl] = await Promise.all([
-    getSiteName(),
-    getFaviconUrl(),
-  ]);
-  return {
-    title: siteName,
-    description: siteName,
-    ...(faviconUrl && {
-      icons: {
-        icon: faviconUrl,
-        apple: faviconUrl,
-      },
-    }),
-  };
+  try {
+    const [siteName, faviconUrl] = await Promise.all([
+      getSiteName(),
+      getFaviconUrl(),
+    ]);
+    return {
+      title: siteName,
+      description: siteName,
+      ...(faviconUrl && {
+        icons: {
+          icon: faviconUrl,
+          apple: faviconUrl,
+        },
+      }),
+    };
+  } catch {
+    return { title: 'Vela' };
+  }
 }
 
 export const viewport: Viewport = {

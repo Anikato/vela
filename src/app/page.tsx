@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 import { buildSeoMetadata, type AlternateLocale } from '@/lib/seo';
 import { SectionRenderer } from '@/components/website/sections/section-renderer';
