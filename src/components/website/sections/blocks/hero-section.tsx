@@ -69,7 +69,7 @@ export function HeroSection({ section }: SectionComponentProps) {
   }
 
   return (
-    <div className="mx-auto max-w-4xl py-8 text-center sm:py-12">
+    <div className="py-8 text-center sm:py-12">
       {tr.title ? (
         <h1 className="text-3xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
           {tr.title}

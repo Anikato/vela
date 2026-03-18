@@ -43,7 +43,7 @@ export function VideoEmbedSection({ section }: SectionComponentProps) {
       )}
 
       {parsed?.embedUrl && (
-        <div className="mx-auto max-w-4xl overflow-hidden rounded-xl bg-black">
+        <div className="overflow-hidden rounded-xl bg-black">
           <div className={aspectRatio}>
             <iframe
               src={parsed.embedUrl}
@@ -60,7 +60,7 @@ export function VideoEmbedSection({ section }: SectionComponentProps) {
 
       {tr.content && (
         <div
-          className="prose prose-sm mx-auto mt-6 max-w-3xl text-center text-muted-foreground"
+          className="prose prose-sm mx-auto mt-6 max-w-none text-center text-muted-foreground"
           dangerouslySetInnerHTML={{ __html: tr.content }}
         />
       )}

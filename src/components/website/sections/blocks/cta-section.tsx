@@ -14,7 +14,7 @@ export function CtaSection({ section }: SectionComponentProps) {
   }
 
   return (
-    <div className="relative mx-auto max-w-4xl overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary/80 p-8 text-center text-primary-foreground sm:p-12 lg:p-16">
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary/80 p-8 text-center text-primary-foreground sm:p-12 lg:p-16">
       <div className="absolute -left-12 -top-12 h-40 w-40 rounded-full bg-white/10" />
       <div className="absolute -bottom-8 -right-8 h-32 w-32 rounded-full bg-white/10" />
       <div className="absolute left-1/2 top-0 h-20 w-20 -translate-x-1/2 rounded-full bg-white/5" />

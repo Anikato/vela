@@ -20,7 +20,7 @@ export function TimelineSection({ section }: SectionComponentProps) {
         </div>
       )}
 
-      <div className="relative mx-auto max-w-4xl">
+      <div className="relative mx-auto">
         <div className="absolute left-4 top-0 hidden h-full w-px bg-gradient-to-b from-primary/20 via-primary/40 to-primary/20 md:left-1/2 md:block md:-translate-x-px" />
         <div className="absolute left-4 top-0 h-full w-px bg-gradient-to-b from-primary/20 via-primary/40 to-primary/20 md:hidden" />
 

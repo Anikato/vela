@@ -5,7 +5,7 @@ export function RichTextSection({ section }: SectionComponentProps) {
   if (!tr.title && !tr.content) return null;
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div>
       {tr.title ? <h2 className="text-2xl font-semibold">{tr.title}</h2> : null}
       {tr.content ? (
         <div

@@ -13,7 +13,7 @@ export function FaqSection({ section }: SectionComponentProps) {
   if (!items.length && !tr.title) return null;
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div>
       {(tr.title || tr.subtitle) && (
         <div className="mb-12 text-center">
           {tr.title && <h2 className="text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">{tr.title}</h2>}

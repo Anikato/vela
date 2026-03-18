@@ -22,7 +22,7 @@ export function ContactFormSection({ section, captchaSiteKey }: SectionComponent
         </div>
       )}
 
-      <div className="mx-auto max-w-xl">
+      <div className="mx-auto">
         <InlineContactForm
           submitLabel={tr.buttonText}
           successMessage={tr.content}
