@@ -1,11 +1,12 @@
 'use server';
 
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
 import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
-import { auth } from '@/server/auth';
 import type { ActionResult } from '@/types';
+import { ensureAuth } from '@/server/actions/lib/auth';
 import type { TagListItem, TagWithTranslations } from '@/server/services/tag.service';
 import { createTag, deleteTag, getTagList, updateTag } from '@/server/services/tag.service';
 
@@ -51,17 +52,12 @@ function handleError(error: unknown): ActionResult<never> {
   return { success: false, error: 'An unexpected error occurred' };
 }
 
-async function ensureAuthed(): Promise<ActionResult<never> | null> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
-  return null;
-}
 
 export async function getTagListAction(
   locale: string,
   defaultLocale: string,
 ): Promise<ActionResult<TagListItem[]>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   try {
@@ -75,7 +71,7 @@ export async function getTagListAction(
 export async function createTagAction(
   input: z.input<typeof createTagSchema>,
 ): Promise<ActionResult<TagWithTranslations>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsed = createTagSchema.safeParse(input);
@@ -85,6 +81,8 @@ export async function createTagAction(
 
   try {
     const data = await createTag(parsed.data);
+    revalidateTag('tags', 'max');
+    revalidateTag('products', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);
@@ -95,7 +93,7 @@ export async function updateTagAction(
   id: string,
   input: z.input<typeof updateTagSchema>,
 ): Promise<ActionResult<TagWithTranslations>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(id);
@@ -110,6 +108,8 @@ export async function updateTagAction(
 
   try {
     const data = await updateTag(parsedId.data, parsed.data);
+    revalidateTag('tags', 'max');
+    revalidateTag('products', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);
@@ -117,7 +117,7 @@ export async function updateTagAction(
 }
 
 export async function deleteTagAction(id: string): Promise<ActionResult<void>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(id);
@@ -127,6 +127,8 @@ export async function deleteTagAction(id: string): Promise<ActionResult<void>> {
 
   try {
     await deleteTag(parsedId.data);
+    revalidateTag('tags', 'max');
+    revalidateTag('products', 'max');
     return { success: true, data: undefined };
   } catch (error) {
     return handleError(error);

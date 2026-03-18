@@ -1,7 +1,7 @@
 'use server';
 
-import { auth } from '@/server/auth';
 import type { ActionResult } from '@/types';
+import { ensureAuth } from '@/server/actions/lib/auth';
 import { exportProductsCsv, generateProductCsvTemplate } from '@/server/services/product-export.service';
 import { exportInquiriesCsv } from '@/server/services/inquiry-export.service';
 import { exportNewsCsv } from '@/server/services/news-export.service';
@@ -10,8 +10,8 @@ import { exportNewsCsv } from '@/server/services/news-export.service';
 export async function exportProductsCsvAction(
   defaultLocale: string,
 ): Promise<ActionResult<string>> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   try {
     const csv = await exportProductsCsv(defaultLocale);
@@ -25,8 +25,8 @@ export async function exportProductsCsvAction(
 export async function getProductCsvTemplateAction(
   defaultLocale: string,
 ): Promise<ActionResult<string>> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   try {
     const csv = await generateProductCsvTemplate(defaultLocale);
@@ -38,8 +38,8 @@ export async function getProductCsvTemplateAction(
 
 /** 后台：导出询盘 CSV */
 export async function exportInquiriesCsvAction(): Promise<ActionResult<string>> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   try {
     const csv = await exportInquiriesCsv();
@@ -53,8 +53,8 @@ export async function exportInquiriesCsvAction(): Promise<ActionResult<string>> 
 export async function exportNewsCsvAction(
   defaultLocale: string,
 ): Promise<ActionResult<string>> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   try {
     const csv = await exportNewsCsv(defaultLocale);

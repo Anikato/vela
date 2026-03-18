@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 
+export const revalidate = 3600;
+
 import { buildSeoMetadata, type AlternateLocale } from '@/lib/seo';
 import { WebsiteShell } from '@/components/website/layout/website-shell';
 import { SectionRenderer } from '@/components/website/sections/section-renderer';

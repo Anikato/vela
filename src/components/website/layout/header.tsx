@@ -167,9 +167,7 @@ export async function Header({ locale, defaultLocale }: HeaderProps) {
   );
 
   const langBlock = (
-    <div className="hidden md:block">
-      <LanguageSwitcher locales={localeOptions} defaultLocale={defaultLocale} />
-    </div>
+    <LanguageSwitcher locales={localeOptions} defaultLocale={defaultLocale} />
   );
 
   const mobileNav = <MobileNav items={navigationItems} locales={localeOptions} defaultLocale={defaultLocale} />;

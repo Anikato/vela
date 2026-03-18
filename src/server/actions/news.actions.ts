@@ -1,10 +1,11 @@
 'use server';
 
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
 import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
-import { auth } from '@/server/auth';
 import type { ActionResult } from '@/types';
+import { ensureAuth } from '@/server/actions/lib/auth';
 import {
   cloneNews,
   createNews,
@@ -64,8 +65,8 @@ const updateNewsSchema = z.object({
 export async function getNewsListAction(
   params: Omit<AdminNewsListParams, 'locale' | 'defaultLocale'> & { locale: string; defaultLocale: string },
 ): Promise<ActionResult<AdminNewsListResult>> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   try {
     const result = await getNewsListPaginated(params);
@@ -79,8 +80,8 @@ export async function getNewsListAction(
 export async function getNewsByIdAction(
   id: string,
 ): Promise<ActionResult<NewsDetail>> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(id);
   if (!parsedId.success) return { success: false, error: 'Invalid news id' };
@@ -98,8 +99,8 @@ export async function getNewsByIdAction(
 export async function createNewsAction(
   input: z.infer<typeof createNewsSchema>,
 ): Promise<ActionResult<{ id: string }>> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   const parsed = createNewsSchema.safeParse(input);
   if (!parsed.success) {
@@ -108,6 +109,7 @@ export async function createNewsAction(
 
   try {
     const result = await createNews(parsed.data);
+    revalidateTag('news', 'max');
     return { success: true, data: result };
   } catch (error) {
     if (error instanceof DuplicateError) return { success: false, error: error.message };
@@ -121,8 +123,8 @@ export async function updateNewsAction(
   id: string,
   input: z.infer<typeof updateNewsSchema>,
 ): Promise<ActionResult<void>> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(id);
   if (!parsedId.success) return { success: false, error: 'Invalid news id' };
@@ -134,6 +136,7 @@ export async function updateNewsAction(
 
   try {
     await updateNews(parsedId.data, parsed.data);
+    revalidateTag('news', 'max');
     return { success: true, data: undefined };
   } catch (error) {
     if (error instanceof NotFoundError) return { success: false, error: 'News not found' };
@@ -145,14 +148,15 @@ export async function updateNewsAction(
 
 /** 后台：删除新闻 */
 export async function deleteNewsAction(id: string): Promise<ActionResult<void>> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(id);
   if (!parsedId.success) return { success: false, error: 'Invalid news id' };
 
   try {
     await deleteNews(parsedId.data);
+    revalidateTag('news', 'max');
     return { success: true, data: undefined };
   } catch (error) {
     if (error instanceof NotFoundError) return { success: false, error: 'News not found' };
@@ -165,8 +169,8 @@ export async function cloneNewsAction(
   sourceId: string,
   newSlug: string,
 ): Promise<ActionResult<{ id: string }>> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(sourceId);
   if (!parsedId.success) return { success: false, error: 'Invalid news id' };
@@ -175,6 +179,7 @@ export async function cloneNewsAction(
 
   try {
     const data = await cloneNews(parsedId.data, newSlug.trim().toLowerCase());
+    revalidateTag('news', 'max');
     return { success: true, data };
   } catch (error) {
     if (error instanceof NotFoundError) return { success: false, error: 'News not found' };

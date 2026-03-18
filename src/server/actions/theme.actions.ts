@@ -1,9 +1,10 @@
 'use server';
 
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
-import { auth } from '@/server/auth';
 import type { ActionResult } from '@/types';
+import { requireAuth } from '@/server/actions/lib/auth';
 import { DEFAULT_THEME_CONFIG, type ThemeConfig } from '@/types/theme';
 import {
   getThemeList,
@@ -13,11 +14,6 @@ import {
   deleteTheme,
   type ThemeListItem,
 } from '@/server/services/theme.service';
-
-async function requireAuth() {
-  const session = await auth();
-  if (!session?.user) throw new Error('未授权');
-}
 
 const colorsSchema = z.object({
   primary: z.string(),
@@ -135,6 +131,7 @@ export async function createThemeAction(
       ? { ...DEFAULT_THEME_CONFIG, ...config, productCard: { ...DEFAULT_THEME_CONFIG.productCard, ...config.productCard }, announcementBar: { ...DEFAULT_THEME_CONFIG.announcementBar, ...config.announcementBar }, layout: { ...DEFAULT_THEME_CONFIG.layout, ...config.layout } }
       : DEFAULT_THEME_CONFIG;
     const data = await createTheme(name, themeConfig);
+    revalidateTag('theme', 'max');
     return { success: true, data };
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '创建主题失败' };
@@ -157,6 +154,7 @@ export async function updateThemeAction(
       ? { ...DEFAULT_THEME_CONFIG, ...config, productCard: { ...DEFAULT_THEME_CONFIG.productCard, ...config.productCard }, announcementBar: { ...DEFAULT_THEME_CONFIG.announcementBar, ...config.announcementBar }, layout: { ...DEFAULT_THEME_CONFIG.layout, ...config.layout } }
       : undefined;
     const data = await updateTheme(id, { name, config: mergedConfig });
+    revalidateTag('theme', 'max');
     return { success: true, data };
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '更新主题失败' };
@@ -172,6 +170,7 @@ export async function activateThemeAction(
     await requireAuth();
     const { id } = activateSchema.parse(input);
     await activateTheme(id);
+    revalidateTag('theme', 'max');
     return { success: true, data: undefined };
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '激活主题失败' };
@@ -187,6 +186,7 @@ export async function deleteThemeAction(
     await requireAuth();
     const { id } = deleteSchema.parse(input);
     await deleteTheme(id);
+    revalidateTag('theme', 'max');
     return { success: true, data: undefined };
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '删除主题失败' };

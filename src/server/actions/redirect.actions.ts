@@ -1,8 +1,8 @@
 'use server';
 
 import { z } from 'zod';
-import { auth } from '@/server/auth';
 import type { ActionResult } from '@/types';
+import { requireAuth } from '@/server/actions/lib/auth';
 import {
   getRedirectList,
   createRedirect,
@@ -11,15 +11,9 @@ import {
   type Redirect,
 } from '@/server/services/redirect.service';
 
-async function requireAdmin() {
-  const session = await auth();
-  if (!session?.user) throw new Error('Unauthorized');
-  return session;
-}
-
 export async function getRedirectListAction(): Promise<ActionResult<Redirect[]>> {
   try {
-    await requireAdmin();
+    await requireAuth();
     const list = await getRedirectList();
     return { success: true, data: list };
   } catch (error) {
@@ -38,7 +32,7 @@ export async function createRedirectAction(
   input: z.infer<typeof createSchema>,
 ): Promise<ActionResult<Redirect>> {
   try {
-    await requireAdmin();
+    await requireAuth();
     const parsed = createSchema.parse(input);
     const row = await createRedirect(parsed);
     return { success: true, data: row };
@@ -59,7 +53,7 @@ export async function updateRedirectAction(
   input: z.infer<typeof updateSchema>,
 ): Promise<ActionResult<Redirect>> {
   try {
-    await requireAdmin();
+    await requireAuth();
     const { id, ...rest } = updateSchema.parse(input);
     const row = await updateRedirect(id, rest);
     return { success: true, data: row };
@@ -70,7 +64,7 @@ export async function updateRedirectAction(
 
 export async function deleteRedirectAction(id: number): Promise<ActionResult<null>> {
   try {
-    await requireAdmin();
+    await requireAuth();
     await deleteRedirect(id);
     return { success: true, data: null };
   } catch (error) {

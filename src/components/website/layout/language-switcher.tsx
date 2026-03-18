@@ -71,12 +71,12 @@ export function LanguageSwitcher({ locales, defaultLocale }: LanguageSwitcherPro
     <div ref={containerRef} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground md:px-2.5"
         aria-label="Switch language"
       >
         <Globe className="h-3.5 w-3.5" />
-        <span className="max-w-20 truncate">{currentOption?.nativeName ?? currentLocale}</span>
-        <ChevronDown className={cn('h-3 w-3 transition-transform', open && 'rotate-180')} />
+        <span className="hidden max-w-20 truncate md:inline">{currentOption?.nativeName ?? currentLocale}</span>
+        <ChevronDown className={cn('hidden h-3 w-3 transition-transform md:block', open && 'rotate-180')} />
       </button>
 
       {open && (

@@ -5,7 +5,7 @@ import { z } from 'zod';
 import type { ActionResult } from '@/types';
 import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
-import { auth } from '@/server/auth';
+import { ensureAuthWithUser } from '@/server/actions/lib/auth';
 import {
   changeMyPassword,
   createUser,
@@ -71,23 +71,9 @@ function handleError(error: unknown): ActionResult<never> {
   return { success: false, error: 'An unexpected error occurred' };
 }
 
-async function requireAuth(): Promise<
-  ActionResult<never> | { userId: string; role: string }
-> {
-  const session = await auth();
-  if (!session?.user) {
-    return { success: false, error: 'Unauthorized' };
-  }
-
-  return {
-    userId: session.user.id,
-    role: session.user.role,
-  };
-}
-
 /** 获取用户列表 */
 export async function getAllUsersAction(): Promise<ActionResult<SafeUser[]>> {
-  const session = await requireAuth();
+  const session = await ensureAuthWithUser();
   if ('success' in session) return session;
 
   try {
@@ -102,7 +88,7 @@ export async function getAllUsersAction(): Promise<ActionResult<SafeUser[]>> {
 export async function createUserAction(
   input: z.input<typeof createUserSchema>,
 ): Promise<ActionResult<SafeUser>> {
-  const session = await requireAuth();
+  const session = await ensureAuthWithUser();
   if ('success' in session) return session;
 
   const parsed = createUserSchema.safeParse(input);
@@ -124,7 +110,7 @@ export async function createUserAction(
 export async function setUserActiveAction(
   input: z.input<typeof setActiveSchema>,
 ): Promise<ActionResult<SafeUser>> {
-  const session = await requireAuth();
+  const session = await ensureAuthWithUser();
   if ('success' in session) return session;
 
   const parsed = setActiveSchema.safeParse(input);
@@ -148,7 +134,7 @@ export async function setUserActiveAction(
 export async function resetUserPasswordAction(
   input: z.input<typeof resetPasswordSchema>,
 ): Promise<ActionResult<void>> {
-  const session = await requireAuth();
+  const session = await ensureAuthWithUser();
   if ('success' in session) return session;
 
   const parsed = resetPasswordSchema.safeParse(input);
@@ -168,7 +154,7 @@ export async function resetUserPasswordAction(
 export async function updateUserProfileAction(
   input: z.input<typeof updateProfileSchema>,
 ): Promise<ActionResult<SafeUser>> {
-  const session = await requireAuth();
+  const session = await ensureAuthWithUser();
   if ('success' in session) return session;
 
   const parsed = updateProfileSchema.safeParse(input);
@@ -192,7 +178,7 @@ export async function updateUserProfileAction(
 export async function changeMyPasswordAction(
   input: z.input<typeof changeMyPasswordSchema>,
 ): Promise<ActionResult<void>> {
-  const session = await requireAuth();
+  const session = await ensureAuthWithUser();
   if ('success' in session) return session;
 
   const parsed = changeMyPasswordSchema.safeParse(input);

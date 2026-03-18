@@ -3,7 +3,7 @@
 import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
-import { auth } from '@/server/auth';
+import { requireAuth } from '@/server/actions/lib/auth';
 import type { ActionResult } from '@/types';
 import {
   getSiteSettings,
@@ -13,11 +13,6 @@ import {
   upsertSettingTranslation,
   type SiteSettingsData,
 } from '@/server/services/settings-admin.service';
-
-async function requireAuth() {
-  const session = await auth();
-  if (!session?.user) throw new Error('未授权');
-}
 
 export async function getSiteSettingsAction(): Promise<ActionResult<SiteSettingsData>> {
   try {

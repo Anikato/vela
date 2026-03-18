@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { NotFoundError, ValidationError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
-import { auth } from '@/server/auth';
+import { ensureAuth } from '@/server/actions/lib/auth';
 import type { ActionResult } from '@/types';
 import type { ProductAttributeEditorData, ProductOption } from '@/server/services/product-attribute.service';
 import {
@@ -74,17 +74,12 @@ function handleError(error: unknown): ActionResult<never> {
   return { success: false, error: 'An unexpected error occurred' };
 }
 
-async function ensureAuthed(): Promise<ActionResult<never> | null> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
-  return null;
-}
 
 export async function getProductOptionsAction(
   locale: string,
   defaultLocale: string,
 ): Promise<ActionResult<ProductOption[]>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   try {
@@ -100,7 +95,7 @@ export async function getProductAttributeEditorDataAction(
   locale: string,
   defaultLocale: string,
 ): Promise<ActionResult<ProductAttributeEditorData>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(productId);
@@ -117,7 +112,7 @@ export async function getProductAttributeEditorDataAction(
 export async function createAttributeGroupAction(
   input: z.input<typeof createGroupSchema>,
 ): Promise<ActionResult<void>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsed = createGroupSchema.safeParse(input);
@@ -135,7 +130,7 @@ export async function updateAttributeGroupAction(
   groupId: string,
   input: z.input<typeof updateGroupSchema>,
 ): Promise<ActionResult<void>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(groupId);
@@ -153,7 +148,7 @@ export async function updateAttributeGroupAction(
 }
 
 export async function deleteAttributeGroupAction(groupId: string): Promise<ActionResult<void>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(groupId);
@@ -170,7 +165,7 @@ export async function deleteAttributeGroupAction(groupId: string): Promise<Actio
 export async function createAttributeAction(
   input: z.input<typeof createAttributeSchema>,
 ): Promise<ActionResult<void>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsed = createAttributeSchema.safeParse(input);
@@ -188,7 +183,7 @@ export async function updateAttributeAction(
   attributeId: string,
   input: z.input<typeof updateAttributeSchema>,
 ): Promise<ActionResult<void>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(attributeId);
@@ -206,7 +201,7 @@ export async function updateAttributeAction(
 }
 
 export async function deleteAttributeAction(attributeId: string): Promise<ActionResult<void>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(attributeId);
@@ -224,7 +219,7 @@ export async function reorderAttributeGroupsAction(
   productId: string,
   orderedGroupIds: string[],
 ): Promise<ActionResult<void>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedProductId = z.string().uuid().safeParse(productId);
@@ -245,7 +240,7 @@ export async function reorderAttributesAction(
   groupId: string,
   orderedAttributeIds: string[],
 ): Promise<ActionResult<void>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedGroupId = z.string().uuid().safeParse(groupId);
@@ -275,7 +270,7 @@ const bulkImportSchema = z.object({
 export async function bulkImportAttributesAction(
   input: z.input<typeof bulkImportSchema>,
 ): Promise<ActionResult<{ groupsCreated: number; attributesCreated: number }>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsed = bulkImportSchema.safeParse(input);
@@ -298,7 +293,7 @@ const copyAttributesSchema = z.object({
 export async function copyAttributesFromProductAction(
   input: z.input<typeof copyAttributesSchema>,
 ): Promise<ActionResult<{ groupsCopied: number; attributesCopied: number }>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsed = copyAttributesSchema.safeParse(input);
@@ -316,7 +311,7 @@ export async function moveAttributeToGroupAction(
   attributeId: string,
   targetGroupId: string,
 ): Promise<ActionResult<void>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedAttributeId = z.string().uuid().safeParse(attributeId);

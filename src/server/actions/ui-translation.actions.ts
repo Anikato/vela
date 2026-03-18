@@ -3,7 +3,7 @@
 import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
-import { auth } from '@/server/auth';
+import { requireAuth } from '@/server/actions/lib/auth';
 import type { ActionResult } from '@/types';
 import {
   getUiTranslationList,
@@ -15,11 +15,6 @@ import {
   type UiTranslationListResult,
   type CategoryStat,
 } from '@/server/services/ui-translation-admin.service';
-
-async function requireAuth() {
-  const session = await auth();
-  if (!session?.user) throw new Error('未授权');
-}
 
 const listSchema = z.object({
   category: z.string().optional(),

@@ -225,6 +225,12 @@ export async function updateScriptsSettings(input: UpdateScriptsInput): Promise<
   } else if (input.captchaSiteKey === null) {
     data.captchaProvider = null;
   }
+  if (typeof data.captchaSecretKey === 'string' && data.captchaSecretKey) {
+    data.captchaSecretKey = encryptSecret(data.captchaSecretKey as string);
+  }
+  if (typeof data.translationApiKey === 'string' && data.translationApiKey) {
+    data.translationApiKey = encryptSecret(data.translationApiKey as string);
+  }
 
   const existing = await db.query.siteSettings.findFirst();
   if (!existing) {

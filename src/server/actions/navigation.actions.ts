@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
-import { auth } from '@/server/auth';
+import { ensureAuth } from '@/server/actions/lib/auth';
 import {
   createNavigationItem,
   deleteNavigationItem,
@@ -78,17 +78,12 @@ function handleError(error: unknown): ActionResult<never> {
   return { success: false, error: 'An unexpected error occurred' };
 }
 
-async function ensureAuthed(): Promise<ActionResult<never> | null> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
-  return null;
-}
 
 export async function getNavigationListAction(
   locale: string,
   defaultLocale: string,
 ): Promise<ActionResult<NavigationListItem[]>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   try {
@@ -102,7 +97,7 @@ export async function getNavigationListAction(
 export async function createNavigationItemAction(
   input: z.input<typeof createNavigationSchema>,
 ): Promise<ActionResult<NavigationWithTranslations>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsed = createNavigationSchema.safeParse(input);
@@ -123,7 +118,7 @@ export async function updateNavigationItemAction(
   id: string,
   input: z.input<typeof updateNavigationSchema>,
 ): Promise<ActionResult<NavigationWithTranslations>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(id);
@@ -146,7 +141,7 @@ export async function updateNavigationItemAction(
 }
 
 export async function deleteNavigationItemAction(id: string): Promise<ActionResult<void>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(id);
@@ -166,7 +161,7 @@ export async function deleteNavigationItemAction(id: string): Promise<ActionResu
 export async function reorderNavigationTreeAction(
   input: z.input<typeof reorderNavigationSchema>,
 ): Promise<ActionResult<void>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsed = reorderNavigationSchema.safeParse(input);

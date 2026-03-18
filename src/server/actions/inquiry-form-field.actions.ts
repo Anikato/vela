@@ -4,7 +4,7 @@ import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
 import { NotFoundError } from '@/lib/errors';
-import { auth } from '@/server/auth';
+import { requireAuth } from '@/server/actions/lib/auth';
 import type { ActionResult } from '@/types';
 import {
   createFormField,
@@ -15,11 +15,6 @@ import {
   updateFormField,
   type FormFieldItem,
 } from '@/server/services/inquiry-form-field.service';
-
-async function requireAuth() {
-  const session = await auth();
-  if (!session?.user) throw new Error('未授权');
-}
 
 const translationSchema = z.object({
   locale: z.string().min(1).max(10),

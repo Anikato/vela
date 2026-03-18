@@ -92,7 +92,7 @@ export function HeroSection({ section }: SectionComponentProps) {
             </Button>
           ) : null}
           {hasSecondaryButton ? (
-            <Button asChild variant="secondary" size="lg" className="rounded-full px-8 text-base">
+            <Button asChild variant="outline" size="lg" className="rounded-full px-8 text-base">
               <Link href={tr.secondaryButtonLink!}>{tr.secondaryButtonText}</Link>
             </Button>
           ) : null}

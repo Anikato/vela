@@ -2,14 +2,9 @@
 
 import { z } from 'zod';
 
-import { auth } from '@/server/auth';
+import { requireAuth } from '@/server/actions/lib/auth';
 import type { ActionResult } from '@/types';
 import { translateSingle, translateTexts } from '@/server/services/translation.service';
-
-async function requireAuth() {
-  const session = await auth();
-  if (!session?.user) throw new Error('未授权');
-}
 
 const translateSingleSchema = z.object({
   text: z.string().min(1).max(50000),

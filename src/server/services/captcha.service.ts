@@ -1,3 +1,4 @@
+import { decryptSecret } from '@/lib/crypto';
 import { db } from '@/server/db';
 
 interface CaptchaConfig {
@@ -15,7 +16,7 @@ export async function getCaptchaConfig(): Promise<CaptchaConfig | null> {
   return {
     provider: 'turnstile',
     siteKey: row.captchaSiteKey,
-    secretKey: row.captchaSecretKey,
+    secretKey: decryptSecret(row.captchaSecretKey),
   };
 }
 

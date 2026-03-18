@@ -1,10 +1,11 @@
 'use server';
 
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
 import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
-import { auth } from '@/server/auth';
+import { ensureAuth } from '@/server/actions/lib/auth';
 import {
   createPage,
   deletePage,
@@ -65,17 +66,12 @@ function handleError(error: unknown): ActionResult<never> {
   return { success: false, error: 'An unexpected error occurred' };
 }
 
-async function ensureAuthed(): Promise<ActionResult<never> | null> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
-  return null;
-}
 
 export async function getPageListAction(
   locale: string,
   defaultLocale: string,
 ): Promise<ActionResult<PageListItem[]>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   try {
@@ -89,7 +85,7 @@ export async function getPageListAction(
 export async function createPageAction(
   input: z.input<typeof createPageSchema>,
 ): Promise<ActionResult<PageWithTranslations>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsed = createPageSchema.safeParse(input);
@@ -99,6 +95,7 @@ export async function createPageAction(
 
   try {
     const data = await createPage(parsed.data);
+    revalidateTag('pages', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);
@@ -109,7 +106,7 @@ export async function updatePageAction(
   id: string,
   input: z.input<typeof updatePageSchema>,
 ): Promise<ActionResult<PageWithTranslations>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(id);
@@ -124,6 +121,7 @@ export async function updatePageAction(
 
   try {
     const data = await updatePage(parsedId.data, parsed.data);
+    revalidateTag('pages', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);
@@ -131,7 +129,7 @@ export async function updatePageAction(
 }
 
 export async function deletePageAction(id: string): Promise<ActionResult<void>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(id);
@@ -141,6 +139,7 @@ export async function deletePageAction(id: string): Promise<ActionResult<void>> 
 
   try {
     await deletePage(parsedId.data);
+    revalidateTag('pages', 'max');
     return { success: true, data: undefined };
   } catch (error) {
     return handleError(error);

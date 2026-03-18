@@ -1,3 +1,4 @@
+import { decryptSecret } from '@/lib/crypto';
 import { db } from '@/server/db';
 
 // ─── Types ───
@@ -23,7 +24,7 @@ interface AzureConfig {
 async function getAzureConfig(): Promise<AzureConfig | null> {
   const row = await db.query.siteSettings.findFirst();
   if (!row?.translationApiKey) return null;
-  return { apiKey: row.translationApiKey, region: 'global' };
+  return { apiKey: decryptSecret(row.translationApiKey), region: 'global' };
 }
 
 /** 获取语言的 Azure Translator 代码映射 */

@@ -1,11 +1,12 @@
 'use server';
 
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
 import type { ActionResult } from '@/types';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
-import { auth } from '@/server/auth';
+import { ensureAuth } from '@/server/actions/lib/auth';
 import { deleteMediaById, updateMediaAlt } from '@/server/services/media.service';
 
 const mediaIdSchema = z.string().uuid();
@@ -26,10 +27,8 @@ function handleError(error: unknown): ActionResult<never> {
  * 删除媒体文件
  */
 export async function deleteMediaAction(id: string): Promise<ActionResult<void>> {
-  const session = await auth();
-  if (!session?.user) {
-    return { success: false, error: 'Unauthorized' };
-  }
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   const parsedId = mediaIdSchema.safeParse(id);
   if (!parsedId.success) {
@@ -38,6 +37,7 @@ export async function deleteMediaAction(id: string): Promise<ActionResult<void>>
 
   try {
     await deleteMediaById(parsedId.data);
+    revalidateTag('media', 'max');
     return { success: true, data: undefined };
   } catch (error) {
     return handleError(error);
@@ -51,8 +51,8 @@ export async function updateMediaAltAction(
   id: string,
   alt: string,
 ): Promise<ActionResult<void>> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   const parsedId = mediaIdSchema.safeParse(id);
   if (!parsedId.success) return { success: false, error: 'Invalid media id' };

@@ -1,10 +1,11 @@
 'use server';
 
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
 import { NotFoundError, ValidationError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
-import { auth } from '@/server/auth';
+import { ensureAuth } from '@/server/actions/lib/auth';
 import {
   cloneSection,
   createSection,
@@ -75,18 +76,13 @@ function handleError(error: unknown): ActionResult<never> {
   return { success: false, error: 'An unexpected error occurred' };
 }
 
-async function ensureAuthed(): Promise<ActionResult<never> | null> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
-  return null;
-}
 
 export async function getPageSectionsAction(
   pageId: string,
   locale: string,
   defaultLocale: string,
 ): Promise<ActionResult<SectionListItem[]>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedPageId = z.string().uuid().safeParse(pageId);
@@ -105,7 +101,7 @@ export async function getPageSectionsAction(
 export async function createSectionAction(
   input: z.input<typeof createSectionSchema>,
 ): Promise<ActionResult<SectionWithTranslations>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsed = createSectionSchema.safeParse(input);
@@ -115,6 +111,8 @@ export async function createSectionAction(
 
   try {
     const data = await createSection(parsed.data);
+    revalidateTag('pages', 'max');
+    revalidateTag('categories', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);
@@ -125,7 +123,7 @@ export async function updateSectionAction(
   sectionId: string,
   input: z.input<typeof updateSectionSchema>,
 ): Promise<ActionResult<SectionWithTranslations>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(sectionId);
@@ -140,6 +138,8 @@ export async function updateSectionAction(
 
   try {
     const data = await updateSection(parsedId.data, parsed.data);
+    revalidateTag('pages', 'max');
+    revalidateTag('categories', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);
@@ -147,7 +147,7 @@ export async function updateSectionAction(
 }
 
 export async function deleteSectionAction(sectionId: string): Promise<ActionResult<void>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(sectionId);
@@ -157,6 +157,8 @@ export async function deleteSectionAction(sectionId: string): Promise<ActionResu
 
   try {
     await deleteSection(parsedId.data);
+    revalidateTag('pages', 'max');
+    revalidateTag('categories', 'max');
     return { success: true, data: undefined };
   } catch (error) {
     return handleError(error);
@@ -166,7 +168,7 @@ export async function deleteSectionAction(sectionId: string): Promise<ActionResu
 export async function reorderPageSectionsAction(
   input: z.input<typeof reorderSectionsSchema>,
 ): Promise<ActionResult<void>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsed = reorderSectionsSchema.safeParse(input);
@@ -176,6 +178,7 @@ export async function reorderPageSectionsAction(
 
   try {
     await reorderPageSections(parsed.data.pageId, parsed.data.orderedSectionIds);
+    revalidateTag('pages', 'max');
     return { success: true, data: undefined };
   } catch (error) {
     return handleError(error);
@@ -185,7 +188,7 @@ export async function reorderPageSectionsAction(
 export async function cloneSectionAction(
   sectionId: string,
 ): Promise<ActionResult<SectionWithTranslations>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(sectionId);
@@ -195,6 +198,8 @@ export async function cloneSectionAction(
 
   try {
     const data = await cloneSection(parsedId.data);
+    revalidateTag('pages', 'max');
+    revalidateTag('categories', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);
@@ -208,7 +213,7 @@ export async function getCategorySectionsAction(
   locale: string,
   defaultLocale: string,
 ): Promise<ActionResult<SectionListItem[]>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(categoryId);
@@ -232,7 +237,7 @@ const reorderCategorySectionsSchema = z.object({
 export async function reorderCategorySectionsAction(
   input: z.input<typeof reorderCategorySectionsSchema>,
 ): Promise<ActionResult<void>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsed = reorderCategorySectionsSchema.safeParse(input);
@@ -242,6 +247,7 @@ export async function reorderCategorySectionsAction(
 
   try {
     await reorderCategorySections(parsed.data.categoryId, parsed.data.orderedSectionIds);
+    revalidateTag('categories', 'max');
     return { success: true, data: undefined };
   } catch (error) {
     return handleError(error);

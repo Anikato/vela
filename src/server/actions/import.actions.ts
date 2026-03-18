@@ -1,7 +1,7 @@
 'use server';
 
-import { auth } from '@/server/auth';
 import type { ActionResult } from '@/types';
+import { ensureAuth } from '@/server/actions/lib/auth';
 import {
   parseProductCsv,
   importProducts,
@@ -14,8 +14,8 @@ import {
 export async function previewProductCsvAction(
   csvText: string,
 ): Promise<ActionResult<ImportPreviewResult>> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   try {
     const result = parseProductCsv(csvText);
@@ -30,8 +30,8 @@ export async function executeProductImportAction(
   csvText: string,
   mode: 'skip' | 'update' = 'skip',
 ): Promise<ActionResult<ImportResult>> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   try {
     const preview = parseProductCsv(csvText);

@@ -5,8 +5,8 @@ import { z } from 'zod';
 
 import { NotFoundError, ValidationError } from '@/lib/errors';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { auth } from '@/server/auth';
 import type { ActionResult } from '@/types';
+import { ensureAuth } from '@/server/actions/lib/auth';
 import {
   batchUpdateInquiryStatus,
   createInquiry,
@@ -131,8 +131,8 @@ export async function getInquiryListAction(params: {
     totalPages: number;
   }>
 > {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   try {
     const status = INQUIRY_STATUSES.includes(params.status as InquiryStatus)
@@ -147,8 +147,8 @@ export async function getInquiryListAction(params: {
 
 /** 后台：询盘详情 */
 export async function getInquiryDetailAction(id: string): Promise<ActionResult<InquiryDetail>> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   try {
     const detail = await getInquiryById(id);
@@ -166,8 +166,8 @@ export async function updateInquiryStatusAction(
   id: string,
   status: string,
 ): Promise<ActionResult<void>> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   const parsed = inquiryStatusSchema.safeParse(status);
   if (!parsed.success) return { success: false, error: 'Invalid status' };
@@ -188,8 +188,8 @@ export async function updateInquiryNotesAction(
   id: string,
   notes: string,
 ): Promise<ActionResult<void>> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   try {
     await updateInquiryNotes(id, notes);
@@ -207,8 +207,8 @@ export async function batchUpdateInquiryStatusAction(
   ids: string[],
   status: string,
 ): Promise<ActionResult<{ count: number }>> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   const parsedIds = z.array(z.string().uuid()).safeParse(ids);
   if (!parsedIds.success) return { success: false, error: 'Invalid inquiry ids' };
@@ -228,8 +228,8 @@ export async function batchUpdateInquiryStatusAction(
 export async function getInquiryStatsAction(): Promise<
   ActionResult<{ total: number; new: number; read: number; replied: number; closed: number; spam: number }>
 > {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
 
   try {
     const stats = await getInquiryStats();

@@ -1,11 +1,12 @@
 'use server';
 
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
 import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
-import { auth } from '@/server/auth';
 import type { ActionResult } from '@/types';
+import { ensureAuth } from '@/server/actions/lib/auth';
 import {
   batchDeleteProducts,
   batchUpdateProductStatus,
@@ -120,17 +121,12 @@ function handleError(error: unknown): ActionResult<never> {
   return { success: false, error: msg ? `操作失败：${msg}` : '操作失败，请重试或联系管理员' };
 }
 
-async function ensureAuthed(): Promise<ActionResult<never> | null> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
-  return null;
-}
 
 export async function getProductListAction(
   locale: string,
   defaultLocale: string,
 ): Promise<ActionResult<ProductListItem[]>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   try {
@@ -144,7 +140,7 @@ export async function getProductListAction(
 export async function createProductAction(
   input: z.input<typeof createProductSchema>,
 ): Promise<ActionResult<ProductWithRelations>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsed = createProductSchema.safeParse(input);
@@ -154,6 +150,8 @@ export async function createProductAction(
 
   try {
     const data = await createProduct(parsed.data);
+    revalidateTag('products', 'max');
+    revalidateTag('categories', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);
@@ -164,7 +162,7 @@ export async function updateProductAction(
   id: string,
   input: z.input<typeof updateProductSchema>,
 ): Promise<ActionResult<ProductWithRelations>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(id);
@@ -179,6 +177,8 @@ export async function updateProductAction(
 
   try {
     const data = await updateProduct(parsedId.data, parsed.data);
+    revalidateTag('products', 'max');
+    revalidateTag('categories', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);
@@ -186,7 +186,7 @@ export async function updateProductAction(
 }
 
 export async function deleteProductAction(id: string): Promise<ActionResult<void>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(id);
@@ -196,6 +196,8 @@ export async function deleteProductAction(id: string): Promise<ActionResult<void
 
   try {
     await deleteProduct(parsedId.data);
+    revalidateTag('products', 'max');
+    revalidateTag('categories', 'max');
     return { success: true, data: undefined };
   } catch (error) {
     return handleError(error);
@@ -206,7 +208,7 @@ export async function batchUpdateProductStatusAction(
   ids: string[],
   status: string,
 ): Promise<ActionResult<{ count: number }>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedIds = z.array(z.string().uuid()).safeParse(ids);
@@ -217,6 +219,7 @@ export async function batchUpdateProductStatusAction(
 
   try {
     const count = await batchUpdateProductStatus(parsedIds.data, parsedStatus.data);
+    revalidateTag('products', 'max');
     return { success: true, data: { count } };
   } catch (error) {
     return handleError(error);
@@ -226,7 +229,7 @@ export async function batchUpdateProductStatusAction(
 export async function batchDeleteProductsAction(
   ids: string[],
 ): Promise<ActionResult<{ count: number }>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedIds = z.array(z.string().uuid()).safeParse(ids);
@@ -234,6 +237,8 @@ export async function batchDeleteProductsAction(
 
   try {
     const count = await batchDeleteProducts(parsedIds.data);
+    revalidateTag('products', 'max');
+    revalidateTag('categories', 'max');
     return { success: true, data: { count } };
   } catch (error) {
     return handleError(error);
@@ -245,7 +250,7 @@ export async function cloneProductAction(
   newSku: string,
   newSlug: string,
 ): Promise<ActionResult<ProductWithRelations>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(sourceId);
@@ -257,6 +262,8 @@ export async function cloneProductAction(
 
   try {
     const data = await cloneProduct(parsedId.data, newSku.trim(), newSlug.trim().toLowerCase());
+    revalidateTag('products', 'max');
+    revalidateTag('categories', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);

@@ -1,10 +1,11 @@
 'use server';
 
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
 import { DuplicateError, NotFoundError, ValidationError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
-import { auth } from '@/server/auth';
+import { ensureAuth } from '@/server/actions/lib/auth';
 import type {
   CategoryListItem,
   CategoryWithTranslations,
@@ -79,17 +80,12 @@ function handleError(error: unknown): ActionResult<never> {
   return { success: false, error: 'An unexpected error occurred' };
 }
 
-async function ensureAuthed(): Promise<ActionResult<never> | null> {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: 'Unauthorized' };
-  return null;
-}
 
 export async function getCategoryListAction(
   locale: string,
   defaultLocale: string,
 ): Promise<ActionResult<CategoryListItem[]>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   try {
@@ -103,7 +99,7 @@ export async function getCategoryListAction(
 export async function createCategoryAction(
   input: z.input<typeof createCategorySchema>,
 ): Promise<ActionResult<CategoryWithTranslations>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsed = createCategorySchema.safeParse(input);
@@ -113,6 +109,8 @@ export async function createCategoryAction(
 
   try {
     const data = await createCategory(parsed.data);
+    revalidateTag('categories', 'max');
+    revalidateTag('products', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);
@@ -123,7 +121,7 @@ export async function updateCategoryAction(
   id: string,
   input: z.input<typeof updateCategorySchema>,
 ): Promise<ActionResult<CategoryWithTranslations>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(id);
@@ -138,6 +136,8 @@ export async function updateCategoryAction(
 
   try {
     const data = await updateCategory(parsedId.data, parsed.data);
+    revalidateTag('categories', 'max');
+    revalidateTag('products', 'max');
     return { success: true, data };
   } catch (error) {
     return handleError(error);
@@ -145,7 +145,7 @@ export async function updateCategoryAction(
 }
 
 export async function deleteCategoryAction(id: string): Promise<ActionResult<void>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsedId = z.string().uuid().safeParse(id);
@@ -155,6 +155,8 @@ export async function deleteCategoryAction(id: string): Promise<ActionResult<voi
 
   try {
     await deleteCategory(parsedId.data);
+    revalidateTag('categories', 'max');
+    revalidateTag('products', 'max');
     return { success: true, data: undefined };
   } catch (error) {
     return handleError(error);
@@ -164,7 +166,7 @@ export async function deleteCategoryAction(id: string): Promise<ActionResult<voi
 export async function reorderCategoryTreeAction(
   input: z.input<typeof reorderCategorySchema>,
 ): Promise<ActionResult<void>> {
-  const unauthed = await ensureAuthed();
+  const unauthed = await ensureAuth();
   if (unauthed) return unauthed;
 
   const parsed = reorderCategorySchema.safeParse(input);
@@ -174,6 +176,7 @@ export async function reorderCategoryTreeAction(
 
   try {
     await reorderCategoryTree(parsed.data.items);
+    revalidateTag('categories', 'max');
     return { success: true, data: undefined };
   } catch (error) {
     return handleError(error);
