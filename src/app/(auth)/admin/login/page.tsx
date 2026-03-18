@@ -1,4 +1,7 @@
 import type { Metadata } from 'next';
+
+export const dynamic = 'force-dynamic';
+
 import { LoginForm } from '@/components/admin/auth/login-form';
 import { getSiteName } from '@/server/services/settings-public.service';
 
