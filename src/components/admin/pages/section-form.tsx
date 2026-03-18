@@ -507,6 +507,8 @@ export function SectionForm({
                       <SelectItem value="partner_logos">partner_logos — 合作伙伴Logo</SelectItem>
                       <SelectItem value="image_gallery">image_gallery — 图片画廊</SelectItem>
                       <SelectItem value="video_embed">video_embed — 视频嵌入</SelectItem>
+                      <SelectItem value="image_marquee">image_marquee — 图片走马灯</SelectItem>
+                      <SelectItem value="video_gallery">video_gallery — 视频画廊</SelectItem>
                     </SelectGroup>
                     <SelectGroup>
                       <SelectLabel>交互类</SelectLabel>
@@ -519,6 +521,7 @@ export function SectionForm({
                     <SelectGroup>
                       <SelectLabel>其他</SelectLabel>
                       <SelectItem value="custom_html">custom_html — 自定义HTML</SelectItem>
+                      <SelectItem value="google_map">google_map — 谷歌地图</SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>
