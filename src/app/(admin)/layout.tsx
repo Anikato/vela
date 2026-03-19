@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { AdminShell } from '@/components/admin/layout';
+import { Toaster } from '@/components/ui/sonner';
 import { getSiteName } from '@/server/services/settings-public.service';
 
 export const dynamic = 'force-dynamic';
@@ -20,5 +21,10 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const siteName = await getSiteName();
-  return <AdminShell siteName={siteName}>{children}</AdminShell>;
+  return (
+    <>
+      <AdminShell siteName={siteName}>{children}</AdminShell>
+      <Toaster richColors />
+    </>
+  );
 }

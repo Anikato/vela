@@ -3,10 +3,14 @@ export const metadata = { title: '分类管理' };
 import { CategoryManagement } from '@/components/admin/categories/category-management';
 import { getCategoryList } from '@/server/services/category.service';
 import { getAllLanguages, getDefaultLanguage } from '@/server/services/language.service';
+import { listMedia } from '@/server/services/media.service';
 
 export default async function CategoriesPage() {
-  const allLanguages = await getAllLanguages();
-  const defaultLanguage = await getDefaultLanguage();
+  const [allLanguages, defaultLanguage, mediaResult] = await Promise.all([
+    getAllLanguages(),
+    getDefaultLanguage(),
+    listMedia({ page: 1, pageSize: 200 }),
+  ]);
   const categories = await getCategoryList(defaultLanguage.code, defaultLanguage.code);
 
   return (
@@ -19,7 +23,11 @@ export default async function CategoriesPage() {
           </p>
         </div>
       </div>
-      <CategoryManagement initialCategories={categories} locales={allLanguages} />
+      <CategoryManagement
+        initialCategories={categories}
+        locales={allLanguages}
+        mediaItems={mediaResult.items}
+      />
     </div>
   );
 }

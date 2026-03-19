@@ -1,7 +1,4 @@
-'use client';
-
 import { cn } from '@/lib/utils';
-import { useScrollReveal } from '@/hooks/use-scroll-reveal';
 
 import type { WebsiteSection } from './types';
 
@@ -65,16 +62,9 @@ function getConfigString(config: Record<string, unknown>, key: string): string |
   return typeof value === 'string' ? value : null;
 }
 
-function getDefaultBlockBg(): string {
-  if (typeof document === 'undefined') return 'white';
-  return document.documentElement.dataset.defaultBlockBg || 'white';
-}
-
 export function SectionWrapper({ section, children }: SectionWrapperProps) {
-  const ref = useScrollReveal<HTMLElement>();
-
   const explicitBg = getConfigString(section.config, 'background');
-  const background = explicitBg ?? getDefaultBlockBg();
+  const background = explicitBg ?? (section.config._defaultBg as string | undefined) ?? 'white';
   const spacingTop = getConfigString(section.config, 'padding_top') ?? 'md';
   const spacingBottom = getConfigString(section.config, 'padding_bottom') ?? 'md';
   const explicitContainerWidth = getConfigString(section.config, 'container_width');
@@ -84,7 +74,7 @@ export function SectionWrapper({ section, children }: SectionWrapperProps) {
   const overlayOpacity = Number(section.config.overlay_opacity) || 0;
 
   const sectionClassName = cn(
-    'relative',
+    'relative vt-section-reveal',
     !backgroundImage && (BACKGROUND_CLASS_MAP[background] ?? BACKGROUND_CLASS_MAP.white),
     SPACING_TOP_CLASS_MAP[spacingTop] ?? SPACING_TOP_CLASS_MAP.md,
     SPACING_BOTTOM_CLASS_MAP[spacingBottom] ?? SPACING_BOTTOM_CLASS_MAP.md,
@@ -92,7 +82,7 @@ export function SectionWrapper({ section, children }: SectionWrapperProps) {
   );
 
   return (
-    <section ref={ref} id={section.anchorId ?? undefined} className={sectionClassName}>
+    <section id={section.anchorId ?? undefined} className={sectionClassName}>
       {backgroundImage && (
         <>
           <div

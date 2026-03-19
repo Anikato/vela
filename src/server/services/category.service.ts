@@ -28,6 +28,7 @@ export interface CategoryTranslationInput {
 export interface CreateCategoryInput {
   slug: string;
   parentId?: string | null;
+  imageId?: string | null;
   isActive?: boolean;
   sortOrder?: number;
   translations: CategoryTranslationInput[];
@@ -168,6 +169,7 @@ export async function createCategory(input: CreateCategoryInput): Promise<Catego
     .values({
       slug,
       parentId: input.parentId ?? null,
+      imageId: input.imageId ?? null,
       isActive: input.isActive ?? true,
       sortOrder: input.sortOrder,
     })
@@ -208,6 +210,7 @@ export async function updateCategory(id: string, input: UpdateCategoryInput): Pr
     .set({
       slug: input.slug ?? existing.slug,
       parentId: input.parentId === undefined ? existing.parentId : input.parentId,
+      imageId: input.imageId === undefined ? existing.imageId : input.imageId,
       isActive: input.isActive ?? existing.isActive,
       sortOrder: input.sortOrder ?? existing.sortOrder,
       updatedAt: new Date(),

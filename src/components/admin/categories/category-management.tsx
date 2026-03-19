@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Check, ChevronDown, ChevronRight, FolderInput, GripVertical, Layers, Pencil, Plus, Power, PowerOff, Trash2, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, FolderInput, GripVertical, Layers, Pencil, Plus, PowerOff, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -15,7 +15,7 @@ import {
   reorderCategoryTreeAction,
   updateCategoryAction,
 } from '@/server/actions/category.actions';
-import type { CategoryListItem, Language } from '@/types/admin';
+import type { CategoryListItem, Language, Media } from '@/types/admin';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -46,14 +46,18 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfirmDeleteDialog } from '@/components/admin/common/confirm-delete-dialog';
+import { ImagePickerUpload } from '@/components/admin/common/image-picker-upload';
+
 function handleTextareaClassName() {
   return 'min-h-[72px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm';
 }
 
+type MediaWithUrl = Media & { url: string };
 
 interface CategoryManagementProps {
   initialCategories: CategoryListItem[];
   locales: Language[];
+  mediaItems: MediaWithUrl[];
 }
 
 type TranslationForm = {
@@ -147,10 +151,11 @@ function reindexSiblingSortOrder(
   });
 }
 
-export function CategoryManagement({ initialCategories, locales }: CategoryManagementProps) {
+export function CategoryManagement({ initialCategories, locales, mediaItems: initialMediaItems }: CategoryManagementProps) {
   const router = useRouter();
   const [categories, setCategories] = useState(initialCategories);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mediaItems, setMediaItems] = useState(initialMediaItems);
 
   useEffect(() => {
     setCategories(initialCategories);
@@ -167,6 +172,8 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
   const [deleteTarget, setDeleteTarget] = useState<CategoryListItem | null>(null);
   const [slug, setSlug] = useState('');
   const [parentId, setParentId] = useState(EMPTY_ID);
+  const [imageId, setImageId] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isActive, setIsActive] = useState(true);
   const [sortOrder, setSortOrder] = useState(0);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -196,10 +203,16 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
     );
   }
 
+  const handleMediaUploaded = useCallback((items: MediaWithUrl[]) => {
+    setMediaItems((prev) => [...items, ...prev]);
+  }, []);
+
   function openCreateDialog() {
     setEditing(null);
     setSlug('');
     setParentId(EMPTY_ID);
+    setImageId(null);
+    setImageUrl(null);
     setIsActive(true);
     setSortOrder(categories.length);
     setTranslations(buildTranslationForm(locales));
@@ -211,6 +224,9 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
     setEditing(item);
     setSlug(item.slug);
     setParentId(item.parentId ?? EMPTY_ID);
+    setImageId(item.imageId);
+    const matchedMedia = item.imageId ? mediaItems.find((m) => m.id === item.imageId) : null;
+    setImageUrl(matchedMedia?.url ?? null);
     setIsActive(item.isActive);
     setSortOrder(item.sortOrder);
     setTranslations(
@@ -241,13 +257,14 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
 
   async function handleSave() {
     if (!slug.trim()) {
-      toast.error('Slug 不能为空');
+      toast.error('Slug ????');
       return;
     }
 
     const payload = {
       slug: slug.trim().toLowerCase(),
       parentId: parentId === EMPTY_ID ? null : parentId,
+      imageId,
       isActive,
       sortOrder,
       translations: translations.map((item) => ({
@@ -266,11 +283,11 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
         : await createCategoryAction(payload);
 
       if (!result.success) {
-        toast.error(typeof result.error === 'string' ? result.error : '保存失败');
+        toast.error(typeof result.error === 'string' ? result.error : '????');
         return;
       }
 
-      toast.success(editing ? '分类已更新' : '分类已创建');
+      toast.success(editing ? '?????' : '?????');
       setDialogOpen(false);
       router.refresh();
     } finally {
@@ -284,12 +301,12 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
     try {
       const result = await deleteCategoryAction(deleteTarget.id);
       if (!result.success) {
-        toast.error(typeof result.error === 'string' ? result.error : '删除失败');
+        toast.error(typeof result.error === 'string' ? result.error : '????');
         return;
       }
 
       setCategories((prev) => prev.filter((row) => row.id !== deleteTarget.id));
-      toast.success('分类已删除');
+      toast.success('?????');
       setDeleteTarget(null);
       router.refresh();
     } finally {
@@ -319,10 +336,10 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
     try {
       const result = await batchToggleCategoriesAction(ids, isActive);
       if (!result.success) {
-        toast.error(typeof result.error === 'string' ? result.error : '操作失败');
+        toast.error(typeof result.error === 'string' ? result.error : '????');
         return;
       }
-      toast.success(`已${isActive ? '启用' : '停用'} ${result.data.count} 个分类`);
+      toast.success(`?${isActive ? '??' : '??'} ${result.data.count} ???`);
       setSelectedIds(new Set());
       router.refresh();
     } finally {
@@ -336,16 +353,16 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
     try {
       const result = await batchDeleteCategoriesAction(ids);
       if (!result.success) {
-        toast.error(typeof result.error === 'string' ? result.error : '删除失败');
+        toast.error(typeof result.error === 'string' ? result.error : '????');
         return;
       }
       if (result.data.skipped.length > 0) {
         const skippedNames = result.data.skipped
           .map((id) => categories.find((c) => c.id === id)?.displayName ?? id)
-          .join('、');
-        toast.warning(`已删除 ${result.data.deleted} 个，${result.data.skipped.length} 个含子分类无法删除: ${skippedNames}`);
+          .join('?');
+        toast.warning(`??? ${result.data.deleted} ??${result.data.skipped.length} ?????????: ${skippedNames}`);
       } else {
-        toast.success(`已删除 ${result.data.deleted} 个分类`);
+        toast.success(`??? ${result.data.deleted} ???`);
       }
       setSelectedIds(new Set());
       setBatchDeleteOpen(false);
@@ -362,10 +379,10 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
     try {
       const result = await batchMoveCategoriesAction(ids, targetParent);
       if (!result.success) {
-        toast.error(typeof result.error === 'string' ? result.error : '移动失败');
+        toast.error(typeof result.error === 'string' ? result.error : '????');
         return;
       }
-      toast.success(`已移动 ${result.data.count} 个分类`);
+      toast.success(`??? ${result.data.count} ???`);
       setSelectedIds(new Set());
       setMoveDialogOpen(false);
       router.refresh();
@@ -399,7 +416,7 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
 
     if (!result.success) {
       setCategories(fallbackList);
-      toast.error(typeof result.error === 'string' ? result.error : '排序保存失败');
+      toast.error(typeof result.error === 'string' ? result.error : '??????');
       return;
     }
 
@@ -416,7 +433,7 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
     if (!source || !target) return null;
     if (source.id === target.id) return null;
     if (isDescendant(target.id, source.id, currentList)) {
-      toast.error('不能将分类拖拽到自己的子分类下');
+      toast.error('???????????????');
       return null;
     }
 
@@ -483,51 +500,51 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
           {selectedIds.size > 0 && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">
-                已选 {selectedIds.size} 项
+                ?? {selectedIds.size} ?
               </span>
               <Button
                 variant="outline" size="sm" disabled={batchLoading}
                 onClick={() => handleBatchToggle(true)}
               >
-                <Check className="mr-1 h-3.5 w-3.5" />启用
+                <Check className="mr-1 h-3.5 w-3.5" />??
               </Button>
               <Button
                 variant="outline" size="sm" disabled={batchLoading}
                 onClick={() => handleBatchToggle(false)}
               >
-                <PowerOff className="mr-1 h-3.5 w-3.5" />停用
+                <PowerOff className="mr-1 h-3.5 w-3.5" />??
               </Button>
               <Button
                 variant="outline" size="sm" disabled={batchLoading}
                 onClick={() => { setMoveTargetParentId(EMPTY_ID); setMoveDialogOpen(true); }}
               >
-                <FolderInput className="mr-1 h-3.5 w-3.5" />移动
+                <FolderInput className="mr-1 h-3.5 w-3.5" />??
               </Button>
               <Button
                 variant="outline" size="sm" disabled={batchLoading}
                 className="text-destructive hover:text-destructive"
                 onClick={() => setBatchDeleteOpen(true)}
               >
-                <Trash2 className="mr-1 h-3.5 w-3.5" />删除
+                <Trash2 className="mr-1 h-3.5 w-3.5" />??
               </Button>
               <Button
                 variant="ghost" size="sm" disabled={batchLoading}
                 onClick={() => setSelectedIds(new Set())}
               >
-                <X className="mr-1 h-3.5 w-3.5" />取消
+                <X className="mr-1 h-3.5 w-3.5" />??
               </Button>
             </div>
           )}
         </div>
         <Button onClick={openCreateDialog}>
           <Plus className="mr-2 h-4 w-4" />
-          新建分类
+          ????
         </Button>
       </div>
 
       <div className="rounded-lg border border-border/50 bg-card">
         <div className="border-b border-border/50 px-4 py-2 text-xs text-muted-foreground">
-          拖拽行左侧手柄：同级可调整顺序，跨级会自动移动为目标分类的子分类
+          ????????????????????????????????
         </div>
         <Table>
           <TableHeader>
@@ -536,22 +553,22 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
                 <Checkbox
                   checked={treeRows.length > 0 && selectedIds.size === treeRows.length}
                   onCheckedChange={toggleSelectAll}
-                  aria-label="全选"
+                  aria-label="??"
                 />
               </TableHead>
-              <TableHead>名称</TableHead>
+              <TableHead>??</TableHead>
               <TableHead>Slug</TableHead>
-              <TableHead>父级</TableHead>
-              <TableHead>排序</TableHead>
-              <TableHead>状态</TableHead>
-              <TableHead className="w-40 text-right">操作</TableHead>
+              <TableHead>??</TableHead>
+              <TableHead>??</TableHead>
+              <TableHead>??</TableHead>
+              <TableHead className="w-40 text-right">??</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {treeRows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                  暂无分类
+                  ????
                 </TableCell>
               </TableRow>
             ) : (
@@ -580,7 +597,7 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
                     <Checkbox
                       checked={selectedIds.has(item.id)}
                       onCheckedChange={() => toggleSelect(item.id)}
-                      aria-label={`选择 ${item.displayName}`}
+                      aria-label={`?? ${item.displayName}`}
                     />
                   </TableCell>
                   <TableCell>
@@ -597,7 +614,7 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
                   <TableCell>{item.sortOrder}</TableCell>
                   <TableCell>
                     <Badge variant={item.isActive ? 'default' : 'secondary'}>
-                      {item.isActive ? '启用' : '停用'}
+                      {item.isActive ? '??' : '??'}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -609,12 +626,12 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
                         onClick={() => openEditDialog(item)}
                       >
                         <Pencil className="mr-1 h-3.5 w-3.5" />
-                        编辑
+                        ??
                       </Button>
                       <Button asChild variant="ghost" size="sm" className="h-8">
                         <Link href={`/admin/categories/${item.id}/sections`}>
                           <Layers className="mr-1 h-3.5 w-3.5" />
-                          区块
+                          ??
                         </Link>
                       </Button>
                       <Button
@@ -625,7 +642,7 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
                         onClick={() => setDeleteTarget(item)}
                       >
                         <Trash2 className="mr-1 h-3.5 w-3.5" />
-                        删除
+                        ??
                       </Button>
                     </div>
                   </TableCell>
@@ -639,35 +656,43 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
           <DialogHeader>
-            <DialogTitle>{editing ? '编辑分类' : '新建分类'}</DialogTitle>
+            <DialogTitle>{editing ? '????' : '????'}</DialogTitle>
             <DialogDescription>
-              填写分类基础信息与多语言内容，至少一个语言名称不能为空。
+              ????????????????????????????
             </DialogDescription>
           </DialogHeader>
 
           <Tabs defaultValue="basic">
             <TabsList className="w-full">
-              <TabsTrigger value="basic" className="flex-1">基础信息</TabsTrigger>
-              <TabsTrigger value="i18n" className="flex-1">多语言内容</TabsTrigger>
+              <TabsTrigger value="basic" className="flex-1">????</TabsTrigger>
+              <TabsTrigger value="i18n" className="flex-1">?????</TabsTrigger>
             </TabsList>
 
             <TabsContent value="basic" className="space-y-4 pt-4">
+              <ImagePickerUpload
+                label="分类图片"
+                currentUrl={imageUrl}
+                mediaItems={mediaItems}
+                onSelect={(id, url) => { setImageId(id); setImageUrl(url); }}
+                onClear={() => { setImageId(null); setImageUrl(null); }}
+                onMediaUploaded={handleMediaUploaded}
+              />
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Slug</label>
                   <Input
                     value={slug}
                     onChange={(e) => setSlug(e.target.value)}
-                    placeholder="例如：industrial-equipment"
+                    placeholder="???industrial-equipment"
                     disabled={isSubmitting}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">父级分类</label>
+                  <label className="text-sm font-medium">????</label>
                   <Select value={parentId} onValueChange={setParentId} disabled={isSubmitting}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={EMPTY_ID}>无（顶级分类）</SelectItem>
+                      <SelectItem value={EMPTY_ID}>???????</SelectItem>
                       {parentOptions.map((item) => (
                         <SelectItem key={item.id} value={item.id}>
                           {item.displayName} ({item.slug})
@@ -677,7 +702,7 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">排序值</label>
+                  <label className="text-sm font-medium">???</label>
                   <Input
                     type="number"
                     min={0}
@@ -693,7 +718,7 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
                       onCheckedChange={setIsActive}
                       disabled={isSubmitting}
                     />
-                    启用分类
+                    ????
                   </label>
                 </div>
               </div>
@@ -711,7 +736,7 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
                       onClick={() => toggleLocalePanel(item.locale)}
                     >
                       <span className="text-sm font-semibold">
-                        {item.locale} {isDefault ? '(默认)' : ''}
+                        {item.locale} {isDefault ? '(??)' : ''}
                       </span>
                       {expanded ? (
                         <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -722,13 +747,13 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
                     {expanded ? (
                       <div className="grid gap-3 sm:grid-cols-2">
                         <Input
-                          placeholder="分类名称"
+                          placeholder="????"
                           value={item.name}
                           onChange={(e) => updateTranslation(item.locale, 'name', e.target.value)}
                           disabled={isSubmitting}
                         />
                         <Input
-                          placeholder="SEO 标题（可选）"
+                          placeholder="SEO ??????"
                           value={item.seoTitle}
                           onChange={(e) => updateTranslation(item.locale, 'seoTitle', e.target.value)}
                           disabled={isSubmitting}
@@ -737,7 +762,7 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
                           <textarea
                             rows={3}
                             className={handleTextareaClassName()}
-                            placeholder="分类描述（可选）"
+                            placeholder="????????"
                             value={item.description}
                             onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
                               updateTranslation(item.locale, 'description', e.target.value)
@@ -749,7 +774,7 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
                           <textarea
                             rows={2}
                             className={handleTextareaClassName()}
-                            placeholder="SEO 描述（可选）"
+                            placeholder="SEO ??????"
                             value={item.seoDescription}
                             onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
                               updateTranslation(item.locale, 'seoDescription', e.target.value)
@@ -767,10 +792,10 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>
-              取消
+              ??
             </Button>
             <Button onClick={handleSave} disabled={isSubmitting}>
-              保存
+              ??
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -779,7 +804,7 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
       <ConfirmDeleteDialog
         open={!!deleteTarget}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
-        description={<>确定删除分类 <strong>{deleteTarget?.displayName}</strong> 吗？此操作不可撤销。</>}
+        description={<>?????? <strong>{deleteTarget?.displayName}</strong> ??????????</>}
         onConfirm={handleDelete}
         loading={isSubmitting}
       />
@@ -787,7 +812,7 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
       <ConfirmDeleteDialog
         open={batchDeleteOpen}
         onOpenChange={setBatchDeleteOpen}
-        description={<>确定删除选中的 <strong>{selectedIds.size}</strong> 个分类吗？含有子分类的将被跳过。此操作不可撤销。</>}
+        description={<>??????? <strong>{selectedIds.size}</strong> ????????????????????????</>}
         onConfirm={handleBatchDelete}
         loading={batchLoading}
       />
@@ -795,15 +820,15 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
       <Dialog open={moveDialogOpen} onOpenChange={setMoveDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>批量移动分类</DialogTitle>
+            <DialogTitle>??????</DialogTitle>
             <DialogDescription>
-              将选中的 {selectedIds.size} 个分类移动到指定父级下
+              ???? {selectedIds.size} ???????????
             </DialogDescription>
           </DialogHeader>
           <Select value={moveTargetParentId} onValueChange={setMoveTargetParentId}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value={EMPTY_ID}>无（顶级分类）</SelectItem>
+              <SelectItem value={EMPTY_ID}>???????</SelectItem>
               {moveParentOptions.map((item) => (
                 <SelectItem key={item.id} value={item.id}>
                   {item.displayName} ({item.slug})
@@ -813,10 +838,10 @@ export function CategoryManagement({ initialCategories, locales }: CategoryManag
           </Select>
           <DialogFooter>
             <Button variant="outline" onClick={() => setMoveDialogOpen(false)} disabled={batchLoading}>
-              取消
+              ??
             </Button>
             <Button onClick={handleBatchMove} disabled={batchLoading}>
-              确认移动
+              ????
             </Button>
           </DialogFooter>
         </DialogContent>

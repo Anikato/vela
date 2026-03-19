@@ -1,13 +1,23 @@
+import dynamic from 'next/dynamic';
+
 import { getCachedActiveTheme, getCachedAnnouncementBarText, getCachedUiTranslationMap } from '@/lib/data-cache';
 import { DEFAULT_THEME_CONFIG } from '@/types/theme';
 import { getLanguageByCode } from '@/server/services/language.service';
 import { AnalyticsScripts } from './analytics-scripts';
 import { AnnouncementBar } from './announcement-bar';
-import { BackToTop } from './back-to-top';
-import { CookieConsentBanner } from './cookie-consent-banner';
 import { Footer } from './footer';
 import { Header } from './header';
+import { ScrollRevealInit } from './scroll-reveal-init';
 import { ThemeStyle } from './theme-provider';
+
+const BackToTop = dynamic(
+  () => import('./back-to-top').then((m) => ({ default: m.BackToTop })),
+  { ssr: false },
+);
+const CookieConsentBanner = dynamic(
+  () => import('./cookie-consent-banner').then((m) => ({ default: m.CookieConsentBanner })),
+  { ssr: false },
+);
 
 interface WebsiteShellProps {
   locale: string;
@@ -55,6 +65,7 @@ export async function WebsiteShell({ locale, defaultLocale, children }: WebsiteS
         rejectText={ui['cookie.reject']}
       />
       <BackToTop />
+      <ScrollRevealInit />
       <AnalyticsScripts />
     </div>
   );

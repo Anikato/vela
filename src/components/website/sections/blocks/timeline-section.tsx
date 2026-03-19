@@ -84,7 +84,7 @@ function YearBadge({ year, align }: { year: string | null; align: 'left' | 'righ
 
 function TimelineContent({ item, align }: { item: WebsiteSectionItem; align: 'left' | 'right' }) {
   return (
-    <div className={cn(align === 'right' ? 'text-right' : '')}>
+    <div className={cn('group/tl relative', align === 'right' ? 'text-right' : '')}>
       {item.translation.title && (
         <h3 className="text-base font-semibold tracking-tight sm:text-lg">{item.translation.title}</h3>
       )}
@@ -94,17 +94,22 @@ function TimelineContent({ item, align }: { item: WebsiteSectionItem; align: 'le
         </p>
       )}
       {item.imageUrl && (
-        <div className="mt-4">
-          <Image
-            src={item.imageUrl}
-            alt={item.translation.title ?? ''}
-            width={300}
-            height={200}
-            className={cn(
-              'rounded-xl object-cover shadow-sm',
-              align === 'right' ? 'ml-auto' : '',
-            )}
-          />
+        <div
+          className={cn(
+            'pointer-events-none absolute z-20 mt-2 w-64 opacity-0 transition-all duration-300 ease-out',
+            'translate-y-2 scale-95 group-hover/tl:pointer-events-auto group-hover/tl:translate-y-0 group-hover/tl:scale-100 group-hover/tl:opacity-100',
+            align === 'right' ? 'right-0' : 'left-0',
+          )}
+        >
+          <div className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-xl">
+            <Image
+              src={item.imageUrl}
+              alt={item.translation.title ?? ''}
+              width={300}
+              height={200}
+              className="h-auto w-full object-cover"
+            />
+          </div>
         </div>
       )}
     </div>

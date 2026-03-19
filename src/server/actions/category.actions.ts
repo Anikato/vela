@@ -37,6 +37,7 @@ const createCategorySchema = z.object({
     .max(255)
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug must be kebab-case'),
   parentId: z.string().uuid().nullable().optional(),
+  imageId: z.string().uuid().nullable().optional(),
   isActive: z.boolean().optional(),
   sortOrder: z.number().int().min(0).optional(),
   translations: z.array(translationSchema).min(1),
@@ -50,6 +51,7 @@ const updateCategorySchema = z.object({
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug must be kebab-case')
     .optional(),
   parentId: z.string().uuid().nullable().optional(),
+  imageId: z.string().uuid().nullable().optional(),
   isActive: z.boolean().optional(),
   sortOrder: z.number().int().min(0).optional(),
   translations: z.array(translationSchema).optional(),
