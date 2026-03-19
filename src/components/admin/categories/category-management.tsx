@@ -47,10 +47,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfirmDeleteDialog } from '@/components/admin/common/confirm-delete-dialog';
 import { ImagePickerUpload } from '@/components/admin/common/image-picker-upload';
-
 function handleTextareaClassName() {
   return 'min-h-[72px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm';
 }
+
 
 type MediaWithUrl = Media & { url: string };
 
@@ -257,7 +257,7 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
 
   async function handleSave() {
     if (!slug.trim()) {
-      toast.error('Slug ????');
+      toast.error('Slug 不能为空');
       return;
     }
 
@@ -283,11 +283,11 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
         : await createCategoryAction(payload);
 
       if (!result.success) {
-        toast.error(typeof result.error === 'string' ? result.error : '????');
+        toast.error(typeof result.error === 'string' ? result.error : '保存失败');
         return;
       }
 
-      toast.success(editing ? '?????' : '?????');
+      toast.success(editing ? '分类已更新' : '分类已创建');
       setDialogOpen(false);
       router.refresh();
     } finally {
@@ -301,12 +301,12 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
     try {
       const result = await deleteCategoryAction(deleteTarget.id);
       if (!result.success) {
-        toast.error(typeof result.error === 'string' ? result.error : '????');
+        toast.error(typeof result.error === 'string' ? result.error : '删除失败');
         return;
       }
 
       setCategories((prev) => prev.filter((row) => row.id !== deleteTarget.id));
-      toast.success('?????');
+      toast.success('分类已删除');
       setDeleteTarget(null);
       router.refresh();
     } finally {
@@ -336,10 +336,10 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
     try {
       const result = await batchToggleCategoriesAction(ids, isActive);
       if (!result.success) {
-        toast.error(typeof result.error === 'string' ? result.error : '????');
+        toast.error(typeof result.error === 'string' ? result.error : '操作失败');
         return;
       }
-      toast.success(`?${isActive ? '??' : '??'} ${result.data.count} ???`);
+      toast.success(`已${isActive ? '启用' : '停用'} ${result.data.count} 个分类`);
       setSelectedIds(new Set());
       router.refresh();
     } finally {
@@ -353,16 +353,16 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
     try {
       const result = await batchDeleteCategoriesAction(ids);
       if (!result.success) {
-        toast.error(typeof result.error === 'string' ? result.error : '????');
+        toast.error(typeof result.error === 'string' ? result.error : '删除失败');
         return;
       }
       if (result.data.skipped.length > 0) {
         const skippedNames = result.data.skipped
           .map((id) => categories.find((c) => c.id === id)?.displayName ?? id)
-          .join('?');
-        toast.warning(`??? ${result.data.deleted} ??${result.data.skipped.length} ?????????: ${skippedNames}`);
+          .join('、');
+        toast.warning(`已删除 ${result.data.deleted} 个，${result.data.skipped.length} 个含子分类无法删除: ${skippedNames}`);
       } else {
-        toast.success(`??? ${result.data.deleted} ???`);
+        toast.success(`已删除 ${result.data.deleted} 个分类`);
       }
       setSelectedIds(new Set());
       setBatchDeleteOpen(false);
@@ -379,10 +379,10 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
     try {
       const result = await batchMoveCategoriesAction(ids, targetParent);
       if (!result.success) {
-        toast.error(typeof result.error === 'string' ? result.error : '????');
+        toast.error(typeof result.error === 'string' ? result.error : '移动失败');
         return;
       }
-      toast.success(`??? ${result.data.count} ???`);
+      toast.success(`已移动 ${result.data.count} 个分类`);
       setSelectedIds(new Set());
       setMoveDialogOpen(false);
       router.refresh();
@@ -416,7 +416,7 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
 
     if (!result.success) {
       setCategories(fallbackList);
-      toast.error(typeof result.error === 'string' ? result.error : '??????');
+      toast.error(typeof result.error === 'string' ? result.error : '排序保存失败');
       return;
     }
 
@@ -433,7 +433,7 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
     if (!source || !target) return null;
     if (source.id === target.id) return null;
     if (isDescendant(target.id, source.id, currentList)) {
-      toast.error('???????????????');
+      toast.error('不能将分类拖拽到自己的子分类下');
       return null;
     }
 
@@ -500,51 +500,51 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
           {selectedIds.size > 0 && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">
-                ?? {selectedIds.size} ?
+                已选 {selectedIds.size} 项
               </span>
               <Button
                 variant="outline" size="sm" disabled={batchLoading}
                 onClick={() => handleBatchToggle(true)}
               >
-                <Check className="mr-1 h-3.5 w-3.5" />??
+                <Check className="mr-1 h-3.5 w-3.5" />启用
               </Button>
               <Button
                 variant="outline" size="sm" disabled={batchLoading}
                 onClick={() => handleBatchToggle(false)}
               >
-                <PowerOff className="mr-1 h-3.5 w-3.5" />??
+                <PowerOff className="mr-1 h-3.5 w-3.5" />停用
               </Button>
               <Button
                 variant="outline" size="sm" disabled={batchLoading}
                 onClick={() => { setMoveTargetParentId(EMPTY_ID); setMoveDialogOpen(true); }}
               >
-                <FolderInput className="mr-1 h-3.5 w-3.5" />??
+                <FolderInput className="mr-1 h-3.5 w-3.5" />移动
               </Button>
               <Button
                 variant="outline" size="sm" disabled={batchLoading}
                 className="text-destructive hover:text-destructive"
                 onClick={() => setBatchDeleteOpen(true)}
               >
-                <Trash2 className="mr-1 h-3.5 w-3.5" />??
+                <Trash2 className="mr-1 h-3.5 w-3.5" />删除
               </Button>
               <Button
                 variant="ghost" size="sm" disabled={batchLoading}
                 onClick={() => setSelectedIds(new Set())}
               >
-                <X className="mr-1 h-3.5 w-3.5" />??
+                <X className="mr-1 h-3.5 w-3.5" />取消
               </Button>
             </div>
           )}
         </div>
         <Button onClick={openCreateDialog}>
           <Plus className="mr-2 h-4 w-4" />
-          ????
+          新建分类
         </Button>
       </div>
 
       <div className="rounded-lg border border-border/50 bg-card">
         <div className="border-b border-border/50 px-4 py-2 text-xs text-muted-foreground">
-          ????????????????????????????????
+          拖拽行左侧手柄：同级可调整顺序，跨级会自动移动为目标分类的子分类
         </div>
         <Table>
           <TableHeader>
@@ -553,22 +553,22 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
                 <Checkbox
                   checked={treeRows.length > 0 && selectedIds.size === treeRows.length}
                   onCheckedChange={toggleSelectAll}
-                  aria-label="??"
+                  aria-label="全选"
                 />
               </TableHead>
-              <TableHead>??</TableHead>
+              <TableHead>名称</TableHead>
               <TableHead>Slug</TableHead>
-              <TableHead>??</TableHead>
-              <TableHead>??</TableHead>
-              <TableHead>??</TableHead>
-              <TableHead className="w-40 text-right">??</TableHead>
+              <TableHead>父级</TableHead>
+              <TableHead>排序</TableHead>
+              <TableHead>状态</TableHead>
+              <TableHead className="w-40 text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {treeRows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                  ????
+                  暂无分类
                 </TableCell>
               </TableRow>
             ) : (
@@ -597,7 +597,7 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
                     <Checkbox
                       checked={selectedIds.has(item.id)}
                       onCheckedChange={() => toggleSelect(item.id)}
-                      aria-label={`?? ${item.displayName}`}
+                      aria-label={`选择 ${item.displayName}`}
                     />
                   </TableCell>
                   <TableCell>
@@ -614,7 +614,7 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
                   <TableCell>{item.sortOrder}</TableCell>
                   <TableCell>
                     <Badge variant={item.isActive ? 'default' : 'secondary'}>
-                      {item.isActive ? '??' : '??'}
+                      {item.isActive ? '启用' : '停用'}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -626,12 +626,12 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
                         onClick={() => openEditDialog(item)}
                       >
                         <Pencil className="mr-1 h-3.5 w-3.5" />
-                        ??
+                        编辑
                       </Button>
                       <Button asChild variant="ghost" size="sm" className="h-8">
                         <Link href={`/admin/categories/${item.id}/sections`}>
                           <Layers className="mr-1 h-3.5 w-3.5" />
-                          ??
+                          区块
                         </Link>
                       </Button>
                       <Button
@@ -642,7 +642,7 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
                         onClick={() => setDeleteTarget(item)}
                       >
                         <Trash2 className="mr-1 h-3.5 w-3.5" />
-                        ??
+                        删除
                       </Button>
                     </div>
                   </TableCell>
@@ -656,16 +656,16 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
           <DialogHeader>
-            <DialogTitle>{editing ? '????' : '????'}</DialogTitle>
+            <DialogTitle>{editing ? '编辑分类' : '新建分类'}</DialogTitle>
             <DialogDescription>
-              ????????????????????????????
+              填写分类基础信息与多语言内容，至少一个语言名称不能为空。
             </DialogDescription>
           </DialogHeader>
 
           <Tabs defaultValue="basic">
             <TabsList className="w-full">
-              <TabsTrigger value="basic" className="flex-1">????</TabsTrigger>
-              <TabsTrigger value="i18n" className="flex-1">?????</TabsTrigger>
+              <TabsTrigger value="basic" className="flex-1">基础信息</TabsTrigger>
+              <TabsTrigger value="i18n" className="flex-1">多语言内容</TabsTrigger>
             </TabsList>
 
             <TabsContent value="basic" className="space-y-4 pt-4">
@@ -683,16 +683,16 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
                   <Input
                     value={slug}
                     onChange={(e) => setSlug(e.target.value)}
-                    placeholder="???industrial-equipment"
+                    placeholder="例如：industrial-equipment"
                     disabled={isSubmitting}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">????</label>
+                  <label className="text-sm font-medium">父级分类</label>
                   <Select value={parentId} onValueChange={setParentId} disabled={isSubmitting}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={EMPTY_ID}>???????</SelectItem>
+                      <SelectItem value={EMPTY_ID}>无（顶级分类）</SelectItem>
                       {parentOptions.map((item) => (
                         <SelectItem key={item.id} value={item.id}>
                           {item.displayName} ({item.slug})
@@ -702,7 +702,7 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">???</label>
+                  <label className="text-sm font-medium">排序值</label>
                   <Input
                     type="number"
                     min={0}
@@ -718,7 +718,7 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
                       onCheckedChange={setIsActive}
                       disabled={isSubmitting}
                     />
-                    ????
+                    启用分类
                   </label>
                 </div>
               </div>
@@ -736,7 +736,7 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
                       onClick={() => toggleLocalePanel(item.locale)}
                     >
                       <span className="text-sm font-semibold">
-                        {item.locale} {isDefault ? '(??)' : ''}
+                        {item.locale} {isDefault ? '(默认)' : ''}
                       </span>
                       {expanded ? (
                         <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -747,13 +747,13 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
                     {expanded ? (
                       <div className="grid gap-3 sm:grid-cols-2">
                         <Input
-                          placeholder="????"
+                          placeholder="分类名称"
                           value={item.name}
                           onChange={(e) => updateTranslation(item.locale, 'name', e.target.value)}
                           disabled={isSubmitting}
                         />
                         <Input
-                          placeholder="SEO ??????"
+                          placeholder="SEO 标题（可选）"
                           value={item.seoTitle}
                           onChange={(e) => updateTranslation(item.locale, 'seoTitle', e.target.value)}
                           disabled={isSubmitting}
@@ -762,7 +762,7 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
                           <textarea
                             rows={3}
                             className={handleTextareaClassName()}
-                            placeholder="????????"
+                            placeholder="分类描述（可选）"
                             value={item.description}
                             onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
                               updateTranslation(item.locale, 'description', e.target.value)
@@ -774,7 +774,7 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
                           <textarea
                             rows={2}
                             className={handleTextareaClassName()}
-                            placeholder="SEO ??????"
+                            placeholder="SEO 描述（可选）"
                             value={item.seoDescription}
                             onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
                               updateTranslation(item.locale, 'seoDescription', e.target.value)
@@ -792,10 +792,10 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>
-              ??
+              取消
             </Button>
             <Button onClick={handleSave} disabled={isSubmitting}>
-              ??
+              保存
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -804,7 +804,7 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
       <ConfirmDeleteDialog
         open={!!deleteTarget}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
-        description={<>?????? <strong>{deleteTarget?.displayName}</strong> ??????????</>}
+        description={<>确定删除分类 <strong>{deleteTarget?.displayName}</strong> 吗？此操作不可撤销。</>}
         onConfirm={handleDelete}
         loading={isSubmitting}
       />
@@ -812,7 +812,7 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
       <ConfirmDeleteDialog
         open={batchDeleteOpen}
         onOpenChange={setBatchDeleteOpen}
-        description={<>??????? <strong>{selectedIds.size}</strong> ????????????????????????</>}
+        description={<>确定删除选中的 <strong>{selectedIds.size}</strong> 个分类吗？含有子分类的将被跳过。此操作不可撤销。</>}
         onConfirm={handleBatchDelete}
         loading={batchLoading}
       />
@@ -820,15 +820,15 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
       <Dialog open={moveDialogOpen} onOpenChange={setMoveDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>??????</DialogTitle>
+            <DialogTitle>批量移动分类</DialogTitle>
             <DialogDescription>
-              ???? {selectedIds.size} ???????????
+              将选中的 {selectedIds.size} 个分类移动到指定父级下
             </DialogDescription>
           </DialogHeader>
           <Select value={moveTargetParentId} onValueChange={setMoveTargetParentId}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value={EMPTY_ID}>???????</SelectItem>
+              <SelectItem value={EMPTY_ID}>无（顶级分类）</SelectItem>
               {moveParentOptions.map((item) => (
                 <SelectItem key={item.id} value={item.id}>
                   {item.displayName} ({item.slug})
@@ -838,10 +838,10 @@ export function CategoryManagement({ initialCategories, locales, mediaItems: ini
           </Select>
           <DialogFooter>
             <Button variant="outline" onClick={() => setMoveDialogOpen(false)} disabled={batchLoading}>
-              ??
+              取消
             </Button>
             <Button onClick={handleBatchMove} disabled={batchLoading}>
-              ????
+              确认移动
             </Button>
           </DialogFooter>
         </DialogContent>
