@@ -1,6 +1,6 @@
 import { and, asc, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 
-import { getTranslation } from '@/lib/i18n';
+import { getTranslation, getTranslatedField } from '@/lib/i18n';
 import { db } from '@/server/db';
 import {
   categories,
@@ -326,16 +326,15 @@ export async function getPublishedProductDetailBySlug(
   const attributeGroups: PublicProductAttributeGroup[] = groups.map((group) => {
     const groupTranslations = groupTranslationsByGroupId.get(group.id) ?? [];
     const groupName =
-      getTranslation(groupTranslations, locale, defaultLocale)?.name ?? '(Unnamed Group)';
+      getTranslatedField(groupTranslations, locale, defaultLocale, 'name') ?? '(Unnamed Group)';
     const items = attributes
       .filter((attribute) => attribute.groupId === group.id)
       .map((attribute) => {
         const translations = attributeTranslationsById.get(attribute.id) ?? [];
-        const translatedAttribute = getTranslation(translations, locale, defaultLocale);
         return {
           id: attribute.id,
-          name: translatedAttribute?.name ?? '(Unnamed)',
-          value: translatedAttribute?.value ?? '-',
+          name: getTranslatedField(translations, locale, defaultLocale, 'name') ?? '(Unnamed)',
+          value: getTranslatedField(translations, locale, defaultLocale, 'value') ?? '-',
           sortOrder: attribute.sortOrder,
         };
       });

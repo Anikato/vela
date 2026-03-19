@@ -1,7 +1,7 @@
 import { and, asc, desc, eq } from 'drizzle-orm';
 
 import { NotFoundError, ValidationError } from '@/lib/errors';
-import { getTranslation } from '@/lib/i18n';
+import { getTranslation, getTranslatedField } from '@/lib/i18n';
 import { db } from '@/server/db';
 import {
   productAttributeGroupTranslations,
@@ -218,26 +218,14 @@ export async function getProductAttributeEditorData(
     },
     groups: groups.map((group) => ({
       ...group,
-      displayName: (() => {
-        const translatedGroup = getTranslation(group.translations, locale, defaultLocale);
-        if (typeof translatedGroup?.name === 'string' && translatedGroup.name) {
-          return translatedGroup.name;
-        }
-        return '(未命名分组)';
-      })(),
+      displayName: getTranslatedField(group.translations, locale, defaultLocale, 'name') ?? '(未命名分组)',
       attributes: [...group.attributes]
         .sort((a, b) => a.sortOrder - b.sortOrder)
-        .map((attribute) => {
-          const translated = getTranslation(attribute.translations, locale, defaultLocale);
-          return {
-            ...attribute,
-            displayName: translated?.name ?? '(未命名参数)',
-            displayValue:
-              typeof translated?.value === 'string' && translated.value
-                ? translated.value
-                : '-',
-          };
-        }),
+        .map((attribute) => ({
+          ...attribute,
+          displayName: getTranslatedField(attribute.translations, locale, defaultLocale, 'name') ?? '(未命名参数)',
+          displayValue: getTranslatedField(attribute.translations, locale, defaultLocale, 'value') ?? '-',
+        })),
     })),
   };
 }

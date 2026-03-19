@@ -114,6 +114,29 @@ export function matchLocale(
 }
 
 /**
+ * 从翻译数组中获取指定字段的值，支持字段级回退。
+ * 当目标语言的记录存在但字段为空时，回退到默认语言的对应字段。
+ */
+export function getTranslatedField<T extends TranslationRecord>(
+  translations: T[],
+  targetLocale: string,
+  defaultLocale: string,
+  field: keyof T,
+): string | null {
+  const target = getTranslation(translations, targetLocale, defaultLocale);
+  const value = target?.[field];
+  if (typeof value === 'string' && value.trim()) return value;
+
+  if (target?.locale !== defaultLocale) {
+    const fallback = translations.find((t) => t.locale === defaultLocale);
+    const fallbackValue = fallback?.[field];
+    if (typeof fallbackValue === 'string' && fallbackValue.trim()) return fallbackValue;
+  }
+
+  return null;
+}
+
+/**
  * 构建带语言前缀的 URL 路径
  * 默认语言无前缀，非默认语言带前缀
  */

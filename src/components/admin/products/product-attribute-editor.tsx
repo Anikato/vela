@@ -561,23 +561,36 @@ export function ProductAttributeEditor({
             <DialogDescription>填写分组多语言名称。</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            {groupTranslations.map((translation) => (
-              <div key={translation.locale} className="space-y-2 rounded-md border border-border/50 p-3">
-                <p className="text-sm font-medium">{translation.locale}</p>
-                <Input
-                  value={translation.name}
-                  onChange={(e) =>
-                    setGroupTranslations((prev) =>
-                      prev.map((item) =>
-                        item.locale === translation.locale ? { ...item, name: e.target.value } : item,
-                      ),
-                    )
-                  }
-                  placeholder="分组名称"
-                  disabled={isSubmitting}
-                />
-              </div>
-            ))}
+            {[...groupTranslations].sort((a, b) => {
+              if (a.locale === defaultLocale) return -1;
+              if (b.locale === defaultLocale) return 1;
+              return a.locale.localeCompare(b.locale);
+            }).map((translation) => {
+              const isDefault = translation.locale === defaultLocale;
+              const defaultRef = isDefault
+                ? null
+                : groupTranslations.find((t) => t.locale === defaultLocale)?.name;
+              return (
+                <div key={translation.locale} className="space-y-2 rounded-md border border-border/50 p-3">
+                  <p className="text-sm font-medium">
+                    {translation.locale}
+                    {isDefault && <span className="ml-1.5 text-xs text-muted-foreground">(默认)</span>}
+                  </p>
+                  <Input
+                    value={translation.name}
+                    onChange={(e) =>
+                      setGroupTranslations((prev) =>
+                        prev.map((item) =>
+                          item.locale === translation.locale ? { ...item, name: e.target.value } : item,
+                        ),
+                      )
+                    }
+                    placeholder={defaultRef ? `参考：${defaultRef}` : '分组名称'}
+                    disabled={isSubmitting}
+                  />
+                </div>
+              );
+            })}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setGroupDialogOpen(false)} disabled={isSubmitting}>
@@ -610,35 +623,53 @@ export function ProductAttributeEditor({
                 </SelectContent>
               </Select>
             </div>
-            {attributeTranslations.map((translation) => (
-              <div key={translation.locale} className="space-y-2 rounded-md border border-border/50 p-3">
-                <p className="text-sm font-medium">{translation.locale}</p>
-                <Input
-                  value={translation.name}
-                  onChange={(e) =>
-                    setAttributeTranslations((prev) =>
-                      prev.map((item) =>
-                        item.locale === translation.locale ? { ...item, name: e.target.value } : item,
-                      ),
-                    )
-                  }
-                  placeholder="参数名（如：功率）"
-                  disabled={isSubmitting}
-                />
-                <Input
-                  value={translation.value}
-                  onChange={(e) =>
-                    setAttributeTranslations((prev) =>
-                      prev.map((item) =>
-                        item.locale === translation.locale ? { ...item, value: e.target.value } : item,
-                      ),
-                    )
-                  }
-                  placeholder="参数值（如：5.5 kW）"
-                  disabled={isSubmitting}
-                />
-              </div>
-            ))}
+            {[...attributeTranslations].sort((a, b) => {
+              if (a.locale === defaultLocale) return -1;
+              if (b.locale === defaultLocale) return 1;
+              return a.locale.localeCompare(b.locale);
+            }).map((translation) => {
+              const isDefault = translation.locale === defaultLocale;
+              const defaultRef = isDefault
+                ? null
+                : attributeTranslations.find((t) => t.locale === defaultLocale);
+              return (
+                <div key={translation.locale} className="space-y-2 rounded-md border border-border/50 p-3">
+                  <p className="text-sm font-medium">
+                    {translation.locale}
+                    {isDefault && <span className="ml-1.5 text-xs text-muted-foreground">(默认)</span>}
+                  </p>
+                  {defaultRef && (defaultRef.name || defaultRef.value) && (
+                    <p className="text-xs text-muted-foreground">
+                      参考：{defaultRef.name || '-'} → {defaultRef.value || '-'}
+                    </p>
+                  )}
+                  <Input
+                    value={translation.name}
+                    onChange={(e) =>
+                      setAttributeTranslations((prev) =>
+                        prev.map((item) =>
+                          item.locale === translation.locale ? { ...item, name: e.target.value } : item,
+                        ),
+                      )
+                    }
+                    placeholder={defaultRef?.name ? `参考：${defaultRef.name}` : '参数名（如：功率）'}
+                    disabled={isSubmitting}
+                  />
+                  <Input
+                    value={translation.value}
+                    onChange={(e) =>
+                      setAttributeTranslations((prev) =>
+                        prev.map((item) =>
+                          item.locale === translation.locale ? { ...item, value: e.target.value } : item,
+                        ),
+                      )
+                    }
+                    placeholder={defaultRef?.value ? `参考：${defaultRef.value}` : '参数值（如：5.5 kW）'}
+                    disabled={isSubmitting}
+                  />
+                </div>
+              );
+            })}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAttributeDialogOpen(false)} disabled={isSubmitting}>
