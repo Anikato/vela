@@ -170,7 +170,7 @@ const ITEM_FIELDS_BY_TYPE: Record<
   feature_grid: { showIcon: true, showImage: true, showLink: true, showDescription: true, showContent: false, itemLabel: '特性卡片', hint: '每个子项是一张特性卡片，可使用图标或图片。' },
   carousel_banner: { showIcon: false, showImage: true, showLink: true, showDescription: true, showContent: false, itemLabel: '轮播幻灯片', hint: '每个子项是一张轮播图，包含图片、标题、描述和链接。' },
   two_column: { showIcon: false, showImage: true, showLink: false, showDescription: false, showContent: false, itemLabel: '侧栏图片', hint: '上传一张图片用于双栏布局的图片列。通常只需 1 项。' },
-  timeline: { showIcon: false, showImage: false, showLink: false, showDescription: true, showContent: false, itemLabel: '里程碑', hint: '每个子项是一个时间线节点。标题格式建议："2020 — 事件名称"。' },
+  timeline: { showIcon: false, showImage: true, showLink: false, showDescription: true, showContent: false, itemLabel: '里程碑', hint: '每个子项是一个时间线节点。标题格式建议："2020 — 事件名称"。可选上传图片，悬停时展示。' },
   team: { showIcon: false, showImage: true, showLink: true, showDescription: true, showContent: false, itemLabel: '团队成员', hint: '每个子项是一位团队成员。标题 = 姓名，描述 = 职位/简介。' },
   partner_logos: { showIcon: false, showImage: true, showLink: true, showDescription: false, showContent: false, itemLabel: '合作伙伴 Logo', hint: '每个子项是一个合作伙伴的 Logo 图片。' },
   image_gallery: { showIcon: false, showImage: true, showLink: false, showDescription: false, showContent: false, itemLabel: '图库图片', hint: '每个子项是一张图库图片。' },
