@@ -41,11 +41,11 @@ export async function generateMetadata({ params }: LocaleCustomPageProps): Promi
     title: `${t?.seoTitle || t?.title || slug} | ${siteInfo.siteName}`,
     siteName: siteInfo.siteName,
     description: t?.seoDescription || siteInfo.siteDescription,
-    canonicalPath: `/${locale}/page/${slug}`,
+    canonicalPath: `/${locale}/${slug}`,
     locale,
     defaultLocale: defaultLanguage.code,
     activeLocales,
-    pagePath: `/page/${slug}`,
+    pagePath: `/${slug}`,
     ogImage: siteInfo.ogImageUrl,
   });
 }

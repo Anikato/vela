@@ -11,6 +11,19 @@ const REDIRECT_CACHE_TTL_MS = 60 * 1000;
 const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 const FALLBACK_DEFAULT_LOCALE = 'en-US';
 
+/**
+ * 前台静态路由段列表 — 这些路径不应被当作自定义页面 slug 进行 rewrite。
+ * 新增固定前台路由时需同步添加。
+ */
+const STATIC_FRONTEND_ROUTES = new Set([
+  'products',
+  'news',
+  'about',
+  'contact',
+  'search',
+  'page',
+]);
+
 const PUBLIC_FILE_REGEX = /\.[^/]+$/;
 
 function getInternalOrigin(request: NextRequest): string {
@@ -168,6 +181,21 @@ export default auth(async (request) => {
       return response;
     }
 
+    // 非默认语言：/{locale}/{slug} → 内部 rewrite 到 /{locale}/page/{slug}
+    // 仅处理两段路径（/{locale}/{slug}），更深的路径（如 /zh-CN/products/xxx）不处理
+    if (pathSegments.length === 2) {
+      const secondSegment = pathSegments[1];
+      if (secondSegment && !STATIC_FRONTEND_ROUTES.has(secondSegment)) {
+        const rewriteUrl = new URL(
+          `/${firstSegment}/page/${secondSegment}${search}`,
+          origin,
+        );
+        const response = NextResponse.rewrite(rewriteUrl);
+        setLocaleCookie(response, firstSegment);
+        return response;
+      }
+    }
+
     const response = NextResponse.next();
     setLocaleCookie(response, firstSegment);
     return response;
@@ -178,6 +206,19 @@ export default auth(async (request) => {
   if (cookieLocale && localeSet.has(cookieLocale) && cookieLocale !== defaultLocale) {
     const redirectUrl = new URL(`/${cookieLocale}${pathname}${search}`, origin);
     const response = NextResponse.redirect(redirectUrl, 307);
+    return response;
+  }
+
+  // 默认语言：/{slug} → 内部 rewrite 到 /page/{slug}
+  // 仅处理单段路径，排除静态路由
+  if (
+    pathSegments.length === 1 &&
+    firstSegment &&
+    !STATIC_FRONTEND_ROUTES.has(firstSegment)
+  ) {
+    const rewriteUrl = new URL(`/page/${firstSegment}${search}`, origin);
+    const response = NextResponse.rewrite(rewriteUrl);
+    setLocaleCookie(response, defaultLocale);
     return response;
   }
 

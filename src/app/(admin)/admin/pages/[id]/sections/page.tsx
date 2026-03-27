@@ -20,11 +20,7 @@ export default async function PageSectionsPage({ params }: PageProps) {
   ]);
   const sections = await getPageSections(id, defaultLanguage.code, defaultLanguage.code);
 
-  const previewSlug = page.isHomepage
-    ? '/'
-    : page.slug === 'about'
-      ? '/about'
-      : `/page/${page.slug}`;
+  const previewSlug = page.isHomepage ? '/' : `/${page.slug}`;
 
   return (
     <div>

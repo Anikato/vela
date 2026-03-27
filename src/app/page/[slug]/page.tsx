@@ -42,11 +42,11 @@ export async function generateMetadata({ params }: CustomPageProps): Promise<Met
     title: `${t?.seoTitle || t?.title || slug} | ${siteInfo.siteName}`,
     siteName: siteInfo.siteName,
     description: t?.seoDescription || siteInfo.siteDescription,
-    canonicalPath: `/page/${slug}`,
+    canonicalPath: `/${slug}`,
     locale,
     defaultLocale: locale,
     activeLocales,
-    pagePath: `/page/${slug}`,
+    pagePath: `/${slug}`,
     ogImage: siteInfo.ogImageUrl,
   });
 }
