@@ -251,9 +251,12 @@ export function SectionItemsManagement({
   const [allMedia, setAllMedia] = useState<MediaWithUrl[]>(initialMediaItems);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // 用 item ID 的字符串签名作为依赖，避免数组引用变化导致的无限渲染循环
+  const itemsKey = initialItems.map((i) => i.id).join('|');
   useEffect(() => {
     setItems(initialItems);
-  }, [initialItems]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemsKey]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<SectionItemForUI | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SectionItemForUI | null>(null);

@@ -93,15 +93,40 @@ function CarouselBannerClient({
                 priority={idx === 0}
               />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+            {/* Overlay - 由每张幻灯片的 config.overlayStyle 控制 */}
+            {(() => {
+              const overlayStyle = (slide.config.overlayStyle as string) ?? 'gradient';
+              const overlayOpacity = Number(slide.config.overlayOpacity ?? 50) / 100;
+              if (overlayStyle === 'none') return null;
+              if (overlayStyle === 'full') {
+                return (
+                  <div
+                    className="absolute inset-0 bg-black"
+                    style={{ opacity: overlayOpacity }}
+                  />
+                );
+              }
+              return (
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              );
+            })()}
 
             {(slide.translation.title || slide.translation.description) && (
-              <div className="absolute inset-x-0 bottom-0 p-6 sm:p-10 lg:p-14">
+              <div className={cn(
+                'absolute p-6 sm:p-10 lg:p-14',
+                (() => {
+                  const pos = (slide.config.textPosition as string) ?? 'bottom-left';
+                  if (pos === 'bottom-center') return 'inset-x-0 bottom-0 flex flex-col items-center text-center';
+                  if (pos === 'center') return 'inset-0 flex flex-col items-center justify-center text-center';
+                  if (pos === 'top-left') return 'inset-x-0 top-0';
+                  return 'inset-x-0 bottom-0'; // bottom-left default
+                })(),
+              )}>
                 <div className="max-w-2xl">
                   {slide.translation.title && (
                     <h2 className={cn(
                       'text-2xl font-bold text-white sm:text-4xl lg:text-5xl',
-                      'translate-y-0 transition-all duration-700 delay-200',
+                      'transition-all duration-700 delay-200',
                       idx === current ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4',
                     )}>
                       {slide.translation.title}
@@ -123,7 +148,7 @@ function CarouselBannerClient({
                     )}>
                       <Button asChild size="lg" className="rounded-full px-8">
                         <Link href={slide.linkUrl}>
-                          {slide.translation.title ?? 'Learn More'} →
+                          {slide.translation.content || 'Learn More'} →
                         </Link>
                       </Button>
                     </div>

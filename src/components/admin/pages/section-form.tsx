@@ -162,13 +162,14 @@ const ITEM_FIELDS_BY_TYPE: Record<
     showLink: boolean;
     showDescription: boolean;
     showContent: boolean;
+    contentLabel?: string;
     itemLabel: string;
     hint: string;
   }
 > = {
   hero: { showIcon: false, showImage: true, showLink: false, showDescription: false, showContent: false, itemLabel: '背景图片', hint: '上传一张图片作为 Hero 区块的背景。通常只需 1 项。' },
   feature_grid: { showIcon: true, showImage: true, showLink: true, showDescription: true, showContent: false, itemLabel: '特性卡片', hint: '每个子项是一张特性卡片，可使用图标或图片。' },
-  carousel_banner: { showIcon: false, showImage: true, showLink: true, showDescription: true, showContent: false, itemLabel: '轮播幻灯片', hint: '每个子项是一张轮播图，包含图片、标题、描述和链接。' },
+  carousel_banner: { showIcon: false, showImage: true, showLink: true, showDescription: true, showContent: true, contentLabel: '按钮文本', itemLabel: '轮播幻灯片', hint: '每个子项是一张轮播图，包含图片、标题、描述、按钮文本和链接。' },
   two_column: { showIcon: false, showImage: true, showLink: false, showDescription: false, showContent: false, itemLabel: '侧栏图片', hint: '上传一张图片用于双栏布局的图片列。通常只需 1 项。' },
   timeline: { showIcon: false, showImage: true, showLink: false, showDescription: true, showContent: false, itemLabel: '里程碑', hint: '每个子项是一个时间线节点。标题格式建议："2020 — 事件名称"。可选上传图片，悬停时展示。' },
   team: { showIcon: false, showImage: true, showLink: true, showDescription: true, showContent: false, itemLabel: '团队成员', hint: '每个子项是一位团队成员。标题 = 姓名，描述 = 职位/简介。' },
@@ -232,9 +233,12 @@ export function SectionForm({
   // Items state
   const [items, setItems] = useState<SectionItemForUI[]>(initialItems);
 
+  // 用 item ID 的字符串签名作为依赖，避免数组引用变化导致的无限渲染循环
+  const itemsKey = initialItems.map((i) => i.id).join('|');
   useEffect(() => {
     setItems(initialItems);
-  }, [initialItems]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemsKey]);
 
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<SectionItemForUI | null>(null);
@@ -246,6 +250,7 @@ export function SectionForm({
   const [itemImageId, setItemImageId] = useState<string | null>(null);
   const [itemImageUrl, setItemImageUrl] = useState<string | null>(null);
   const [itemLinkUrl, setItemLinkUrl] = useState('');
+  const [itemConfig, setItemConfig] = useState<Record<string, unknown>>({});
   const [itemTranslations, setItemTranslations] = useState<ItemTranslationForm[]>([]);
   const [expandedLocales, setExpandedLocales] = useState<string[]>([]);
 
@@ -322,6 +327,7 @@ export function SectionForm({
     setItemImageId(null);
     setItemImageUrl(null);
     setItemLinkUrl('');
+    setItemConfig({});
     setItemTranslations(buildItemTranslationForm());
     setExpandedLocales(defaultLocale ? [defaultLocale] : []);
     setItemDialogOpen(true);
@@ -333,6 +339,7 @@ export function SectionForm({
     setItemImageId(item.imageId);
     setItemImageUrl(item.imageUrl);
     setItemLinkUrl(item.linkUrl ?? '');
+    setItemConfig(item.config ?? {});
     setItemTranslations(
       locales.map((locale) => {
         const matched = item.translations.find((tr) => tr.locale === locale.code);
@@ -381,6 +388,7 @@ export function SectionForm({
       iconName: itemIconName || null,
       imageId: itemImageId || null,
       linkUrl: itemLinkUrl || null,
+      config: itemConfig,
       translations: itemTranslations.map((item) => ({
         locale: item.locale,
         title: item.title || undefined,
@@ -833,6 +841,62 @@ export function SectionForm({
               </div>
             )}
 
+            {/* Carousel-specific per-slide config */}
+            {type === 'carousel_banner' && (
+              <div className="space-y-3 rounded-md border border-border/50 p-4">
+                <label className="text-sm font-medium">幻灯片配置</label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">文字位置</label>
+                    <Select
+                      value={String(itemConfig.textPosition ?? 'bottom-left')}
+                      onValueChange={(v) => setItemConfig((prev) => ({ ...prev, textPosition: v }))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="bottom-left">底部居左</SelectItem>
+                        <SelectItem value="bottom-center">底部居中</SelectItem>
+                        <SelectItem value="center">垂直居中</SelectItem>
+                        <SelectItem value="top-left">顶部居左</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">遮罩样式</label>
+                    <Select
+                      value={String(itemConfig.overlayStyle ?? 'gradient')}
+                      onValueChange={(v) => setItemConfig((prev) => ({ ...prev, overlayStyle: v }))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gradient">底部渐变（默认）</SelectItem>
+                        <SelectItem value="full">全幅纯色</SelectItem>
+                        <SelectItem value="none">无遮罩</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                {String(itemConfig.overlayStyle ?? 'gradient') === 'full' && (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      遮罩透明度：{Number(itemConfig.overlayOpacity ?? 50)}%
+                    </label>
+                    <input
+                      type="range"
+                      min="10"
+                      max="90"
+                      step="10"
+                      value={Number(itemConfig.overlayOpacity ?? 50)}
+                      onChange={(e) =>
+                        setItemConfig((prev) => ({ ...prev, overlayOpacity: Number(e.target.value) }))
+                      }
+                      className="w-full"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Icon & Link */}
             <div className="grid gap-4 sm:grid-cols-2">
               {itemFields.showIcon && (
@@ -905,10 +969,8 @@ export function SectionForm({
                           />
                         )}
                         {itemFields.showContent && (
-                          <textarea
-                            rows={4}
-                            className="min-h-[96px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                            placeholder="富文本内容（可选）"
+                          <Input
+                            placeholder={itemFields.contentLabel ?? '内容（可选）'}
                             value={item.content}
                             onChange={(e) => updateItemTranslation(item.locale, 'content', e.target.value)}
                             disabled={itemIsSubmitting}
