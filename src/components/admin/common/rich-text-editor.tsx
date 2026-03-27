@@ -263,6 +263,20 @@ const ResizableImage = TiptapImage.extend({
   },
 });
 
+// 模块级常量：extensions 配置不依赖组件 props/state，提到模块级避免每次渲染重建
+// 防止 Tiptap 因引用变化调用 refreshEditorInstance 产生"Duplicate extension names"警告和无限渲染
+const EDITOR_EXTENSIONS = [
+  StarterKit.configure({ heading: { levels: [2, 3, 4] } }),
+  Underline,
+  Link.configure({ openOnClick: false, autolink: true }),
+  Table.configure({ resizable: true }),
+  TableRow,
+  TableHeader,
+  TableCell,
+  ResizableImage.configure({ inline: false, allowBase64: false }),
+  Youtube.configure({ inline: false, nocookie: true }),
+];
+
 const VIDEO_WIDTH_PRESETS = [
   { label: '小 (480px)', value: 480 },
   { label: '中 (640px)', value: 640 },
@@ -304,32 +318,7 @@ export function RichTextEditor({
 
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: [
-      StarterKit.configure({
-        heading: {
-          levels: [2, 3, 4],
-        },
-      }),
-      Underline,
-      Link.configure({
-        openOnClick: false,
-        autolink: true,
-      }),
-      Table.configure({
-        resizable: true,
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      ResizableImage.configure({
-        inline: false,
-        allowBase64: false,
-      }),
-      Youtube.configure({
-        inline: false,
-        nocookie: true,
-      }),
-    ],
+    extensions: EDITOR_EXTENSIONS,
     content: sanitizedInitial,
     editable: !disabled,
     editorProps: {

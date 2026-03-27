@@ -3,6 +3,7 @@ import Link from 'next/link';
 import * as LucideIcons from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { getSectionTextConfig } from '@/lib/section-text-config';
 import type { SectionComponentProps, WebsiteSectionItem } from '../types';
 
 type CardVariant = 'default' | 'bordered' | 'filled' | 'minimal';
@@ -23,15 +24,33 @@ export function FeatureGridSection({ section }: SectionComponentProps) {
         ? `${mobileGrid} sm:grid-cols-2 lg:grid-cols-4`
         : `${mobileGrid} sm:grid-cols-2 lg:grid-cols-3`;
 
+  const textCfg = getSectionTextConfig(section.config, {
+    titleSizeClass: 'text-2xl sm:text-3xl lg:text-4xl',
+    subtitleSizeClass: 'sm:text-lg',
+  });
+
   return (
     <div>
       {(tr.title || tr.subtitle) && (
-        <div className="mb-12 text-center">
+        <div className={cn('mb-12 text-center', textCfg.lineHeightClass)}>
           {tr.title && (
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">{tr.title}</h2>
+            <h2
+              className={cn('font-bold tracking-tight', textCfg.title.sizeClass, textCfg.title.colorClass)}
+              style={textCfg.title.style}
+            >
+              {tr.title}
+            </h2>
+          )}
+          {tr.title && textCfg.divider.show && (
+            <div className={cn('mx-auto', textCfg.divider.className)} style={textCfg.divider.style} />
           )}
           {tr.subtitle && (
-            <p className="mx-auto mt-4 max-w-2xl text-muted-foreground sm:text-lg">{tr.subtitle}</p>
+            <p
+              className={cn('mx-auto mt-4 max-w-2xl text-muted-foreground', textCfg.subtitle.sizeClass, textCfg.subtitle.colorClass)}
+              style={textCfg.subtitle.style}
+            >
+              {tr.subtitle}
+            </p>
           )}
         </div>
       )}

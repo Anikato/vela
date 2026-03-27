@@ -1,6 +1,8 @@
 import Link from 'next/link';
 
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { getSectionTextConfig } from '@/lib/section-text-config';
 
 import type { SectionComponentProps } from '../types';
 
@@ -13,18 +15,36 @@ export function CtaSection({ section }: SectionComponentProps) {
     return null;
   }
 
+  const textCfg = getSectionTextConfig(section.config, {
+    titleSizeClass: 'text-2xl sm:text-3xl lg:text-4xl',
+    subtitleSizeClass: 'sm:text-lg',
+  });
+
   return (
     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary/80 p-8 text-center text-primary-foreground sm:p-12 lg:p-16">
       <div className="absolute -left-12 -top-12 h-40 w-40 rounded-full bg-white/10" />
       <div className="absolute -bottom-8 -right-8 h-32 w-32 rounded-full bg-white/10" />
       <div className="absolute left-1/2 top-0 h-20 w-20 -translate-x-1/2 rounded-full bg-white/5" />
 
-      <div className="relative">
+      <div className={cn('relative', textCfg.lineHeightClass)}>
         {tr.title ? (
-          <h2 className="text-2xl font-bold sm:text-3xl lg:text-4xl">{tr.title}</h2>
+          <h2
+            className={cn('font-bold', textCfg.title.sizeClass, textCfg.title.colorClass)}
+            style={textCfg.title.style}
+          >
+            {tr.title}
+          </h2>
         ) : null}
+        {tr.title && textCfg.divider.show && (
+          <div className={cn('mx-auto', textCfg.divider.className)} style={textCfg.divider.style} />
+        )}
         {tr.subtitle ? (
-          <p className="mx-auto mt-4 max-w-xl text-primary-foreground/80 sm:text-lg">{tr.subtitle}</p>
+          <p
+            className={cn('mx-auto mt-4 max-w-xl text-primary-foreground/80', textCfg.subtitle.sizeClass, textCfg.subtitle.colorClass)}
+            style={textCfg.subtitle.style}
+          >
+            {tr.subtitle}
+          </p>
         ) : null}
 
         {hasPrimaryButton || hasSecondaryButton ? (
