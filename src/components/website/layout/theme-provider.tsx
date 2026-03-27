@@ -1,5 +1,6 @@
 import { getActiveTheme } from '@/server/services/theme.service';
 import type { ThemeConfig, ThemeBackground, RadiusPreset } from '@/types/theme';
+import { buildGoogleFontsUrl } from '@/lib/google-fonts-catalog';
 
 const RADIUS_MAP: Record<RadiusPreset, string> = {
   none: '0',
@@ -28,7 +29,11 @@ function buildCssVariables(config: ThemeConfig): string {
   vars.push(`--font-latin: '${config.fonts.latin}';`);
   vars.push(`--font-cjk: '${config.fonts.cjk}';`);
   vars.push(`--font-arabic: '${config.fonts.arabic}';`);
+  // 标题字体：单独设置则用独立字体，否则跟随正文字体
+  const headingFont = config.fonts.headingFont ?? config.fonts.latin;
+  vars.push(`--font-heading: '${headingFont}';`);
   vars.push(`--heading-weight: ${config.fonts.headingWeight};`);
+  vars.push(`--heading-letter-spacing: ${config.fonts.letterSpacing ?? 'normal'};`);
   vars.push(`--body-size: ${config.fonts.bodySize};`);
 
   vars.push(`--btn-animation: ${config.button.animation};`);
@@ -94,6 +99,12 @@ export async function ThemeStyle() {
   const customCss = buildCustomCss(cfg);
   const attrs = buildDataAttributes(cfg);
 
+  // 收集需要加载的字体（正文 + 标题独立字体）
+  const fontNames = (
+    [cfg.fonts.latin, cfg.fonts.cjk, cfg.fonts.arabic, cfg.fonts.headingFont] as (string | undefined)[]
+  ).filter((f): f is string => typeof f === 'string' && f.trim().length > 0);
+  const googleFontsUrl = buildGoogleFontsUrl([...new Set(fontNames)]);
+
   const bgCss = [
     buildBackgroundCss(cfg.layout.pageBackground, '.vt-page-content'),
     buildBackgroundCss(cfg.layout.headerBackground, '.vt-header'),
@@ -113,6 +124,13 @@ export async function ThemeStyle() {
 
   return (
     <>
+      {googleFontsUrl && (
+        <>
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+          <link href={googleFontsUrl} rel="stylesheet" />
+        </>
+      )}
       <style dangerouslySetInnerHTML={{ __html: css }} />
       {allExtra && <style dangerouslySetInnerHTML={{ __html: allExtra }} />}
       <script dangerouslySetInnerHTML={{ __html: attrScript }} />

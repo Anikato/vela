@@ -23,6 +23,10 @@ export interface ThemeFonts {
   arabic: string;
   headingWeight: string;
   bodySize: string;
+  /** 标题专用字体（留空则与正文字体相同） */
+  headingFont?: string;
+  /** 标题字母间距，如 '-0.02em'、'0.05em'，留空则用默认 */
+  letterSpacing?: string;
 }
 
 export type ButtonShape = 'square' | 'soft' | 'rounded' | 'pill';

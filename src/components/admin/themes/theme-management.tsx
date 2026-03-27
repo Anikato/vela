@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Plus,
@@ -16,6 +16,7 @@ import {
   ShoppingBag,
   Megaphone,
   Code,
+  ChevronDown,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -55,6 +56,12 @@ import {
 } from '@/types/theme';
 import type { ThemeListItem } from '@/types/admin';
 import { ColorInput } from './color-input';
+import {
+  GOOGLE_FONTS,
+  FONT_CATEGORIES,
+  buildGoogleFontsUrl,
+  type FontCategory,
+} from '@/lib/google-fonts-catalog';
 
 interface Props {
   initialThemes: ThemeListItem[];
@@ -277,6 +284,121 @@ const COLOR_PRESETS: ColorPreset[] = [
   },
 ];
 
+// ── 字母间距预设 ────────────────────────────────────────────────────────────
+const LETTER_SPACING_OPTIONS = [
+  { value: 'normal',   label: '正常' },
+  { value: '-0.04em',  label: '紧凑 -4%' },
+  { value: '-0.02em',  label: '微紧 -2%' },
+  { value: '0.02em',   label: '微松 +2%' },
+  { value: '0.05em',   label: '宽松 +5%' },
+  { value: '0.1em',    label: '超宽 +10%' },
+  { value: '0.2em',    label: '极宽 +20%' },
+];
+
+// ── 字体下拉选择器 ──────────────────────────────────────────────────────────
+function FontSelect({
+  label,
+  value,
+  onChange,
+  allowEmpty,
+  emptyLabel,
+  filterCategories,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  allowEmpty?: boolean;
+  emptyLabel?: string;
+  filterCategories?: FontCategory[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const filtered = GOOGLE_FONTS.filter((f) => {
+    if (filterCategories && !filterCategories.includes(f.category)) return false;
+    return f.name.toLowerCase().includes(search.toLowerCase());
+  });
+
+  const grouped: Record<string, typeof filtered> = {};
+  for (const f of filtered) {
+    const cat = FONT_CATEGORIES[f.category];
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(f);
+  }
+
+  const displayValue = value || emptyLabel || '（与正文字体相同）';
+
+  return (
+    <div className="relative">
+      <label className="text-sm font-medium mb-1.5 block">{label}</label>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-accent transition-colors"
+      >
+        <span style={{ fontFamily: value ? `'${value}', sans-serif` : undefined }}>
+          {displayValue}
+        </span>
+        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground ml-2" />
+      </button>
+
+      {open && (
+        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-lg">
+          <div className="p-2 border-b border-border">
+            <input
+              autoFocus
+              className="w-full rounded border border-border bg-background px-2 py-1.5 text-xs outline-none"
+              placeholder="搜索字体…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {allowEmpty && (
+              <button
+                type="button"
+                onClick={() => { onChange(''); setOpen(false); setSearch(''); }}
+                className={cn(
+                  'w-full px-3 py-2 text-xs text-left hover:bg-accent transition-colors',
+                  !value ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground',
+                )}
+              >
+                {emptyLabel ?? '（与正文字体相同）'}
+              </button>
+            )}
+            {Object.entries(grouped).map(([cat, fonts]) => (
+              <div key={cat}>
+                <div className="px-3 pt-2 pb-0.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  {cat}
+                </div>
+                {fonts.map((f) => (
+                  <button
+                    key={f.name}
+                    type="button"
+                    onClick={() => { onChange(f.name); setOpen(false); setSearch(''); }}
+                    className={cn(
+                      'w-full px-3 py-1.5 text-left text-xs hover:bg-accent transition-colors flex items-center justify-between',
+                      value === f.name ? 'bg-primary/10 text-primary font-medium' : '',
+                    )}
+                  >
+                    <span style={{ fontFamily: `'${f.name}', sans-serif` }}>
+                      {f.name} — The quick brown fox
+                    </span>
+                    {value === f.name && <Check className="h-3 w-3 shrink-0 ml-2" />}
+                  </button>
+                ))}
+              </div>
+            ))}
+            {Object.keys(grouped).length === 0 && (
+              <div className="px-3 py-4 text-xs text-muted-foreground text-center">未找到匹配字体</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SelectGroup<T extends string | number>({
   label,
   options,
@@ -388,6 +510,28 @@ function BackgroundEditor({
 }
 
 function EnhancedPreview({ config }: { config: ThemeConfig }) {
+  // 在预览时动态加载所选字体
+  useEffect(() => {
+    const fontNames = [
+      config.fonts.latin,
+      config.fonts.cjk,
+      config.fonts.headingFont,
+    ].filter((f): f is string => Boolean(f));
+    const url = buildGoogleFontsUrl([...new Set(fontNames)]);
+    if (!url) return;
+    const id = 'theme-preview-fonts';
+    const existing = document.getElementById(id) as HTMLLinkElement | null;
+    if (existing) {
+      existing.href = url;
+    } else {
+      const link = document.createElement('link');
+      link.id = id;
+      link.rel = 'stylesheet';
+      link.href = url;
+      document.head.appendChild(link);
+    }
+  }, [config.fonts.latin, config.fonts.cjk, config.fonts.headingFont]);
+
   const c = {
     bg: `hsl(${config.colors.background})`,
     fg: `hsl(${config.colors.foreground})`,
@@ -402,14 +546,25 @@ function EnhancedPreview({ config }: { config: ThemeConfig }) {
     cardFg: `hsl(${config.colors.cardForeground})`,
     border: `hsl(${config.colors.border})`,
   };
-  const btnRadius = config.button.shape === 'pill' ? '9999px' : config.button.shape === 'square' ? '0' : config.button.shape === 'soft' ? '0.25rem' : '0.5rem';
+
+  // 圆角：根据 layout.radius 设置
+  const radiusMap: Record<string, string> = {
+    none: '0', sm: '0.25rem', md: '0.5rem', lg: '0.75rem', full: '9999px',
+  };
+  const cardRadius = radiusMap[config.layout.radius] ?? '0.5rem';
+  const shadowMap: Record<string, string> = {
+    none: 'none', sm: '0 1px 4px rgb(0 0 0 / .06)', md: '0 2px 12px rgb(0 0 0 / .1)', lg: '0 4px 24px rgb(0 0 0 / .14)',
+  };
+  const cardShadow = shadowMap[config.layout.shadow] ?? 'none';
+
+  const btnRadius = config.button.shape === 'pill' ? '9999px' : config.button.shape === 'square' ? '0' : config.button.shape === 'soft' ? '0.25rem' : cardRadius;
   const btnStyle = {
     borderRadius: btnRadius,
     fontWeight: Number(config.button.fontWeight) || 500,
     textTransform: (config.button.uppercase ? 'uppercase' : undefined) as React.CSSProperties['textTransform'],
     letterSpacing: config.button.uppercase ? '0.05em' : undefined,
   };
-  const navStyle = (label: string) => ({
+  const navStyle = (_label: string) => ({
     fontSize: '0.75rem' as const,
     padding: '0.2rem 0.5rem',
     color: c.mutedFg,
@@ -420,11 +575,34 @@ function EnhancedPreview({ config }: { config: ThemeConfig }) {
     backgroundColor: config.nav.style === 'pill' ? c.accent : config.nav.style === 'default' ? c.accent : undefined,
     borderRadius: config.nav.style === 'pill' ? '9999px' : config.nav.style === 'default' ? '0.375rem' : undefined,
   });
-  const font = `${config.fonts.latin}, sans-serif`;
+
+  const bodyFont = `'${config.fonts.latin}', sans-serif`;
+  const headingFont = config.fonts.headingFont
+    ? `'${config.fonts.headingFont}', '${config.fonts.latin}', sans-serif`
+    : bodyFont;
+
   const ab = config.announcementBar ?? DEFAULT_THEME_CONFIG.announcementBar;
 
+  // 页面背景
+  const pageBg = config.layout?.pageBackground;
+  let pageBgStyle: React.CSSProperties = { backgroundColor: c.bg };
+  if (pageBg?.type === 'gradient' && pageBg.gradient) {
+    pageBgStyle = { background: pageBg.gradient };
+  } else if (pageBg?.type === 'image' && pageBg.imageUrl) {
+    pageBgStyle = { backgroundImage: `url(${pageBg.imageUrl})`, backgroundSize: 'cover' };
+  }
+
+  // Header 背景
+  const headerBg = config.layout?.headerBackground;
+  let headerBgStyle: React.CSSProperties = { backgroundColor: c.bg };
+  if (headerBg?.type === 'gradient' && headerBg.gradient) {
+    headerBgStyle = { background: headerBg.gradient };
+  } else if (headerBg?.type === 'image' && headerBg.imageUrl) {
+    headerBgStyle = { backgroundImage: `url(${headerBg.imageUrl})`, backgroundSize: 'cover' };
+  }
+
   return (
-    <div className="text-[11px] leading-relaxed" style={{ fontFamily: font }}>
+    <div className="text-[11px] leading-relaxed" style={{ fontFamily: bodyFont, ...pageBgStyle }}>
       {/* Announcement Bar */}
       {ab.enabled && (
         <div style={{ backgroundColor: ab.bgColor, color: ab.textColor, padding: '0.25rem 0.5rem', textAlign: 'center', fontSize: '0.6rem' }}>
@@ -433,9 +611,9 @@ function EnhancedPreview({ config }: { config: ThemeConfig }) {
       )}
 
       {/* Header */}
-      <div style={{ backgroundColor: c.bg, borderBottom: `1px solid ${c.border}`, padding: '0.5rem 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ ...headerBgStyle, borderBottom: `1px solid ${c.border}`, padding: '0.5rem 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ width: '1.5rem', height: '1.5rem', backgroundColor: c.primary, borderRadius: '0.25rem' }} />
+          <div style={{ width: '1.5rem', height: '1.5rem', backgroundColor: c.primary, borderRadius: cardRadius }} />
           <div style={{ display: 'flex', gap: '0.25rem' }}>
             {['Home', 'Products', 'News', 'Contact'].map((l) => (
               <span key={l} style={navStyle(l)}>{l}</span>
@@ -450,31 +628,31 @@ function EnhancedPreview({ config }: { config: ThemeConfig }) {
 
       {/* Hero Section */}
       <div style={{ backgroundColor: c.primary, color: c.primaryFg, padding: '2rem 1rem', textAlign: 'center' }}>
-        <div style={{ fontWeight: Number(config.fonts.headingWeight) || 700, fontSize: '1.1rem', marginBottom: '0.35rem' }}>
+        <div style={{ fontFamily: headingFont, fontWeight: Number(config.fonts.headingWeight) || 700, fontSize: '1.1rem', marginBottom: '0.35rem', letterSpacing: config.fonts.letterSpacing ?? 'normal' }}>
           Hero Heading
         </div>
         <div style={{ fontSize: '0.7rem', opacity: 0.85, marginBottom: '0.75rem' }}>
           Subtitle text goes here — describe your business
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-          <button style={{ ...btnStyle, backgroundColor: c.bg, color: c.fg, padding: '0.35rem 0.75rem', fontSize: '0.65rem', border: 'none' }}>
+          <button style={{ ...btnStyle, backgroundColor: c.bg, color: c.fg, padding: '0.35rem 0.75rem', fontSize: '0.65rem', border: 'none', cursor: 'default' }}>
             Primary CTA
           </button>
-          <button style={{ ...btnStyle, backgroundColor: 'transparent', color: c.primaryFg, padding: '0.35rem 0.75rem', fontSize: '0.65rem', border: `1px solid ${c.primaryFg}40` }}>
+          <button style={{ ...btnStyle, backgroundColor: 'transparent', color: c.primaryFg, padding: '0.35rem 0.75rem', fontSize: '0.65rem', border: `1px solid ${c.primaryFg}40`, cursor: 'default' }}>
             Secondary
           </button>
         </div>
       </div>
 
       {/* Feature Grid */}
-      <div style={{ backgroundColor: c.bg, color: c.fg, padding: '1rem 0.75rem' }}>
+      <div style={{ color: c.fg, padding: '1rem 0.75rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '0.75rem' }}>
-          <div style={{ fontWeight: Number(config.fonts.headingWeight) || 700, fontSize: '0.85rem' }}>Features</div>
+          <div style={{ fontFamily: headingFont, fontWeight: Number(config.fonts.headingWeight) || 700, fontSize: '0.85rem', letterSpacing: config.fonts.letterSpacing ?? 'normal' }}>Features</div>
           <div style={{ fontSize: '0.6rem', color: c.mutedFg }}>What we offer</div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
           {['⚡', '🛡️', '🚀'].map((icon, i) => (
-            <div key={i} style={{ backgroundColor: c.card, border: `1px solid ${c.border}`, borderRadius: '0.5rem', padding: '0.5rem', textAlign: 'center' }}>
+            <div key={i} style={{ backgroundColor: c.card, border: `1px solid ${c.border}`, borderRadius: cardRadius, boxShadow: cardShadow, padding: '0.5rem', textAlign: 'center' }}>
               <div style={{ fontSize: '1rem', marginBottom: '0.25rem' }}>{icon}</div>
               <div style={{ fontWeight: 600, fontSize: '0.65rem' }}>Feature {i + 1}</div>
               <div style={{ fontSize: '0.55rem', color: c.mutedFg, marginTop: '0.15rem' }}>Short description</div>
@@ -486,12 +664,12 @@ function EnhancedPreview({ config }: { config: ThemeConfig }) {
       {/* Product Cards */}
       <div style={{ backgroundColor: c.muted, padding: '1rem 0.75rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '0.75rem', color: c.fg }}>
-          <div style={{ fontWeight: Number(config.fonts.headingWeight) || 700, fontSize: '0.85rem' }}>Products</div>
+          <div style={{ fontFamily: headingFont, fontWeight: Number(config.fonts.headingWeight) || 700, fontSize: '0.85rem', letterSpacing: config.fonts.letterSpacing ?? 'normal' }}>Products</div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(config.productCard?.gridColumns ?? 3, 3)}, 1fr)`, gap: '0.4rem' }}>
           {Array.from({ length: Math.min(config.productCard?.gridColumns ?? 3, 3) }).map((_, i) => (
-            <div key={i} style={{ backgroundColor: c.card, color: c.cardFg, borderRadius: '0.5rem', border: `1px solid ${c.border}`, overflow: 'hidden' }}>
-              <div style={{ aspectRatio: config.productCard?.imageRatio?.replace(':', '/') ?? '4/3', backgroundColor: c.muted }} />
+            <div key={i} style={{ backgroundColor: c.card, color: c.cardFg, borderRadius: cardRadius, border: `1px solid ${c.border}`, boxShadow: cardShadow, overflow: 'hidden' }}>
+              <div style={{ aspectRatio: config.productCard?.imageRatio?.replace(':', '/') ?? '4/3', backgroundColor: c.secondary }} />
               <div style={{ padding: '0.35rem' }}>
                 <div style={{ fontWeight: 600, fontSize: '0.6rem' }}>Product Name</div>
                 {config.productCard?.showSku !== false && (
@@ -504,14 +682,14 @@ function EnhancedPreview({ config }: { config: ThemeConfig }) {
       </div>
 
       {/* CTA Section */}
-      <div style={{ backgroundColor: c.primary, color: c.primaryFg, padding: '1.25rem 0.75rem', textAlign: 'center' }}>
-        <div style={{ fontWeight: Number(config.fonts.headingWeight) || 700, fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+      <div style={{ backgroundColor: c.primary, color: c.primaryFg, padding: '1.25rem 0.75rem', textAlign: 'center', borderRadius: 0 }}>
+        <div style={{ fontFamily: headingFont, fontWeight: Number(config.fonts.headingWeight) || 700, fontSize: '0.85rem', marginBottom: '0.25rem', letterSpacing: config.fonts.letterSpacing ?? 'normal' }}>
           Ready to Get Started?
         </div>
         <div style={{ fontSize: '0.6rem', opacity: 0.85, marginBottom: '0.5rem' }}>
           Contact us today for a free quote
         </div>
-        <button style={{ ...btnStyle, backgroundColor: c.bg, color: c.fg, padding: '0.3rem 0.75rem', fontSize: '0.6rem', border: 'none' }}>
+        <button style={{ ...btnStyle, backgroundColor: c.bg, color: c.fg, padding: '0.3rem 0.75rem', fontSize: '0.6rem', border: 'none', cursor: 'default' }}>
           Contact Us
         </button>
       </div>
@@ -753,13 +931,113 @@ export function ThemeManagement({ initialThemes }: Props) {
               )}
 
               {activeTab === 'fonts' && (
-                <div className="space-y-4">
-                  <div><label className="text-sm font-medium mb-1 block">拉丁字体</label><Input value={editConfig.fonts.latin} onChange={(e) => setEditConfig((p) => ({ ...p, fonts: { ...p.fonts, latin: e.target.value } }))} /></div>
-                  <div><label className="text-sm font-medium mb-1 block">CJK 字体</label><Input value={editConfig.fonts.cjk} onChange={(e) => setEditConfig((p) => ({ ...p, fonts: { ...p.fonts, cjk: e.target.value } }))} /></div>
-                  <div><label className="text-sm font-medium mb-1 block">阿拉伯字体</label><Input value={editConfig.fonts.arabic} onChange={(e) => setEditConfig((p) => ({ ...p, fonts: { ...p.fonts, arabic: e.target.value } }))} /></div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><label className="text-sm font-medium mb-1 block">标题字重</label><Input value={editConfig.fonts.headingWeight} onChange={(e) => setEditConfig((p) => ({ ...p, fonts: { ...p.fonts, headingWeight: e.target.value } }))} placeholder="700" /></div>
-                    <div><label className="text-sm font-medium mb-1 block">正文字号</label><Input value={editConfig.fonts.bodySize} onChange={(e) => setEditConfig((p) => ({ ...p, fonts: { ...p.fonts, bodySize: e.target.value } }))} placeholder="16px" /></div>
+                <div className="space-y-5">
+                  <div className="rounded-md border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground space-y-1">
+                    <p>字体从 <strong>Google Fonts</strong> 实时加载，选择后右侧预览即可看到效果。</p>
+                    <p>如需使用自有字体文件，请在「自定义 CSS」标签页中用 <code className="bg-background px-1 rounded">@font-face</code> 声明，然后在此处填写字体名称。</p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">正文字体</p>
+                    <p className="text-xs text-muted-foreground mb-2">应用于所有正文段落和 UI 元素</p>
+                    <FontSelect
+                      label="拉丁 / 英文字体"
+                      value={editConfig.fonts.latin}
+                      onChange={(v) => setEditConfig((p) => ({ ...p, fonts: { ...p.fonts, latin: v } }))}
+                      filterCategories={['sans-serif', 'serif', 'display', 'monospace']}
+                    />
+                    <div className="mt-3">
+                      <FontSelect
+                        label="中日韩字体"
+                        value={editConfig.fonts.cjk}
+                        onChange={(v) => setEditConfig((p) => ({ ...p, fonts: { ...p.fonts, cjk: v } }))}
+                        filterCategories={['cjk']}
+                      />
+                    </div>
+                    <div className="mt-3">
+                      <FontSelect
+                        label="阿拉伯字体（多语言站点用）"
+                        value={editConfig.fonts.arabic}
+                        onChange={(v) => setEditConfig((p) => ({ ...p, fonts: { ...p.fonts, arabic: v } }))}
+                        filterCategories={['sans-serif', 'serif']}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border/60 pt-4 space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">标题字体</p>
+                    <p className="text-xs text-muted-foreground mb-2">h1–h6 独立字体，留空则与正文字体相同（很多品牌选择衬线/展示字体做标题）</p>
+                    <FontSelect
+                      label="标题字体"
+                      value={editConfig.fonts.headingFont ?? ''}
+                      onChange={(v) => setEditConfig((p) => ({ ...p, fonts: { ...p.fonts, headingFont: v || undefined } }))}
+                      allowEmpty
+                      emptyLabel="（与正文字体相同）"
+                    />
+                  </div>
+
+                  <div className="border-t border-border/60 pt-4 grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-1.5 block">标题字重</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {['400', '500', '600', '700', '800', '900'].map((w) => (
+                          <button
+                            key={w}
+                            type="button"
+                            onClick={() => setEditConfig((p) => ({ ...p, fonts: { ...p.fonts, headingWeight: w } }))}
+                            className={`px-2.5 py-1 text-xs rounded border transition-colors ${editConfig.fonts.headingWeight === w ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border hover:bg-accent'}`}
+                            style={{ fontWeight: Number(w) }}
+                          >
+                            {w}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1.5 block">正文字号</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {['14px', '15px', '16px', '17px', '18px'].map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => setEditConfig((p) => ({ ...p, fonts: { ...p.fonts, bodySize: s } }))}
+                            className={`px-2.5 py-1 text-xs rounded border transition-colors ${editConfig.fonts.bodySize === s ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border hover:bg-accent'}`}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border/60 pt-4">
+                    <label className="text-sm font-medium mb-1.5 block">标题字间距</label>
+                    <p className="text-xs text-muted-foreground mb-2">调整标题文字之间的间距，负值更紧凑（适合大号标题），正值更舒展（适合展示字体）</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {LETTER_SPACING_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setEditConfig((p) => ({ ...p, fonts: { ...p.fonts, letterSpacing: opt.value } }))}
+                          className={`px-2.5 py-1 text-xs rounded border transition-colors ${(editConfig.fonts.letterSpacing ?? 'normal') === opt.value ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border hover:bg-accent'}`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-200 space-y-1">
+                    <p className="font-medium">如何使用本地字体文件？</p>
+                    <p>1. 将 .woff2 字体文件上传到「媒体库」，获取文件 URL</p>
+                    <p>2. 在「自定义 CSS」标签页粘贴：</p>
+                    <code className="block bg-background/40 rounded p-2 mt-1 text-[10px] whitespace-pre">{`@font-face {
+  font-family: 'MyFont';
+  src: url('/uploads/myfont.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+}`}</code>
+                    <p>3. 回到字体标签页，在拉丁字体下拉中选择任意字体占位，然后在标题字体或正文字体旁直接改 Input 为 <code className="bg-background/40 rounded px-1">MyFont</code>（自定义名称不在下拉列表中，直接输入即可覆盖）</p>
                   </div>
                 </div>
               )}

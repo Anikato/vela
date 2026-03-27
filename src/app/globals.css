@@ -160,6 +160,9 @@
   }
   h1, h2, h3, h4, h5, h6 {
     font-weight: var(--heading-weight, 700);
+    /* 标题专用字体（如未单独配置则跟随正文字体） */
+    font-family: var(--font-heading, var(--font-sans));
+    letter-spacing: var(--heading-letter-spacing, normal);
   }
 }
 
