@@ -139,7 +139,7 @@ export function getSectionTextConfig(
   const subtitleColorKey = str(config.text_subtitle_color, 'muted-foreground');
   const subtitleColorCustom = str(config.text_subtitle_color_custom);
 
-  const showDivider = config.text_divider !== false;
+  const showDivider = config.text_divider === true;
   const dividerWidthKey = str(config.text_divider_width, 'md');
   const dividerWidthCustomPx = num(config.text_divider_width_custom, 56);
   const dividerColorKey = str(config.text_divider_color, 'title');

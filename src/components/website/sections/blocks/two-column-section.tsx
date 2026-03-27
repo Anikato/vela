@@ -173,7 +173,7 @@ export function TwoColumnSection({ section }: SectionComponentProps) {
   const subtitleColorCustom = str(cfg.text_subtitle_color_custom, str(cfg.subtitle_color_custom));
 
   // 装饰条 - 默认开启，跟随标题出现
-  const showDivider = cfg.text_divider !== false && cfg.show_divider !== false;
+  const showDivider = cfg.text_divider === true;
   const dividerWidthKey = str(cfg.text_divider_width, 'md');
   const dividerWidthCustomPx = num(cfg.text_divider_width_custom, 56);
   const dividerColorKey = str(cfg.text_divider_color, 'title');

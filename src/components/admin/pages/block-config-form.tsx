@@ -724,13 +724,13 @@ function CommonAppearanceConfig({ value, onChange, disabled }: Omit<BlockConfigF
         <div className="rounded-md border border-border/60 p-3 space-y-3">
           <label className="flex items-center gap-2 text-sm font-medium">
             <Switch
-              checked={value.text_divider !== false}
+              checked={value.text_divider === true}
               onCheckedChange={(v) => onChange({ ...value, text_divider: v })}
               disabled={disabled}
             />
             标题下方显示装饰条（跟随标题出现）
           </label>
-          {value.text_divider !== false && (
+          {value.text_divider === true && (
             <div className="grid gap-3 sm:grid-cols-2 pl-8">
               {/* 装饰条宽度 */}
               <div className="space-y-1.5">
