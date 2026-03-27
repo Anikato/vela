@@ -59,9 +59,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   for (const pg of publishedPages) {
     if (pg.isHomepage) continue;
-    const pagePath = pg.slug === 'about' ? '/about' : `/page/${pg.slug}`;
     entries.push(
-      makeEntry(pagePath, {
+      makeEntry(`/${pg.slug}`, {
         lastmod: pg.updatedAt,
         priority: 0.6,
         changefreq: 'monthly',

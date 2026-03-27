@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
@@ -231,6 +231,11 @@ export function SectionForm({
 
   // Items state
   const [items, setItems] = useState<SectionItemForUI[]>(initialItems);
+
+  useEffect(() => {
+    setItems(initialItems);
+  }, [initialItems]);
+
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<SectionItemForUI | null>(null);
   const [deleteItemTarget, setDeleteItemTarget] = useState<SectionItemForUI | null>(null);
