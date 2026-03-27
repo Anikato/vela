@@ -170,7 +170,7 @@ const ITEM_FIELDS_BY_TYPE: Record<
   hero: { showIcon: false, showImage: true, showLink: false, showDescription: false, showContent: false, itemLabel: '背景图片', hint: '上传一张图片作为 Hero 区块的背景。通常只需 1 项。' },
   feature_grid: { showIcon: true, showImage: true, showLink: true, showDescription: true, showContent: false, itemLabel: '特性卡片', hint: '每个子项是一张特性卡片，可使用图标或图片。' },
   carousel_banner: { showIcon: false, showImage: true, showLink: true, showDescription: true, showContent: true, contentLabel: '按钮文本', itemLabel: '轮播幻灯片', hint: '每个子项是一张轮播图，包含图片、标题、描述、按钮文本和链接。' },
-  two_column: { showIcon: false, showImage: true, showLink: false, showDescription: false, showContent: false, itemLabel: '侧栏图片', hint: '上传一张图片用于双栏布局的图片列。通常只需 1 项。' },
+  two_column: { showIcon: false, showImage: true, showLink: false, showDescription: false, showContent: false, itemLabel: '侧栏图片', hint: '上传一张或多张图片用于双栏布局的图片列。多张图片时将自动轮播（间隔可在区块配置中设置）。' },
   timeline: { showIcon: false, showImage: true, showLink: false, showDescription: true, showContent: false, itemLabel: '里程碑', hint: '每个子项是一个时间线节点。标题格式建议："2020 — 事件名称"。可选上传图片，悬停时展示。' },
   team: { showIcon: false, showImage: true, showLink: true, showDescription: true, showContent: false, itemLabel: '团队成员', hint: '每个子项是一位团队成员。标题 = 姓名，描述 = 职位/简介。' },
   partner_logos: { showIcon: false, showImage: true, showLink: true, showDescription: false, showContent: false, itemLabel: '合作伙伴 Logo', hint: '每个子项是一个合作伙伴的 Logo 图片。' },
@@ -233,8 +233,20 @@ export function SectionForm({
   // Items state
   const [items, setItems] = useState<SectionItemForUI[]>(initialItems);
 
-  // 用 item ID 的字符串签名作为依赖，避免数组引用变化导致的无限渲染循环
-  const itemsKey = initialItems.map((i) => i.id).join('|');
+  // 用包含 id + config + linkUrl + 翻译内容的字符串签名作为依赖
+  // 纯 ID 签名无法检测"同 ID 但 config/翻译已更新"的情况，会导致编辑后回显旧数据
+  // 使用字符串比较（而非数组引用比较）避免默认 [] 参数产生的无限渲染循环
+  const itemsKey = initialItems
+    .map((i) =>
+      [
+        i.id,
+        JSON.stringify(i.config),
+        i.linkUrl ?? '',
+        i.imageId ?? '',
+        i.translations.map((t) => `${t.locale}:${t.title ?? ''}:${t.description ?? ''}:${t.content ?? ''}`).join('|'),
+      ].join(':')
+    )
+    .join('||');
   useEffect(() => {
     setItems(initialItems);
     // eslint-disable-next-line react-hooks/exhaustive-deps

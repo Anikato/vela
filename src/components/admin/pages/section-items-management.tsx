@@ -251,8 +251,19 @@ export function SectionItemsManagement({
   const [allMedia, setAllMedia] = useState<MediaWithUrl[]>(initialMediaItems);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 用 item ID 的字符串签名作为依赖，避免数组引用变化导致的无限渲染循环
-  const itemsKey = initialItems.map((i) => i.id).join('|');
+  // 包含 id + config + linkUrl + 翻译内容的签名，同时避免数组引用变化的无限循环
+  // 和编辑后无法回显最新数据的问题
+  const itemsKey = initialItems
+    .map((i) =>
+      [
+        i.id,
+        JSON.stringify(i.config),
+        i.linkUrl ?? '',
+        i.imageId ?? '',
+        i.translations.map((t) => `${t.locale}:${t.title ?? ''}:${t.description ?? ''}:${t.content ?? ''}`).join('|'),
+      ].join(':')
+    )
+    .join('||');
   useEffect(() => {
     setItems(initialItems);
     // eslint-disable-next-line react-hooks/exhaustive-deps

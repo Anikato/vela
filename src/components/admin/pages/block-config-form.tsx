@@ -245,18 +245,178 @@ function TestimonialsConfig({ value, onChange, disabled }: Omit<BlockConfigFormP
   );
 }
 
-function TwoColumnConfig({ value, onChange, disabled }: Omit<BlockConfigFormProps, 'type'>) {
+function ColorSelect({
+  label,
+  value: val,
+  customKey,
+  config,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  value: string;
+  customKey: string;
+  config: Record<string, unknown>;
+  onChange: (v: Record<string, unknown>) => void;
+  disabled?: boolean;
+}) {
   return (
     <div className="space-y-1.5">
-      <label className="flex items-center gap-2 text-sm font-medium">
-        <Switch
-          checked={bool(value.reversed)}
-          onCheckedChange={(v) => onChange({ ...value, reversed: v })}
+      <label className="text-sm font-medium text-foreground">{label}</label>
+      <Select
+        value={val}
+        onValueChange={(v) => onChange({ ...config, [customKey.replace('Custom', '')]: v })}
+        disabled={disabled}
+      >
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="default">默认（跟随主题）</SelectItem>
+          <SelectItem value="primary">主题色</SelectItem>
+          <SelectItem value="secondary">副主题色</SelectItem>
+          <SelectItem value="muted">静音色（浅灰）</SelectItem>
+          <SelectItem value="white">白色</SelectItem>
+          <SelectItem value="custom">自定义颜色</SelectItem>
+        </SelectContent>
+      </Select>
+      {val === 'custom' && (
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            value={str(config[customKey], '#000000')}
+            onChange={(e) => onChange({ ...config, [customKey]: e.target.value })}
+            disabled={disabled}
+            className="h-8 w-10 cursor-pointer rounded border border-input"
+          />
+          <Input
+            placeholder="#000000"
+            value={str(config[customKey], '')}
+            onChange={(e) => onChange({ ...config, [customKey]: e.target.value })}
+            disabled={disabled}
+            className="font-mono text-xs"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TwoColumnConfig({ value, onChange, disabled }: Omit<BlockConfigFormProps, 'type'>) {
+  return (
+    <div className="space-y-4">
+      {/* 布局 */}
+      <div className="space-y-1.5">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <Switch
+            checked={bool(value.reversed)}
+            onCheckedChange={(v) => onChange({ ...value, reversed: v })}
+            disabled={disabled}
+          />
+          图文反转（图片在右，文字在左）
+        </label>
+        <p className="text-xs text-muted-foreground">默认：图片在左，文字在右</p>
+      </div>
+
+      {/* 多图轮播 */}
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-foreground">图片轮播间隔（毫秒，0 = 不自动播放）</label>
+        <Input
+          type="number"
+          min={0}
+          max={30000}
+          step={500}
+          value={num(value.image_autoplay_ms, 4000)}
+          onChange={(e) => {
+            const n = Number(e.target.value);
+            if (Number.isFinite(n)) onChange({ ...value, image_autoplay_ms: Math.max(0, Math.min(30000, n)) });
+          }}
           disabled={disabled}
         />
-        图文反转（图片在右，文字在左）
-      </label>
-      <p className="text-xs text-muted-foreground">默认：图片在左，文字在右</p>
+        <p className="text-xs text-muted-foreground">有多张侧栏图片时生效，0 表示禁用自动轮播</p>
+      </div>
+
+      {/* 装饰分割线 */}
+      <div className="space-y-1.5">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <Switch
+            checked={value.show_divider !== false}
+            onCheckedChange={(v) => onChange({ ...value, show_divider: v })}
+            disabled={disabled}
+          />
+          标题与副标题之间显示主题色装饰条
+        </label>
+      </div>
+
+      {/* 标题尺寸 */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-foreground">标题字号</label>
+          <Select
+            value={str(value.title_size, 'md')}
+            onValueChange={(v) => onChange({ ...value, title_size: v })}
+            disabled={disabled}
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="sm">小（xl/2xl/3xl）</SelectItem>
+              <SelectItem value="md">中（2xl/3xl/4xl，默认）</SelectItem>
+              <SelectItem value="lg">大（3xl/4xl/5xl）</SelectItem>
+              <SelectItem value="xl">特大（4xl/5xl/6xl）</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-foreground">副标题字号</label>
+          <Select
+            value={str(value.subtitle_size, 'md')}
+            onValueChange={(v) => onChange({ ...value, subtitle_size: v })}
+            disabled={disabled}
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="sm">小（base）</SelectItem>
+              <SelectItem value="md">中（lg，默认）</SelectItem>
+              <SelectItem value="lg">大（xl）</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-foreground">行高</label>
+          <Select
+            value={str(value.line_height, 'normal')}
+            onValueChange={(v) => onChange({ ...value, line_height: v })}
+            disabled={disabled}
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="tight">紧凑（tight）</SelectItem>
+              <SelectItem value="normal">正常（默认）</SelectItem>
+              <SelectItem value="relaxed">宽松（relaxed）</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* 颜色 */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <ColorSelect
+          label="标题颜色"
+          value={str(value.title_color, 'default')}
+          customKey="title_color_custom"
+          config={value}
+          onChange={onChange}
+          disabled={disabled}
+        />
+        <ColorSelect
+          label="副标题颜色"
+          value={str(value.subtitle_color, 'muted')}
+          customKey="subtitle_color_custom"
+          config={value}
+          onChange={onChange}
+          disabled={disabled}
+        />
+      </div>
     </div>
   );
 }
