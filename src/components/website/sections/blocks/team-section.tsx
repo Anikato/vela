@@ -3,6 +3,7 @@ import Link from 'next/link';
 
 import { cn } from '@/lib/utils';
 import type { SectionComponentProps, WebsiteSectionItem } from '../types';
+import { focalStyle } from '../types';
 
 export function TeamSection({ section }: SectionComponentProps) {
   const tr = section.translation;
@@ -49,6 +50,7 @@ function TeamMemberCard({ item }: { item: WebsiteSectionItem }) {
             width={160}
             height={160}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+            style={focalStyle(item.imageFocal)}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-muted/30">

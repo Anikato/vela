@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Calendar } from 'lucide-react';
 
 import type { SectionComponentProps, WebsiteSectionNewsCard } from '../types';
+import { focalStyle } from '../types';
 
 export function NewsShowcaseSection({ section }: SectionComponentProps) {
   const tr = section.translation;
@@ -12,6 +13,7 @@ export function NewsShowcaseSection({ section }: SectionComponentProps) {
 
   const columns = Number(section.config.columns) || 3;
   const layout = section.config.layout === 'list' ? 'list' : 'grid';
+  const imageAspectRatio = typeof section.config.image_aspect_ratio === 'string' ? section.config.image_aspect_ratio : '16/9';
   const gridCols =
     columns === 2
       ? 'sm:grid-cols-2'
@@ -36,13 +38,13 @@ export function NewsShowcaseSection({ section }: SectionComponentProps) {
         layout === 'list' ? (
           <div className="space-y-4">
             {articles.map((article) => (
-              <NewsListCard key={article.id} article={article} />
+              <NewsListCard key={article.id} article={article} imageAspectRatio={imageAspectRatio} />
             ))}
           </div>
         ) : (
           <div className={`grid gap-6 lg:gap-8 ${gridCols}`}>
             {articles.map((article) => (
-              <NewsGridCard key={article.id} article={article} />
+              <NewsGridCard key={article.id} article={article} imageAspectRatio={imageAspectRatio} />
             ))}
           </div>
         )
@@ -75,13 +77,13 @@ function formatDate(isoString: string | null): string {
   }
 }
 
-function NewsGridCard({ article }: { article: WebsiteSectionNewsCard }) {
+function NewsGridCard({ article, imageAspectRatio }: { article: WebsiteSectionNewsCard; imageAspectRatio: string }) {
   return (
     <Link
       href={`/news/${article.slug}`}
       className="group overflow-hidden rounded-2xl border border-border/40 bg-card transition-all duration-300 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5"
     >
-      <div className="relative aspect-[16/9] overflow-hidden bg-muted/20">
+      <div className="relative overflow-hidden bg-muted/20" style={{ aspectRatio: imageAspectRatio }}>
         {article.coverImage ? (
           <Image
             src={article.coverImage.url}
@@ -89,6 +91,7 @@ function NewsGridCard({ article }: { article: WebsiteSectionNewsCard }) {
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            style={focalStyle(article.coverImage)}
           />
         ) : (
           <div className="flex h-full items-center justify-center">
@@ -116,20 +119,21 @@ function NewsGridCard({ article }: { article: WebsiteSectionNewsCard }) {
   );
 }
 
-function NewsListCard({ article }: { article: WebsiteSectionNewsCard }) {
+function NewsListCard({ article, imageAspectRatio }: { article: WebsiteSectionNewsCard; imageAspectRatio: string }) {
   return (
     <Link
       href={`/news/${article.slug}`}
       className="group flex gap-5 rounded-2xl border border-border/40 bg-card p-4 transition-all duration-300 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 sm:gap-6 sm:p-5"
     >
       {article.coverImage && (
-        <div className="relative hidden aspect-[16/9] w-52 shrink-0 overflow-hidden rounded-xl bg-muted/20 sm:block">
+        <div className="relative hidden w-52 shrink-0 overflow-hidden rounded-xl bg-muted/20 sm:block" style={{ aspectRatio: imageAspectRatio }}>
           <Image
             src={article.coverImage.url}
             alt={article.coverImage.alt || article.title}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
             sizes="200px"
+            style={focalStyle(article.coverImage)}
           />
         </div>
       )}

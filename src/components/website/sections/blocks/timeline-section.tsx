@@ -2,6 +2,7 @@ import Image from 'next/image';
 
 import { cn } from '@/lib/utils';
 import type { SectionComponentProps, WebsiteSectionItem } from '../types';
+import { focalStyle } from '../types';
 
 export function TimelineSection({ section }: SectionComponentProps) {
   const tr = section.translation;
@@ -108,6 +109,7 @@ function TimelineContent({ item, align }: { item: WebsiteSectionItem; align: 'le
               width={300}
               height={200}
               className="h-auto w-full object-cover"
+              style={focalStyle(item.imageFocal)}
             />
           </div>
         </div>

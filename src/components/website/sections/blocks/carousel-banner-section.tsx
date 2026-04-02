@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { SectionComponentProps } from '../types';
+import { focalStyle } from '../types';
 
 export function CarouselBannerSection({ section }: SectionComponentProps) {
   const items = section.items;
@@ -91,6 +92,7 @@ function CarouselBannerClient({
                 className="object-cover"
                 sizes="100vw"
                 priority={idx === 0}
+                style={focalStyle(slide.imageFocal)}
               />
             )}
             {/* Overlay - 由每张幻灯片的 config.overlayStyle 控制 */}

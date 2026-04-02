@@ -4,11 +4,13 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 import type { SectionComponentProps } from '../types';
+import { focalStyle } from '../types';
 
 export function ProductShowcaseSection({ section }: SectionComponentProps) {
   const tr = section.translation;
   const products = section.data?.products ?? [];
   const detailButtonText = tr.buttonText;
+  const aspectRatio = typeof section.config.image_aspect_ratio === 'string' ? section.config.image_aspect_ratio : '4/3';
 
   if (!products.length && !tr.title && !tr.subtitle) {
     return null;
@@ -30,7 +32,7 @@ export function ProductShowcaseSection({ section }: SectionComponentProps) {
               key={product.id}
               className="group overflow-hidden rounded-2xl border border-border/40 bg-card transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5"
             >
-              <div className="relative aspect-[4/3] overflow-hidden bg-muted/20">
+              <div className="relative overflow-hidden bg-muted/20" style={{ aspectRatio }}>
                 {product.featuredImage ? (
                   <Image
                     src={product.featuredImage.url}
@@ -38,6 +40,7 @@ export function ProductShowcaseSection({ section }: SectionComponentProps) {
                     fill
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    style={focalStyle(product.featuredImage)}
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center">

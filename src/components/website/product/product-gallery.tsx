@@ -10,6 +10,8 @@ export interface GalleryImage {
   id: string;
   url: string;
   alt: string | null;
+  focalX?: number;
+  focalY?: number;
 }
 
 interface ProductGalleryProps {
@@ -59,6 +61,7 @@ export function ProductGallery({ featuredImage, galleryImages, productName }: Pr
               className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
               sizes="(max-width: 1024px) 100vw, 50vw"
               priority
+              style={activeImage.focalX != null && activeImage.focalY != null && (activeImage.focalX !== 50 || activeImage.focalY !== 50) ? { objectPosition: `${activeImage.focalX}% ${activeImage.focalY}%` } : undefined}
             />
           )}
           <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/10 group-hover:opacity-100">

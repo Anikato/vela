@@ -149,6 +149,27 @@ orderedCodes: string[]
   - `Invalid media id`
   - `Media not found: {id}`
 
+#### 2) `updateMediaAltAction(id, alt)`
+
+- **入参**：`id: string`（UUID），`alt: string`
+- **鉴权**：必须已登录后台
+- **返回**：`ActionResult<void>`
+- **失败错误**：
+  - `Unauthorized`
+  - `Invalid media id`
+  - `Media not found: {id}`
+
+#### 3) `updateMediaFocalPointAction(id, focalX, focalY)`
+
+- **入参**：`id: string`（UUID），`focalX: number`（0–100），`focalY: number`（0–100）
+- **鉴权**：必须已登录后台
+- **返回**：`ActionResult<void>`
+- **校验**：Zod 校验 id 为 UUID、focalX/focalY 范围 0–100
+- **失败错误**：
+  - `Unauthorized`
+  - `无效的焦点参数`（校验失败）
+  - `Media not found: {id}`
+
 ---
 
 ## 前端调用建议
@@ -165,6 +186,7 @@ orderedCodes: string[]
 |---|---|---|
 | 2026-03 | 初始化 Action 契约文档 | 收录语言管理模块全部 Action |
 | 2026-03 | 新增媒体管理 Action 契约 | 收录 `deleteMediaAction` 的鉴权与参数约束 |
+| 2026-04 | 新增媒体焦点 Action | 收录 `updateMediaFocalPointAction`、补充 `updateMediaAltAction` |
 
 ---
 

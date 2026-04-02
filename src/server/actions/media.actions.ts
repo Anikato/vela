@@ -7,7 +7,7 @@ import type { ActionResult } from '@/types';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
 import { ensureAuth } from '@/server/actions/lib/auth';
-import { deleteMediaById, updateMediaAlt } from '@/server/services/media.service';
+import { deleteMediaById, updateMediaAlt, updateMediaFocalPoint } from '@/server/services/media.service';
 
 const mediaIdSchema = z.string().uuid();
 
@@ -59,6 +59,34 @@ export async function updateMediaAltAction(
 
   try {
     await updateMediaAlt(parsedId.data, alt);
+    return { success: true, data: undefined };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+const focalPointSchema = z.object({
+  id: z.string().uuid(),
+  focalX: z.number().min(0).max(100),
+  focalY: z.number().min(0).max(100),
+});
+
+/**
+ * 更新媒体焦点位置
+ */
+export async function updateMediaFocalPointAction(
+  id: string,
+  focalX: number,
+  focalY: number,
+): Promise<ActionResult<void>> {
+  const unauthed = await ensureAuth();
+  if (unauthed) return unauthed;
+
+  const parsed = focalPointSchema.safeParse({ id, focalX, focalY });
+  if (!parsed.success) return { success: false, error: '无效的焦点参数' };
+
+  try {
+    await updateMediaFocalPoint(parsed.data.id, parsed.data.focalX, parsed.data.focalY);
     return { success: true, data: undefined };
   } catch (error) {
     return handleError(error);

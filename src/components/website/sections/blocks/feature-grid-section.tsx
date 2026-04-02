@@ -5,6 +5,7 @@ import * as LucideIcons from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getSectionTextConfig } from '@/lib/section-text-config';
 import type { SectionComponentProps, WebsiteSectionItem } from '../types';
+import { focalStyle } from '../types';
 
 type CardVariant = 'default' | 'bordered' | 'filled' | 'minimal';
 
@@ -15,6 +16,7 @@ export function FeatureGridSection({ section }: SectionComponentProps) {
   if (!items.length && !tr.title) return null;
 
   const columns = Number(section.config.columns) || 3;
+  const imageAspectRatio = typeof section.config.image_aspect_ratio === 'string' ? section.config.image_aspect_ratio : '4/3';
   const variant = (section.config.card_variant as CardVariant) || 'default';
   const mobileGrid = items.length >= 3 ? 'grid-cols-2' : 'grid-cols-1';
   const gridCols =
@@ -57,14 +59,14 @@ export function FeatureGridSection({ section }: SectionComponentProps) {
 
       <div className={cn('grid gap-3 sm:gap-6 lg:gap-8', gridCols)}>
         {items.map((item, idx) => (
-          <FeatureCard key={item.id} item={item} variant={variant} index={idx} />
+          <FeatureCard key={item.id} item={item} variant={variant} index={idx} imageAspectRatio={imageAspectRatio} />
         ))}
       </div>
     </div>
   );
 }
 
-function FeatureCard({ item, variant, index }: { item: WebsiteSectionItem; variant: CardVariant; index: number }) {
+function FeatureCard({ item, variant, index, imageAspectRatio }: { item: WebsiteSectionItem; variant: CardVariant; index: number; imageAspectRatio: string }) {
   const IconComp = item.iconName
     ? (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[item.iconName]
     : null;
@@ -85,12 +87,13 @@ function FeatureCard({ item, variant, index }: { item: WebsiteSectionItem; varia
     >
       {/* Image mode: image at top, text below */}
       {hasImage && (
-        <div className="relative aspect-[4/3] w-full overflow-hidden">
+        <div className="relative w-full overflow-hidden" style={{ aspectRatio: imageAspectRatio }}>
           <Image
             src={item.imageUrl!}
             alt={item.translation.title ?? ''}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
+            style={focalStyle(item.imageFocal)}
           />
         </div>
       )}

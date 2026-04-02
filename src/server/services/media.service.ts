@@ -249,6 +249,20 @@ export async function updateMediaAlt(id: string, alt: string): Promise<void> {
 }
 
 /**
+ * 更新媒体文件的焦点位置（0–100）。
+ */
+export async function updateMediaFocalPoint(
+  id: string,
+  focalX: number,
+  focalY: number,
+): Promise<void> {
+  const [target] = await db.select().from(media).where(eq(media.id, id));
+  if (!target) throw new NotFoundError('Media', id);
+  const clamp = (v: number) => Math.max(0, Math.min(100, Math.round(v)));
+  await db.update(media).set({ focalX: clamp(focalX), focalY: clamp(focalY) }).where(eq(media.id, id));
+}
+
+/**
  * 删除媒体文件及数据库记录。
  */
 export async function deleteMediaById(id: string): Promise<void> {

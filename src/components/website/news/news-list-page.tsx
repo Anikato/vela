@@ -56,6 +56,7 @@ export function NewsListPage({
                         fill
                         className="object-cover transition group-hover:scale-[1.02]"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        style={item.coverImage.focalX !== 50 || item.coverImage.focalY !== 50 ? { objectPosition: `${item.coverImage.focalX}% ${item.coverImage.focalY}%` } : undefined}
                       />
                     ) : null}
                   </div>

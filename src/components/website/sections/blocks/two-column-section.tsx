@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { SectionComponentProps } from '../types';
+import { focalStyle } from '../types';
 
 // ─── Config helpers ───
 
@@ -131,6 +132,7 @@ function ImagePanel({
             )}
             sizes="(max-width: 1024px) 100vw, 50vw"
             priority={idx === 0}
+            style={focalStyle(item.imageFocal)}
           />
         ) : null,
       )}

@@ -111,16 +111,60 @@ function LimitInput({
   );
 }
 
+/* ---- 图片比例选择器 ---- */
+const ASPECT_RATIO_OPTIONS = [
+  { value: '4/3', label: '4:3（默认）' },
+  { value: '3/2', label: '3:2' },
+  { value: '16/9', label: '16:9' },
+  { value: '1/1', label: '1:1（正方形）' },
+  { value: '3/4', label: '3:4（竖版）' },
+] as const;
+
+function AspectRatioSelect({
+  value,
+  onChange,
+  defaultValue = '4/3',
+  options = ASPECT_RATIO_OPTIONS,
+  disabled,
+}: {
+  value: unknown;
+  onChange: (v: string) => void;
+  defaultValue?: string;
+  options?: readonly { value: string; label: string }[];
+  disabled?: boolean;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium text-foreground">图片比例</label>
+      <Select value={str(value, defaultValue)} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {options.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 /* ==================================================================
  * 各区块类型的配置表单
  * ================================================================*/
 
 function ProductShowcaseConfig({ value, onChange, disabled }: Omit<BlockConfigFormProps, 'type'>) {
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <LimitInput
         value={value.limit}
         onChange={(v) => onChange({ ...value, limit: v })}
+        disabled={disabled}
+      />
+      <AspectRatioSelect
+        value={value.image_aspect_ratio}
+        onChange={(v) => onChange({ ...value, image_aspect_ratio: v })}
         disabled={disabled}
       />
       <div className="space-y-1.5">
@@ -149,7 +193,7 @@ function ProductShowcaseConfig({ value, onChange, disabled }: Omit<BlockConfigFo
 
 function NewsShowcaseConfig({ value, onChange, disabled }: Omit<BlockConfigFormProps, 'type'>) {
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <LimitInput
         value={value.limit}
         onChange={(v) => onChange({ ...value, limit: v })}
@@ -170,13 +214,19 @@ function NewsShowcaseConfig({ value, onChange, disabled }: Omit<BlockConfigFormP
           </SelectContent>
         </Select>
       </div>
+      <AspectRatioSelect
+        value={value.image_aspect_ratio}
+        onChange={(v) => onChange({ ...value, image_aspect_ratio: v })}
+        defaultValue="16/9"
+        disabled={disabled}
+      />
     </div>
   );
 }
 
 function CategoryNavConfig({ value, onChange, disabled }: Omit<BlockConfigFormProps, 'type'>) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid gap-4 sm:grid-cols-3">
       <LimitInput
         value={value.limit}
         onChange={(v) => onChange({ ...value, limit: v })}
@@ -191,6 +241,11 @@ function CategoryNavConfig({ value, onChange, disabled }: Omit<BlockConfigFormPr
         defaultValue={4}
         disabled={disabled}
       />
+      <AspectRatioSelect
+        value={value.image_aspect_ratio}
+        onChange={(v) => onChange({ ...value, image_aspect_ratio: v })}
+        disabled={disabled}
+      />
     </div>
   );
 }
@@ -203,6 +258,11 @@ function FeatureGridConfig({ value, onChange, disabled }: Omit<BlockConfigFormPr
         onChange={(v) => onChange({ ...value, columns: v })}
         disabled={disabled}
       />
+      <AspectRatioSelect
+        value={value.image_aspect_ratio}
+        onChange={(v) => onChange({ ...value, image_aspect_ratio: v })}
+        disabled={disabled}
+      />
     </div>
   );
 }
@@ -213,6 +273,12 @@ function ImageGalleryConfig({ value, onChange, disabled }: Omit<BlockConfigFormP
       <ColumnsSelect
         value={value.columns}
         onChange={(v) => onChange({ ...value, columns: v })}
+        disabled={disabled}
+      />
+      <AspectRatioSelect
+        value={value.image_aspect_ratio}
+        onChange={(v) => onChange({ ...value, image_aspect_ratio: v })}
+        defaultValue="1/1"
         disabled={disabled}
       />
     </div>

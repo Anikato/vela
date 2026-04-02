@@ -2,6 +2,7 @@ import Image from 'next/image';
 
 import { cn } from '@/lib/utils';
 import type { SectionComponentProps, WebsiteSectionItem } from '../types';
+import { focalStyle } from '../types';
 
 export function TestimonialsSection({ section }: SectionComponentProps) {
   const tr = section.translation;
@@ -71,6 +72,7 @@ function TestimonialCard({ item }: { item: WebsiteSectionItem }) {
             width={48}
             height={48}
             className="h-12 w-12 rounded-full object-cover ring-2 ring-background"
+            style={focalStyle(item.imageFocal)}
           />
         ) : (
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">

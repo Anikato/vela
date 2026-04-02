@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Copy, FileText, ImageIcon, Loader2, Pencil, Search, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { deleteMediaAction, updateMediaAltAction } from '@/server/actions/media.actions';
+import { deleteMediaAction, updateMediaAltAction, updateMediaFocalPointAction } from '@/server/actions/media.actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -37,6 +37,8 @@ export interface MediaItem {
   width: number | null;
   height: number | null;
   alt: string | null;
+  focalX: number;
+  focalY: number;
   createdAt: string;
   url: string;
 }
@@ -97,6 +99,8 @@ export function MediaManagement({ initialItems, initialTotal, initialPage, initi
   const [typeFilter, setTypeFilter] = useState<'all' | 'image' | 'document'>('all');
   const [editAltTarget, setEditAltTarget] = useState<MediaItem | null>(null);
   const [editAltValue, setEditAltValue] = useState('');
+  const [editFocalX, setEditFocalX] = useState(50);
+  const [editFocalY, setEditFocalY] = useState(50);
   const [isSavingAlt, setIsSavingAlt] = useState(false);
 
   async function uploadFiles(fileList: FileList | File[]) {
@@ -229,17 +233,30 @@ export function MediaManagement({ initialItems, initialTotal, initialPage, initi
     if (!editAltTarget) return;
     setIsSavingAlt(true);
     try {
-      const result = await updateMediaAltAction(editAltTarget.id, editAltValue);
-      if (!result.success) {
-        toast.error(typeof result.error === 'string' ? result.error : '保存失败');
+      const altResult = await updateMediaAltAction(editAltTarget.id, editAltValue);
+      if (!altResult.success) {
+        toast.error(typeof altResult.error === 'string' ? altResult.error : '保存失败');
         return;
       }
+
+      const isImage = editAltTarget.mimeType.startsWith('image/');
+      const focalChanged = isImage && (editFocalX !== editAltTarget.focalX || editFocalY !== editAltTarget.focalY);
+      if (focalChanged) {
+        const focalResult = await updateMediaFocalPointAction(editAltTarget.id, editFocalX, editFocalY);
+        if (!focalResult.success) {
+          toast.error(typeof focalResult.error === 'string' ? focalResult.error : '焦点保存失败');
+          return;
+        }
+      }
+
       setItems((prev) =>
         prev.map((item) =>
-          item.id === editAltTarget.id ? { ...item, alt: editAltValue.trim() || null } : item,
+          item.id === editAltTarget.id
+            ? { ...item, alt: editAltValue.trim() || null, ...(focalChanged ? { focalX: editFocalX, focalY: editFocalY } : {}) }
+            : item,
         ),
       );
-      toast.success('ALT 文本已更新');
+      toast.success('已保存');
       setEditAltTarget(null);
     } finally {
       setIsSavingAlt(false);
@@ -413,9 +430,11 @@ export function MediaManagement({ initialItems, initialTotal, initialPage, initi
                         onClick={() => {
                           setEditAltTarget(item);
                           setEditAltValue(item.alt ?? '');
+                          setEditFocalX(item.focalX);
+                          setEditFocalY(item.focalY);
                         }}
-                        aria-label="编辑 ALT"
-                        title="编辑 ALT"
+                        aria-label="编辑图片属性"
+                        title="编辑图片属性"
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
@@ -485,20 +504,39 @@ export function MediaManagement({ initialItems, initialTotal, initialPage, initi
         </div>
       )}
 
-      {/* ─── ALT 编辑对话框 ─── */}
+      {/* ─── 图片属性编辑对话框 ─── */}
       <Dialog open={!!editAltTarget} onOpenChange={(open) => !open && setEditAltTarget(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>编辑 ALT 文本</DialogTitle>
+            <DialogTitle>编辑图片属性</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 py-2">
+          <div className="space-y-4 py-2">
             <p className="text-sm text-muted-foreground">{editAltTarget?.originalName}</p>
-            <Input
-              placeholder="输入 ALT 文本（描述图片内容，用于 SEO 和无障碍访问）"
-              value={editAltValue}
-              onChange={(e) => setEditAltValue(e.target.value)}
-              disabled={isSavingAlt}
-            />
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">ALT 文本</label>
+              <Input
+                placeholder="描述图片内容，用于 SEO 和无障碍访问"
+                value={editAltValue}
+                onChange={(e) => setEditAltValue(e.target.value)}
+                disabled={isSavingAlt}
+              />
+            </div>
+
+            {editAltTarget?.mimeType.startsWith('image/') && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  焦点位置
+                  <span className="ml-2 font-normal text-muted-foreground">（点击图片设置裁剪中心）</span>
+                </label>
+                <FocalPointPicker
+                  imageUrl={editAltTarget.url}
+                  focalX={editFocalX}
+                  focalY={editFocalY}
+                  onChange={(x, y) => { setEditFocalX(x); setEditFocalY(y); }}
+                />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditAltTarget(null)} disabled={isSavingAlt}>
@@ -534,6 +572,75 @@ export function MediaManagement({ initialItems, initialTotal, initialPage, initi
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  );
+}
+
+/* ─── 焦点选择器 ─── */
+function FocalPointPicker({
+  imageUrl,
+  focalX,
+  focalY,
+  onChange,
+}: {
+  imageUrl: string;
+  focalX: number;
+  focalY: number;
+  onChange: (x: number, y: number) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  function handleClick(e: React.MouseEvent<HTMLDivElement>) {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+    const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+    onChange(Math.max(0, Math.min(100, x)), Math.max(0, Math.min(100, y)));
+  }
+
+  return (
+    <div className="space-y-2">
+      <div
+        ref={containerRef}
+        className="relative cursor-crosshair overflow-hidden rounded-lg border border-border/60"
+        style={{ maxHeight: 280 }}
+        onClick={handleClick}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={imageUrl}
+          alt=""
+          className="block w-full"
+          style={{ maxHeight: 280, objectFit: 'contain' }}
+          draggable={false}
+        />
+        <div
+          className="pointer-events-none absolute h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white shadow-[0_0_0_2px_rgba(0,0,0,0.4),inset_0_0_0_1px_rgba(0,0,0,0.3)]"
+          style={{ left: `${focalX}%`, top: `${focalY}%` }}
+        />
+        <div
+          className="pointer-events-none absolute left-0 top-0 h-full w-full"
+          style={{
+            background: `
+              linear-gradient(to right, transparent ${focalX - 0.5}%, rgba(255,255,255,0.3) ${focalX}%, transparent ${focalX + 0.5}%),
+              linear-gradient(to bottom, transparent ${focalY - 0.5}%, rgba(255,255,255,0.3) ${focalY}%, transparent ${focalY + 0.5}%)
+            `,
+          }}
+        />
+      </div>
+      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <span>X: {focalX}%</span>
+        <span>Y: {focalY}%</span>
+        {(focalX !== 50 || focalY !== 50) && (
+          <button
+            type="button"
+            className="text-primary hover:underline"
+            onClick={() => onChange(50, 50)}
+          >
+            重置为居中
+          </button>
+        )}
+      </div>
     </div>
   );
 }

@@ -356,7 +356,7 @@ export interface PublicNewsListItem {
   slug: string;
   title: string;
   summary: string | null;
-  coverImage: { url: string; alt: string | null } | null;
+  coverImage: { url: string; alt: string | null; focalX: number; focalY: number } | null;
   publishedAt: Date | null;
 }
 
@@ -374,7 +374,7 @@ export interface PublicNewsDetail {
   title: string;
   summary: string | null;
   content: string | null;
-  coverImage: { url: string; alt: string | null } | null;
+  coverImage: { url: string; alt: string | null; focalX: number; focalY: number } | null;
   publishedAt: Date | null;
   seoTitle: string | null;
   seoDescription: string | null;
@@ -425,6 +425,8 @@ export async function getPublishedNewsList(
         ? {
             url: storage.getPublicUrl(row.coverImage.filename),
             alt: row.coverImage.alt,
+            focalX: row.coverImage.focalX,
+            focalY: row.coverImage.focalY,
           }
         : null,
       publishedAt: row.publishedAt,
@@ -440,7 +442,7 @@ export interface PublicNewsShowcaseItem {
   slug: string;
   title: string;
   summary: string | null;
-  coverImage: { url: string; alt: string | null } | null;
+  coverImage: { url: string; alt: string | null; focalX: number; focalY: number } | null;
   publishedAt: string | null;
 }
 
@@ -472,6 +474,8 @@ export async function getPublishedNewsForShowcase(
         ? {
             url: storage.getPublicUrl(row.coverImage.filename),
             alt: row.coverImage.alt,
+            focalX: row.coverImage.focalX,
+            focalY: row.coverImage.focalY,
           }
         : null,
       publishedAt: row.publishedAt?.toISOString() ?? null,
@@ -509,6 +513,8 @@ export async function getPublishedNewsBySlug(
       ? {
           url: storage.getPublicUrl(row.coverImage.filename),
           alt: row.coverImage.alt,
+          focalX: row.coverImage.focalX,
+          focalY: row.coverImage.focalY,
         }
       : null,
     publishedAt: row.publishedAt,

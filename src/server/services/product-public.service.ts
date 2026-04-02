@@ -39,6 +39,8 @@ export interface PublicProductMediaItem {
   id: string;
   url: string;
   alt: string | null;
+  focalX: number;
+  focalY: number;
 }
 
 export interface PublicProductDetail {
@@ -197,6 +199,8 @@ export async function getPublishedProductDetailBySlug(
       sortOrder: productImages.sortOrder,
       filename: media.filename,
       alt: media.alt,
+      focalX: media.focalX,
+      focalY: media.focalY,
     })
     .from(productImages)
     .innerJoin(media, eq(productImages.mediaId, media.id))
@@ -393,12 +397,16 @@ export async function getPublishedProductDetailBySlug(
           id: featuredMedia.id,
           url: storage.getPublicUrl(featuredMedia.filename),
           alt: featuredMedia.alt,
+          focalX: featuredMedia.focalX,
+          focalY: featuredMedia.focalY,
         }
       : null,
     galleryImages: galleryRows.map((row) => ({
       id: row.mediaId,
       url: storage.getPublicUrl(row.filename),
       alt: row.alt,
+      focalX: row.focalX,
+      focalY: row.focalY,
     })),
     attachments: attachmentRows.map((row) => ({
       id: row.mediaId,
@@ -772,7 +780,7 @@ async function mapProductRowsToCards(
       name: translated?.name ?? item.sku,
       shortDescription: typeof translated?.shortDescription === 'string' ? translated.shortDescription : null,
       featuredImage: featuredMedia
-        ? { id: featuredMedia.id, url: storage.getPublicUrl(featuredMedia.filename), alt: featuredMedia.alt }
+        ? { id: featuredMedia.id, url: storage.getPublicUrl(featuredMedia.filename), alt: featuredMedia.alt, focalX: featuredMedia.focalX, focalY: featuredMedia.focalY }
         : null,
       badges,
     };

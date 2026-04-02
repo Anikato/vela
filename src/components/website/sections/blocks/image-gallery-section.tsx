@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import type { SectionComponentProps, WebsiteSectionItem } from '../types';
+import { focalStyle } from '../types';
 
 export function ImageGallerySection({ section }: SectionComponentProps) {
   const tr = section.translation;
@@ -14,6 +15,7 @@ export function ImageGallerySection({ section }: SectionComponentProps) {
   if (!items.length && !tr.title) return null;
 
   const columns = Number(section.config.columns) || 3;
+  const imageAspectRatio = typeof section.config.image_aspect_ratio === 'string' ? section.config.image_aspect_ratio : '1/1';
   const gridCols =
     columns === 2
       ? 'sm:grid-cols-2'
@@ -32,12 +34,12 @@ export function ImageGallerySection({ section }: SectionComponentProps) {
         </div>
       )}
 
-      <GalleryGrid items={items} gridCols={gridCols} />
+      <GalleryGrid items={items} gridCols={gridCols} imageAspectRatio={imageAspectRatio} />
     </div>
   );
 }
 
-function GalleryGrid({ items, gridCols }: { items: WebsiteSectionItem[]; gridCols: string }) {
+function GalleryGrid({ items, gridCols, imageAspectRatio }: { items: WebsiteSectionItem[]; gridCols: string; imageAspectRatio: string }) {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
   return (
@@ -47,7 +49,8 @@ function GalleryGrid({ items, gridCols }: { items: WebsiteSectionItem[]; gridCol
           <button
             key={item.id}
             onClick={() => setLightboxIdx(idx)}
-            className="group relative aspect-square overflow-hidden rounded-lg bg-muted/30"
+            className="group relative overflow-hidden rounded-lg bg-muted/30"
+            style={{ aspectRatio: imageAspectRatio }}
           >
             <Image
               src={item.imageUrl!}
@@ -55,6 +58,7 @@ function GalleryGrid({ items, gridCols }: { items: WebsiteSectionItem[]; gridCol
               fill
               className="object-cover transition group-hover:scale-105"
               sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              style={focalStyle(item.imageFocal)}
             />
             {item.translation.title && (
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3 text-left opacity-0 transition group-hover:opacity-100">

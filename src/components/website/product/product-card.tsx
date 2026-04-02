@@ -104,6 +104,7 @@ export function ProductCard({
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-105"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              style={item.featuredImage.focalX !== 50 || item.featuredImage.focalY !== 50 ? { objectPosition: `${item.featuredImage.focalX}% ${item.featuredImage.focalY}%` } : undefined}
             />
           ) : (
             <div className="flex h-full items-center justify-center">

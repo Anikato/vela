@@ -41,6 +41,7 @@ export interface RenderSectionItem {
   id: string;
   iconName: string | null;
   imageUrl: string | null;
+  imageFocal: { focalX: number; focalY: number } | null;
   linkUrl: string | null;
   config: Record<string, unknown>;
   translation: {
@@ -493,6 +494,7 @@ export async function getCategorySectionsForRender(
           id: item.id,
           iconName: item.iconName,
           imageUrl: item.image ? storage.getPublicUrl(item.image.filename) : null,
+          imageFocal: item.image ? { focalX: item.image.focalX, focalY: item.image.focalY } : null,
           linkUrl: item.linkUrl,
           config: item.config ?? {},
           translation: {
@@ -680,6 +682,7 @@ export async function getPageSectionsForRender(
           id: item.id,
           iconName: item.iconName,
           imageUrl: item.image ? storage.getPublicUrl(item.image.filename) : null,
+          imageFocal: item.image ? { focalX: item.image.focalX, focalY: item.image.focalY } : null,
           linkUrl: item.linkUrl,
           config: item.config ?? {},
           translation: {

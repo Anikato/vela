@@ -9,6 +9,8 @@ export interface PublicProductMediaItem {
   id: string;
   url: string;
   alt: string | null;
+  focalX: number;
+  focalY: number;
 }
 
 export interface ProductBadge {
@@ -117,7 +119,7 @@ export interface PublicNewsListItem {
   slug: string;
   title: string;
   summary: string | null;
-  coverImage: { url: string; alt: string | null } | null;
+  coverImage: { url: string; alt: string | null; focalX: number; focalY: number } | null;
   publishedAt: Date | null;
 }
 
@@ -135,7 +137,7 @@ export interface PublicNewsDetail {
   title: string;
   summary: string | null;
   content: string | null;
-  coverImage: { url: string; alt: string | null } | null;
+  coverImage: { url: string; alt: string | null; focalX: number; focalY: number } | null;
   publishedAt: Date | null;
   seoTitle: string | null;
   seoDescription: string | null;

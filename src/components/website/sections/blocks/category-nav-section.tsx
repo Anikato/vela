@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import type { SectionComponentProps } from '../types';
+import { focalStyle } from '../types';
 
 export function CategoryNavSection({ section }: SectionComponentProps) {
   const tr = section.translation;
@@ -10,6 +11,7 @@ export function CategoryNavSection({ section }: SectionComponentProps) {
   if (!categories.length && !tr.title && !tr.subtitle) return null;
 
   const columns = Number(section.config.columns) || 4;
+  const aspectRatio = typeof section.config.image_aspect_ratio === 'string' ? section.config.image_aspect_ratio : '4/3';
   const gridCols =
     columns === 2
       ? 'sm:grid-cols-2'
@@ -40,7 +42,7 @@ export function CategoryNavSection({ section }: SectionComponentProps) {
               href={`/products/${cat.slug}`}
               className="group overflow-hidden rounded-xl border border-border/60 bg-card transition hover:shadow-md"
             >
-              <div className="relative aspect-[4/3] bg-muted/30">
+              <div className="relative bg-muted/30" style={{ aspectRatio }}>
                 {cat.imageUrl ? (
                   <Image
                     src={cat.imageUrl}
@@ -48,6 +50,7 @@ export function CategoryNavSection({ section }: SectionComponentProps) {
                     fill
                     className="object-cover transition group-hover:scale-105"
                     sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                    style={focalStyle(cat.imageFocal)}
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center">

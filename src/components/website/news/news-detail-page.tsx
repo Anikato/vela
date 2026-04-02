@@ -62,6 +62,7 @@ export function NewsDetailPage({
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 768px"
               priority
+              style={article.coverImage.focalX !== 50 || article.coverImage.focalY !== 50 ? { objectPosition: `${article.coverImage.focalX}% ${article.coverImage.focalY}%` } : undefined}
             />
           </div>
         ) : null}

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { getSectionTextConfig } from '@/lib/section-text-config';
 
 import type { SectionComponentProps } from '../types';
+import { focalStyle } from '../types';
 
 export function HeroSection({ section }: SectionComponentProps) {
   const tr = section.translation;
@@ -15,7 +16,8 @@ export function HeroSection({ section }: SectionComponentProps) {
 
   if (!hasContent) return null;
 
-  const bgImageUrl = section.items[0]?.imageUrl ?? null;
+  const bgItem = section.items[0] ?? null;
+  const bgImageUrl = bgItem?.imageUrl ?? null;
   const hasBackground = !!bgImageUrl;
 
   const textCfg = getSectionTextConfig(section.config, {
@@ -34,6 +36,7 @@ export function HeroSection({ section }: SectionComponentProps) {
             className="object-cover"
             sizes="100vw"
             priority
+            style={focalStyle(bgItem?.imageFocal)}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
 

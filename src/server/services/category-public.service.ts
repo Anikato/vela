@@ -12,6 +12,7 @@ export interface PublicCategoryCardItem {
   slug: string;
   name: string;
   imageUrl: string | null;
+  imageFocal: { focalX: number; focalY: number } | null;
   productCount: number;
 }
 
@@ -51,6 +52,7 @@ export async function getCategoriesForShowcase(
       slug: cat.slug,
       name: translated?.name ?? cat.slug,
       imageUrl: cat.image ? storage.getPublicUrl(cat.image.filename) : null,
+      imageFocal: cat.image ? { focalX: cat.image.focalX, focalY: cat.image.focalY } : null,
       productCount: (primaryCountMap.get(cat.id) ?? 0) + (additionalCountMap.get(cat.id) ?? 0),
     };
   });
